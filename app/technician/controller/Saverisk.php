@@ -7,7 +7,7 @@ use think\facade\Request;
 use think\facade\Db;
 
 
-class Savematerial
+class Saverisk
 {
     public function index()
     {
@@ -16,17 +16,14 @@ class Savematerial
         $result['data'] = null;
 
         $token = request()->header('token');
-        if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['material_name']) || !isset($_POST['targets']) || !isset($_POST['use_mode'])){
+        if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['risk_targets']) || !isset($_POST['risk_types']) || !isset($_POST['risk_rank']) || !isset($_POST['risk_label']) || !isset($_POST['risk_description']) || !isset($_POST['site_photos'])){
             return json($result); 
         }
-        if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['material_name']) || empty($_POST['targets']) || empty($_POST['use_mode'])){
+        if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['risk_targets']) || empty($_POST['risk_types']) || empty($_POST['risk_rank']) || empty($_POST['risk_label'])  || empty($_POST['risk_description'])  || empty($_POST['site_photos'])){
             return json($result); 
         }
         //获取信息
         $staffid = $_POST['staffid'];
-        $job_id = $_POST['job_id'];
-        $job_type = $_POST['job_type'];
-
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
@@ -37,22 +34,22 @@ class Savematerial
             $id = $_POST['id']?$_POST['id']:0;
             $data['job_id'] = $_POST['job_id'];
             $data['job_type'] = $_POST['job_type'];
-            $data['material_name'] = $_POST['material_name'];
-            $data['material_registration_no'] = $_POST['material_registration_no'];
-            $data['material_active_ingredient'] = $_POST['material_active_ingredient'];
-            $data['material_ratio'] = $_POST['material_ratio'];
-            $data['targets'] = $_POST['targets'];
-            $data['use_mode'] = $_POST['use_mode'];
-            $data['use_area'] = $_POST['use_area'];
-            $data['dosage'] = $_POST['dosage'];
-            $data['processing_space'] = $_POST['processing_space'];
-            $data['matters_needing_attention'] = $_POST['matters_needing_attention'];
-            $data['unit'] = $_POST['unit'];
+            $data['risk_targets'] = $_POST['risk_targets'];
+            $data['risk_types'] = $_POST['risk_types'];
+            $data['risk_rank'] = $_POST['risk_rank'];
+            $data['risk_label'] = $_POST['risk_label'];
+            $data['site_photos'] =  $_POST['site_photos'];
+            $data['risk_description'] = $_POST['risk_description'];
+            $data['risk_proposal'] = $_POST['risk_proposal'];
+            $data['take_steps'] = $_POST['take_steps'];
+        
             if ($id>0) {
-               $save_datas = Db::table('lbs_service_materials')->where('id', $id)->update($data);
+
+               $update_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
+               $save_datas = $id;
             }else{
                $data['creat_time'] = date('Y-m-d H:i:s', time());
-               $save_datas = Db::table('lbs_service_materials')->insert($data);
+               $save_datas = Db::table('lbs_service_risks')->insert($data);
             } 
             if ($save_datas) {
                 //返回数据

@@ -27,20 +27,38 @@ class Login
         //验证登录
         $user = Db::name('staff')->where('StaffID', $staffid)->where('Password', $password)->find();
         if ($user) {
-            if ($user['Status']==1 || $user['Status']==2) {
+            if ($user['Status']==1 || $user['Status']==2 || $user['Status']==5) {
                 //获取城市
-                $office = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID ')->where('o.City', $user['City'])->where('e.EnumType', 8)->find();
+                $office = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID ')->join('officesettings os ','o.Office=os.Office')->where('o.City', $user['City'])->where('e.EnumType', 8)->field('e.Text,os.Tel')->find();
                 //验证成功，生成token
                 $token = $this->create_guid();
                 //增加token表数据
+                $get_token = Db::name('token')->where('StaffID', $user['StaffID'])->find();
                 $data_token = ['StaffID' => $staffid, 'token' => $token,'stamp'=>date('Y-m-d H:i:s')];
-                $token_save = Db::name('token')->save($data_token);
-                //返回状态
-                $result['code'] = 1;
-                $result['msg'] = '登录成功';
-                $result['data']['staffname'] = $user['StaffName'];
-                $result['data']['city'] = $office['Text'];
-                $result['data']['token'] = $token;
+                if ($get_token) {
+                    $token_save = Db::name('token')->update($data_token);
+                }else{
+                    $token_save = Db::name('token')->insert($data_token);
+                }
+                //回传新U登录状态
+                $arr = array('staffid'=>$staffid,'password'=>$password,'token'=>$token);
+                $xinu_data = $this->curl_post('https://app.lbsapps.cn/web/ajax/editJobToken.php',$arr);
+                $xinu = json_decode($xinu_data,true);
+                 if($xinu['code']==1){
+                    //返回状态
+                    $result['code'] = 1;
+                    $result['msg'] = '登录成功';
+                    $result['data']['staffname'] = $user['StaffName'];
+                    $result['data']['city'] = $office['Text'];
+                    $result['data']['token'] = $token;
+                    $result['data']['officetel'] = $office['Tel'];
+                    $result['xinu'] = $xinu_data;
+                }else{
+                   //返回数据
+                    $result['code'] = 0;
+                    $result['msg'] = '新U回传失败';
+                    $result['xinu'] = $xinu_data; 
+                }
                 
             }else{
                 $result['code'] = 0;
@@ -56,8 +74,27 @@ class Login
 
         return json($result);
     }
-
-    
+    public function curl_post($url , $data=array()){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
+        // POST数据
+        curl_setopt($ch, CURLOPT_POST, 1);
+        // 把post的变量加上
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        $output = curl_exec($ch);
+        if($output === false)
+        {
+            $output = curl_error($ch);
+        }
+        curl_close($ch);
+        return $output;
+    }
     //token生成
     public function create_guid($namespace = '') {  
       static $guid = '';

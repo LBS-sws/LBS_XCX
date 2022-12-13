@@ -3,30 +3,27 @@ declare (strict_types = 1);
 
 namespace app\technician\controller;
 use app\BaseController;
-use think\facade\Request;
 use think\facade\Db;
+use think\facade\Request;
 
 
-class Servicequery
+class Getphotobyid
 {
     public function index()
     {
         $result['code'] = 0;
-        $result['msg'] = '请输入';
+        $result['msg'] = '请输入用户名、令牌和日期';
         $result['data'] = null;
 
         $token = request()->header('token');
-        if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['table_name'])){
+        if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['id'])){
             return json($result); 
         }
-        if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['table_name'])){
+        if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['id'])){
             return json($result); 
         }
         //获取信息
         $staffid = $_POST['staffid'];
-        $job_id = $_POST['job_id'];
-        $job_type = $_POST['job_type'];
-        $table_name = $_POST['table_name'];
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
@@ -34,19 +31,14 @@ class Servicequery
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24)) {
-            $wheres['job_id'] = $job_id;
-            $wheres['job_type'] = $job_type;
-            if($table_name=='briefings'){
-                $service_datas = Db::table('lbs_service_'.$table_name)->where($wheres)->find();
-            }else{
-                $service_datas = Db::table('lbs_service_'.$table_name)->where($wheres)->order('id', 'desc')->select();
-            }
-            
-            
-            //返回数据
+            $wheres['id'] = $_POST['id'];
+            $wheres['job_id'] = $_POST['job_id'];
+            $wheres['job_type'] = $_POST['job_type'];
+            $photo_datas = Db::table('lbs_service_photos')->where($wheres)->find();   
+             //返回数据
             $result['code'] = 1;
             $result['msg'] = '成功';
-            $result['data'] = $service_datas;
+            $result['data'] = $photo_datas;
            
         }else{
              $result['code'] = 0;

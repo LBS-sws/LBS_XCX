@@ -37,7 +37,15 @@ class Getshortcuts
             $wheres['s.city'] = $city;
             $wheres['s.shortcut_type'] = $shortcut_type;
             $wheres['s.service_type'] = $service_type;
-            $shortcut_datas = Db::table('lbs_service_shortcuts')->alias('s')->join('lbs_service_shortcut_contents c','s.id=c.shortcut_id')->where($wheres)->field('c.content as value,c.content as label')->select();
+            
+             //search_key 开始
+            $wheres_search = [];
+            if(isset($_POST['search_key']) && $_POST['search_key'] != ''){
+                $wheres_search =  [['c.content', 'like', "%{$_POST['search_key']}%"]];
+            }
+            //search_key 结束
+            
+            $shortcut_datas = Db::table('lbs_service_shortcuts')->alias('s')->join('lbs_service_shortcut_contents c','s.id=c.shortcut_id')->where($wheres)->where($wheres_search)->field('c.content as value,c.content as label')->select();
              if ($shortcut_datas) {
                 //返回数据
                 $result['code'] = 1;
