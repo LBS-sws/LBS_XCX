@@ -8,21 +8,21 @@ use app\technician\model\JobOrder;
 use app\technician\model\FollowupOrder;
 use think\facade\Db;
 
-class reportAutograph
+class ReportAutograph
 {
     public function index()
     {
 
 
         $model = new Autograph();
-        $modelV2 =  new AutographV2();
+        $modelV2 = new AutographV2();
 //        $followupOrderModel =  new FollowupOrder();
 //        $total = $model->count();
 //        $size = 10;
 //        $page = request()->get('page');
         //参数 page 页数  listRows 每页数量
-        $list = $model->where('conversion_flag','=',0)->page(1, 10)->select()->toArray();
-        if(empty($list)){
+        $list = $model->where('conversion_flag', '=', 0)->page(1, 10)->order('id asc')->select()->toArray();
+        if (empty($list)) {
             return error(-1, '没有可执行的数据', []);
         }
         //创建的日期
@@ -44,8 +44,8 @@ class reportAutograph
                 //$data[$k]['employee02_signature'] = '';
                 //$data[$k]['employee04_signature'] = '';
                 $data[$k]['conversion_flag'] = 1;
-                $data_x[$k]['customer_grade'] =  $value['customer_grade'];
-                $data_x[$k]['creat_time'] =  $value['creat_time'];
+                $data_x[$k]['customer_grade'] = $value['customer_grade'];
+                $data_x[$k]['creat_time'] = $value['creat_time'];
                 if ($value['customer_signature'] == 'undefined' || $value['customer_signature'] == '') {
                     $value['customer_signature'] = '';
                 }
@@ -53,13 +53,38 @@ class reportAutograph
             }
             $res = $model->saveAll($data);
             $res1 = $modelV2->insertAll($data_x);
-            sleep(2);
             $model->commit();
             return success(0, 'ok', $res);
         } catch (\Exception $exception) {
             $model->rollback();
             return error(-1, 'error', $exception->getMessage());
         }
+    }
+    public function cron_task(){
+        if (ob_get_level() == 0) ob_start();
+        set_time_limit(0);
+        ini_set('memory_limit', '1G');
+        ini_set('default_socket_timeout', -1);
+
+        set_time_limit(0);
+        ob_end_clean();
+        ob_implicit_flush();
+        header('X-Accel-Buffering: no'); // 关键是加了这一行。
+        //为了方便测试，这里逐单条添加入表
+        for ($i=0; $i<20;$i++) {
+            //   flush(); //ob_flush()定要组合使用 ，否则不起作用
+            //   ob_flush();
+            $this->index();
+            echo ($i+1)."\r\n";  //必须要在循环中 打印哦 ，不然flush就不起作用了
+            //当前apache通过浏览器访问
+            if (strpos(strtolower($_SERVER['SERVER_SOFTWARE']), 'apache') !== false) {
+                echo str_pad('',1)."\n";
+            }
+            sleep(1); //停留一秒观看浏览器 弹出信息
+        }
+        //   ob_end_flush();
+        exit('ok');
+
     }
 
     public function conversionToImg($base64_image_content, $path)
