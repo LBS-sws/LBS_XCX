@@ -24,6 +24,8 @@ class Saveautograph
         }
         //获取信息
         $staffid = $_POST['staffid'];
+        $is_grade = isset($_REQUEST['is_grade'])?$_REQUEST['is_grade']:1;
+
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
@@ -39,7 +41,9 @@ class Saveautograph
             $data['employee02_signature'] = $_POST['employee02_signature'];
             $data['employee03_signature'] = $_POST['employee03_signature'];
             $data['customer_signature'] = $_POST['customer_signature'];
-            $data['customer_grade'] = $_POST['customer_grade'];
+            if($is_grade != 0){
+                $data['customer_grade'] = $_POST['customer_grade'];
+            }
             if ($q_f) {
                $save_datas = Db::table('lbs_report_autograph')->where('id', $q_f['id'])->update($data);
             }else{
@@ -48,9 +52,16 @@ class Saveautograph
             } 
             if ($save_datas) {
                 //返回数据
-                $result['code'] = 1;
-                $result['msg'] = '点评成功';
-                $result['data'] = $save_datas;
+                if($is_grade != 0){
+                    $result['code'] = 1;
+                    $result['msg'] = '【史伟莎】感谢您的点评';
+                    $result['data'] = $save_datas;
+                }else{
+                    $result['code'] = 1;
+                    $result['msg'] = '完成签名';
+                    $result['data'] = $save_datas;
+                }
+                
             }else{
                 $result['code'] = 1;
                 $result['msg'] = '成功，无数据';
@@ -62,5 +73,42 @@ class Saveautograph
              $result['data'] = null;
         }
         return json($result);
+    }
+    
+    public function getStaffAutograph(){
+        //autograph
+        try{
+            
+            $data['job_id'] = $_REQUEST['job_id'];
+            $data['job_type'] = $_REQUEST['job_type'];
+            
+            if ($data['job_type']==1) {
+                    $result['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$data['job_id'])->field('j.Staff01 as jStaff01,j.Staff02 as jStaff02,j.Staff03 as jStaff03')->find();
+                    
+                }elseif($data['job_type']==2){
+                    $result['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$data['job_id'])->field('j.Staff01 as jStaff01,j.Staff02 as jStaff02,j.Staff03 as jStaff03')->find();
+                }
+            
+            $result['autograph'] = Db::table('lbs_report_autograph')->where($data)->find();
+            if(empty($result['autograph'])){
+                $employee_signature = Db::table('lbs_service_employee_signature')->where('staffid',$result['basic']['jStaff01'])->find();
+    
+                $result['autograph']['employee01_signature'] = $employee_signature['signature'];
+                $result['autograph']['employee02_signature'] ='';
+                $result['autograph']['employee03_signature'] ='';
+                if ($result['basic']['jStaff02']) {
+                    $employee_signature = Db::table('lbs_service_employee_signature')->where('staffid',$result['basic']['jStaff02'])->find();
+                    $result['autograph']['employee02_signature'] = $employee_signature['signature'];
+                }
+                if ($result['basic']['jStaff03']) {
+                    $employee_signature = Db::table('lbs_service_employee_signature')->where('staffid',$result['basic']['jStaff03'])->find();
+                    $result['autograph']['employee03_signature'] = $employee_signature['signature'];
+                }
+            }
+             return success(0,'ok',$result);
+        }catch (\Exception $exception){
+            return error(-1,$e->getMessage(),[]);
+        }
+        
     }
 }
