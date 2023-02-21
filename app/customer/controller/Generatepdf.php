@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\customer\controller;
 use app\BaseController;
+use app\technician\model\AutographV2;
 use think\facade\Db;
 use think\facade\Request;
 use TCPDF;
@@ -168,7 +169,23 @@ class Generatepdf
             $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit(4)->select();  
 
             //autograph
-            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
+//            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
+
+
+            //先查询lbs_report_autograph中是否有相关数据。
+            $autographModel =new AutographV2();
+            $autographV2 = $autographModel->where($w)->find();
+            if($autographV2 !== null){
+//                查出来不为空走查询图片路径的路径。
+                $autograph_flag = 1;
+                $autograph_data = $autographV2;
+
+            }else{
+//                否则取之前表里边的值
+                $autograph_flag = 0;
+                //autograph
+                $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
+            }
             
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();
@@ -417,7 +434,7 @@ class Generatepdf
                                 <th width="100%" align="left">{$report_datas['equipment'][$e]['title']}</th>
                             </tr>
                             <tr>
-                            EOF; 
+                            EOF;
                         $targs = (31/($total01-4))."%";
                         for ($t=0; $t < count($report_datas['equipment'][$e]['table_title']); $t++) {
                             if ($t==0) {
@@ -473,47 +490,89 @@ class Generatepdf
                 }
             }
             }
-            //签名点评
-            $eimageName01 = "lbs_".date("His",time())."_".rand(111,999).'.png';
-            $eimageName02 = "lbs_".date("His",time())."_".rand(111,999).'.png';
-            $eimageName03 = "lbs_".date("His",time())."_".rand(111,999).'.png';
-            //设置图片保存路径
-            $path = "../public/pdf/".date("Ymd",time());
-            //判断目录是否存在 不存在就创建
-            if (!is_dir($path)){
-                mkdir($path,0777,true);
-            }
-            $employee01_signature = str_replace("data:image/jpg;base64,","",$report_datas['autograph']['employee01_signature']);
-            $employee02_signature = str_replace("data:image/jpg;base64,","",$report_datas['autograph']['employee02_signature']);
-            $employee03_signature = str_replace("data:image/jpg;base64,","",$report_datas['autograph']['employee03_signature']);
 
-            //图片路径
-            $eimageSrc01= $path."/". $eimageName01;
-            if($employee01_signature!='') file_put_contents($eimageSrc01,base64_decode($employee01_signature));
-            $eimageSrc02= $path."/". $eimageName02;
-            if($employee02_signature!='') file_put_contents($eimageSrc02,base64_decode($employee02_signature));
-            $eimageSrc03= $path."/". $eimageName03;
-            if($employee03_signature!='') file_put_contents($eimageSrc03,base64_decode($employee03_signature));
+            /**
+             * #############################################################
+             * 很好 接下来就进入到处理小程序这边签名问题的处理了，开始---
+             * #############################################################
+             * */
 
-            if($report_datas['autograph']['customer_signature']!='' && $report_datas['autograph']['customer_signature']!='undefined'){
-                $cimageName = "lbs_".date("His",time())."_".rand(111,999).'.png';
-                $cimageSrc= $path."/". $cimageName;
-                $customer_signature = str_replace("data:image/png;base64,","",$report_datas['autograph']['customer_signature']);
-                file_put_contents($cimageSrc, base64_decode($customer_signature));
-                $degrees = 90;      //旋转角度
-                $url = $cimageSrc;  //图片存放位置
-                $this->pic_rotating($degrees,$url);
+            if($autograph_flag === 1){
+                //优先处理有图片的情况
+                //获取当前域名
+                $sign_url = Request::instance()->domain();
+                $eimageSrc01 = isset($autograph_data['staff_id01_url']) ? $sign_url . $autograph_data['staff_id01_url'] : '';
+                $eimageSrc02 = isset($autograph_data['staff_id02_url']) ? $sign_url . $autograph_data['staff_id02_url'] : '';
+                $eimageSrc03 = isset($autograph_data['staff_id03_url']) ? $sign_url . $autograph_data['staff_id03_url'] : '';
+                $cimageSrc = isset($autograph_data['customer_signature_url']) ? $sign_url . $autograph_data['customer_signature_url'] : '';
+                $customer_grade = isset($autograph_data['customer_grade']) ? $autograph_data['customer_grade'] : '';
+                $employee02_signature = '';
+                $employee03_signature = '';
+                // 如果flag == 1则需要作翻转处理
+                if($autograph_data['conversion_flag'] == 1){
+                    $degrees = -90;      //旋转角度
+//                    $url = $cimageSrc;  //图片存放位置
+//                    $this->pic_rotating($degrees,$cimageSrc);
+//                    应用目录
+                    $imgPath = app()->getRootPath().'public'.$autograph_data['customer_signature_url'];
+                    $cmd = " /usr/bin/convert -rotate $degrees $imgPath  $imgPath 2>&1";
+                    @exec($cmd,$output,$return_val);
+                    if($return_val === 0){
+                        $autographModel->where('id','=',$autographV2['id'])->update(['conversion_flag'=>0]);
+                    }
+                }
             }else{
-                $cimageSrc='';
+                $eimageName01 = "lbs_".date("His",time())."_".rand(111,999).'.png';
+                $eimageName02 = "lbs_".date("His",time())."_".rand(111,999).'.png';
+                $eimageName03 = "lbs_".date("His",time())."_".rand(111,999).'.png';
+                //设置图片保存路径
+                $path = "../public/pdf/".date("Ymd",time());
+                //判断目录是否存在 不存在就创建
+                if (!is_dir($path)){
+                    mkdir($path,0777,true);
+                }
+                $employee01_signature = str_replace("data:image/jpg;base64,","",$report_datas['autograph']['employee01_signature']);
+                $employee02_signature = str_replace("data:image/jpg;base64,","",$report_datas['autograph']['employee02_signature']);
+                $employee03_signature = str_replace("data:image/jpg;base64,","",$report_datas['autograph']['employee03_signature']);
+                //图片路径
+                $eimageSrc01= $path."/". $eimageName01;
+                if($employee01_signature!='') file_put_contents($eimageSrc01,base64_decode($employee01_signature));
+                $eimageSrc02= $path."/". $eimageName02;
+                if($employee02_signature!='') file_put_contents($eimageSrc02,base64_decode($employee02_signature));
+                $eimageSrc03= $path."/". $eimageName03;
+                if($employee03_signature!='') file_put_contents($eimageSrc03,base64_decode($employee03_signature));
+
+                if($report_datas['autograph']['customer_signature']!='' && $report_datas['autograph']['customer_signature']!='undefined'){
+                    $cimageName = "lbs_".date("His",time())."_".rand(111,999).'.png';
+                    $cimageSrc= $path."/". $cimageName;
+                    $customer_signature = str_replace("data:image/png;base64,","",$report_datas['autograph']['customer_signature']);
+                    file_put_contents($cimageSrc, base64_decode($customer_signature));
+
+                    //css 样式旋转  暂不在此调用该方法进行特殊处理
+                    /*$degrees = 90;      //旋转角度
+                    $url = $cimageSrc;  //图片存放位置
+                    $this->pic_rotating($degrees,$url);*/
+                }else{
+                    $cimageSrc='';
+                }
+                //签名
+                $customer_grade = $report_datas['autograph']['customer_grade'];
             }
+            /**
+             * #############################################################
+             * 签名处理结束
+             * #############################################################
+             * */
+
+
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-            
+
             $html .= <<<EOF
                         <tr class="myTitle">
                             <th width="100%" align="left">客户点评</th>
                         </tr>
                         <tr>
-                        <td width="100%" align="left">{$report_datas['autograph']['customer_grade']}星(1~5)</td>
+                        <td width="100%" align="left">{$customer_grade}星(1~5)</td>
                         </tr>
                         <tr class="myTitle">
                             <th  width="100%" align="left">报告签名</th>
@@ -570,6 +629,9 @@ class Generatepdf
             //Close and output PDF document
             $pdf->Output('服务报告.pdf', 'D');
 
+            //将图片旋转还原
+//            $cmd = " /usr/bin/convert -rotate 90 $imgPath  $imgPath 2>&1";
+//            @exec($cmd,$output,$return_val);
             //============================================================+
             // END OF FILE
             //============================================================+

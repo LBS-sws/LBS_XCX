@@ -5,6 +5,7 @@ namespace app\technician\controller;
 use app\BaseController;
 use think\facade\Request;
 use think\facade\Db;
+use app\technician\model\AutographV2;
 
 
 class Jobstart
@@ -68,9 +69,10 @@ class Jobstart
                 }
                 //查询签名
                 $job_datas['autograph'] = 0;
-                $autograph = Db::table('lbs_report_autograph')->where($is_where)->find();
+                $autograpV2hModel = new AutographV2();
+                $autograph = $autograpV2hModel->where($is_where)->find();
                 if ($autograph) {
-                    if ($autograph['customer_signature']!='' && $autograph['customer_signature']!='undefined') {
+                    if ($autograph['customer_signature_url']!='' && $autograph['customer_signature_url']!='undefined') {
                         $job_datas['autograph'] = 1;
                     }
                 }

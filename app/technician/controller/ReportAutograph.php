@@ -12,8 +12,6 @@ class ReportAutograph
 {
     public function index()
     {
-
-
         $model = new Autograph();
         $modelV2 = new AutographV2();
 //        $followupOrderModel =  new FollowupOrder();
@@ -21,7 +19,18 @@ class ReportAutograph
 //        $size = 10;
 //        $page = request()->get('page');
         //参数 page 页数  listRows 每页数量
-        $list = $model->where('conversion_flag', '=', 0)->page(1, 10)->order('id asc')->select()->toArray();
+
+        //读取json文件数据
+        $num = file_get_contents('now.json');
+        // dd($num);
+//        $num=38200;
+//        调整基数 默认为10
+        $base_num = 1;
+
+        $list = $model->where('id','>=',$num)->page(1, $base_num)->order('id asc')->select()->toArray();
+        // dd($list[49]['id']);
+
+//        SELECT * FROM `lbs_report_autograph` WHERE `id`>=38200 AND `conversion_flag` = 0 LIMIT 100
         if (empty($list)) {
             return error(-1, '没有可执行的数据', []);
         }
@@ -30,11 +39,10 @@ class ReportAutograph
         $staff_dir = 'signature/staff/' . $create_date . '/';
         $customer_dir = 'signature/customer/' . $create_date . '/';
         $data = [];
-        $model->startTrans();
+        $modelV2->startTrans();
         try {
             foreach ($list as $k => $value) {
-                $data_x[$k]['id'] = $value['id'];
-                $data[$k]['id'] = $value['id'];
+                $data_x[$k]['pid'] = $value['id'];
                 $data_x[$k]['job_id'] = $value['job_id'];
                 $data_x[$k]['job_type'] = $value['job_type'];
                 $data_x[$k]['staff_id01_url'] = $this->conversionToImg($value['employee01_signature'], $staff_dir);
@@ -43,20 +51,22 @@ class ReportAutograph
                 //$data[$k]['employee01_signature'] = '';
                 //$data[$k]['employee02_signature'] = '';
                 //$data[$k]['employee04_signature'] = '';
-                $data[$k]['conversion_flag'] = 1;
+                $data_x[$k]['conversion_flag'] = 1;
                 $data_x[$k]['customer_grade'] = $value['customer_grade'];
                 $data_x[$k]['creat_time'] = $value['creat_time'];
-                if ($value['customer_signature'] == 'undefined' || $value['customer_signature'] == '') {
-                    $value['customer_signature'] = '';
-                }
                 $data_x[$k]['customer_signature_url'] = $this->conversionToImg($value['customer_signature'], $customer_dir);;
+                if ($value['customer_signature'] == 'undefined' || $value['customer_signature'] == '' ||  $value['customer_signature'] == null) {
+                    $value['customer_signature'] = '';
+                    $data_x[$k]['customer_signature_url'] = '';
+                }
             }
-            $res = $model->saveAll($data);
+            file_put_contents('now.json', $num+$base_num);
             $res1 = $modelV2->insertAll($data_x);
-            $model->commit();
-            return success(0, 'ok', $res);
+            $modelV2->commit();
+            return success(0, 'ok', $res1);
         } catch (\Exception $exception) {
-            $model->rollback();
+            file_put_contents('now.json', $num);
+            $modelV2->rollback();
             return error(-1, 'error', $exception->getMessage());
         }
     }
@@ -80,7 +90,7 @@ class ReportAutograph
             if (strpos(strtolower($_SERVER['SERVER_SOFTWARE']), 'apache') !== false) {
                 echo str_pad('',1)."\n";
             }
-            sleep(1); //停留一秒观看浏览器 弹出信息
+            sleep(2); //停留一秒观看浏览器 弹出信息
         }
         //   ob_end_flush();
         exit('ok');
@@ -93,7 +103,7 @@ class ReportAutograph
         if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $base64_image_content, $result)) {
             $type = $result[2];
             if (!is_dir($path)) {
-                mkdir($path, 0700, true);
+                mkdir($path, 0777, true);
             }
             if (!file_exists($path)) {
                 mkdir($path, 0777, true);//0777表示文件夹权限，windows默认已无效，但这里因为用到第三个参数，得填写；true/false表示是否可以递归创建文件夹

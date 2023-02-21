@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\technician\controller;
 use app\BaseController;
+use app\technician\model\AutographV2;
 use think\facade\Db;
 use think\facade\Request;
 
@@ -157,8 +158,17 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
             $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->select();  
 
             //autograph
-            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
-            if(empty($report_datas['autograph'])){
+//            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
+            $autographModel =new AutographV2();
+            $autograph= $autographModel->where($w)->find();
+            //获取当前域名
+            $sign_url = Request::instance()->domain();
+            $report_datas['autograph'] = $autograph;
+            $report_datas['autograph']['employee01_signature'] = !empty($autograph['staff_id01_url'])?$sign_url.$autograph['staff_id01_url']:'';
+            $report_datas['autograph']['employee02_signature'] = !empty($autograph['staff_id02_url'])?$sign_url.$autograph['staff_id02_url']:'';
+            $report_datas['autograph']['employee03_signature'] = !empty($autograph['staff_id03_url'])?$sign_url.$autograph['staff_id03_url']:'';
+            $report_datas['autograph']['customer_signature'] = !empty($autograph['customer_signature_url'])?$sign_url.$autograph['customer_signature_url']:'';
+            if(empty($autograph)){
                 $employee_signature = Db::table('lbs_service_employee_signature')->where('staffid',$report_datas['basic']['jStaff01'])->find();
 
                 $report_datas['autograph']['employee01_signature'] = $employee_signature['signature'];
@@ -173,6 +183,8 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
                     $report_datas['autograph']['employee03_signature'] = $employee_signature['signature'];
                 }
             }
+
+
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();
             if($service_sections){
