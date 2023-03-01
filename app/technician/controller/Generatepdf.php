@@ -179,7 +179,12 @@ class Generatepdf
 //                否则取之前表里边的值
                 $autograph_flag = 0;
                 //autograph
-                $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
+                $report_datas['autograph']['employee01_signature'] = '';
+                $report_datas['autograph']['employee02_signature'] = '';
+                $report_datas['autograph']['employee03_signature'] = '';
+                $report_datas['autograph']['customer_signature'] = '';
+                $report_datas['autograph']['customer_grade'] = '';
+
             }
 
             //查询服务板块
