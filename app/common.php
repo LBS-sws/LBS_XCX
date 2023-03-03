@@ -34,7 +34,7 @@ if (!function_exists('error')) {
  * @return String
  * */
 if (!function_exists('conversionToImg')) {
-    function conversionToImg($base64_image_content, $path)
+    function conversionToImg($base64_image_content, $path,$file_name = "")
     {
         //匹配出图片的格式
         if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $base64_image_content, $result)) {
@@ -45,8 +45,11 @@ if (!function_exists('conversionToImg')) {
             if (!file_exists($path)) {
                 mkdir($path, 0777, true);//0777表示文件夹权限，windows默认已无效，但这里因为用到第三个参数，得填写；true/false表示是否可以递归创建文件夹
             }
+            if($file_name == ""){
+                $file_name = unique_str();
+            }
             //害怕重复  生成唯一的id
-            $new_file = $path . unique_str() . ".{$type}";
+            $new_file = $path . $file_name . ".{$type}";
             if (file_put_contents($new_file, base64_decode(str_replace($result[1], '', $base64_image_content)))) {
                 return '/' . $new_file;
             } else {
