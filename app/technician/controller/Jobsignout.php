@@ -6,11 +6,14 @@ use app\common\controller\Base;
 use think\facade\Request;
 use think\facade\Db;
 use think\facade\Session;
+use think\cache\driver\Redis;
+
 
 class Jobsignout
 {
     public function index()
     {
+        $redis = new Redis();
         $result['code'] = 0;
         $result['msg'] = '请输入用户名、令牌和工作单等';
         $result['data'] = null;
@@ -68,7 +71,14 @@ class Jobsignout
 
                 $xinu_data = $this->curl_post('https://app.lbsapps.cn/web/ajax/editJobStatus.php',$arr);
                 $xinu = json_decode($xinu_data,true);
+                
+                $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
+                $job_start = $redis->get($job_datas_key);
+                if($job_start){
+                    $redis->delete($job_datas_key);
+                }
 
+                
                 if($xinu['code']==1){
                     $job_datas = Db::table('joborder')->where('JobID', $jobid)->update(['FinishDate' => $signdate , 'FinishTime' => $starttime,'Status'=>3]);
 // Percy 發電郵

@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\technician\controller;
 use app\BaseController;
+use think\cache\driver\Redis;
 use think\facade\Request;
 use think\facade\Db;
 
@@ -27,8 +28,14 @@ class Getjobbyid
         $jobid = $_POST['jobid'];
         $jobtype = $_POST['jobtype'];
         
-        //获取用户登录信息
-        $user_token = Db::name('token')->where('StaffID',$staffid)->find();
+       //获取用户登录信息
+        $redis = new Redis();
+        $token_key = 'token_' . $staffid;
+        $user_token = $redis->get($token_key);
+        if (!$user_token) {
+            $user_token = Db::name('token')->where('StaffID',$staffid)->find();
+            $redis->set($token_key,$user_token,600);
+        }
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
@@ -40,7 +47,13 @@ class Getjobbyid
                 $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName')->find();
                 $service_type = $job_datas['ServiceType'];
                 //查询技术员备注
-                $technician_remarks = Db::table('servicecontract')->where('ContractNumber',$job_datas['ContractNumber'])->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->field('TechRemarks')->find();
+
+                $servicecontract_key = 'servicecontract_'. $jobid;
+                $technician_remarks = $redis->get($servicecontract_key);
+                if(!$technician_remarks){
+                    $technician_remarks = Db::table('servicecontract')->where('ContractNumber',$job_datas['ContractNumber'])->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->field('TechRemarks')->find();
+                    $redis->set($servicecontract_key, $technician_remarks,3600);
+                }
                 if ($technician_remarks) {
                     $job_datas['TechRemarks'] = $technician_remarks['TechRemarks'];
                 }else{
@@ -66,7 +79,7 @@ class Getjobbyid
                 // $result['xinu'] = $xinu;
             }elseif ($jobtype==2) {
                 $job_wheres['j.FollowUpID'] = $jobid;
-                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType')->find();
+                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType')->cache(true,60)->find();
                 $service_type = $job_datas['SType'];
             }
            
@@ -77,11 +90,11 @@ class Getjobbyid
                 $job_datas['StaffName02'] = '';
                 $job_datas['button'] = '';
                 if ($job_datas['Staff02']) {
-                    $StaffName01 = Db::table('staff')->where('StaffID',$job_datas['Staff02'])->field('StaffName')->find();
+                    $StaffName01 = Db::table('staff')->where('StaffID',$job_datas['Staff02'])->field('StaffName')->cache(true,60)->find();
                     $job_datas['StaffName01'] = $StaffName01['StaffName'];
                 }
                 if ($job_datas['Staff03']) {
-                    $StaffName02 = Db::table('staff')->where('StaffID',$job_datas['Staff03'])->field('StaffName')->find();
+                    $StaffName02 = Db::table('staff')->where('StaffID',$job_datas['Staff03'])->field('StaffName')->cache(true,60)->find();
                     $job_datas['StaffName02'] = $StaffName02['StaffName'];
                 }
                  
@@ -90,13 +103,13 @@ class Getjobbyid
                     //查询当前设备
                     $where_dq['e.job_id'] = $jobid;
                     $where_dq['e.job_type'] = 1;
-                    $dq_eqs = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($where_dq)->Distinct(true)->select();
+                    $dq_eqs = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($where_dq)->Distinct(true)->cache(true,60)->select();
                     if (count($dq_eqs)>0) {
                                 for ($i=0; $i < count($dq_eqs); $i++) { 
                                     $n['job_id'] = $jobid;
                                     $n['job_type'] = 1;
                                     $n['equipment_type_id'] = $dq_eqs[$i]['equipment_type_id'];
-                                    $numbers = Db::table('lbs_service_equipments')->where($n)->count();
+                                    $numbers = Db::table('lbs_service_equipments')->where($n)->cache(true,60)->count();
                                     if ($job_datas['Watchdog'] == '') {
                                         $job_datas['Watchdog'] = $dq_eqs[$i]['name'].'-'.$numbers;
                                     }else{
@@ -106,17 +119,17 @@ class Getjobbyid
                         
                     }else{
                         //查询上一个设备情况
-                        $last_job = Db::table('joborder')->where('ContractID',$job_datas['ContractID'])->where('ServiceType',$job_datas['ServiceType'])->where('Status',3)->order('JobDate', 'desc')->field('JobID')->find();
+                        $last_job = Db::table('joborder')->where('ContractID',$job_datas['ContractID'])->where('ServiceType',$job_datas['ServiceType'])->where('Status',3)->order('JobDate', 'desc')->field('JobID')->cache(true,60)->find();
                          if ($last_job) {
                            $wherel['e.job_id'] = $last_job['JobID'];
                            $wherel['e.job_type'] = 1;
-                           $equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($wherel)->Distinct(true)->select();
+                           $equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($wherel)->Distinct(true)->cache(true,60)->select();
                            if (count($equipments)>0) {
                                 for ($i=0; $i < count($equipments); $i++) { 
                                     $n['job_id'] = $last_job['JobID'];
                                     $n['job_type'] = 1;
                                     $n['equipment_type_id'] = $equipments[$i]['equipment_type_id'];
-                                    $numbers = Db::table('lbs_service_equipments')->where($n)->count();
+                                    $numbers = Db::table('lbs_service_equipments')->where($n)->cache(true,60)->count();
                                     if ($job_datas['Watchdog'] == '') {
                                         $job_datas['Watchdog'] = $equipments[$i]['name'].'-'.$numbers;
                                     }else{
@@ -180,13 +193,13 @@ class Getjobbyid
                 }
                 //查询历史工作单数量
                 //获取城市
-                $launch_date = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID')->join('lbs_service_city_launch_date l ','e.Text=l.city')->where('o.City', $job_datas['City'])->where('e.EnumType', 8)->field('l.launch_date')->find();
+                $launch_date = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID')->join('lbs_service_city_launch_date l ','e.Text=l.city')->where('o.City', $job_datas['City'])->where('e.EnumType', 8)->field('l.launch_date')->cache(true,60)->find();
                 if($launch_date){
-                    $histroy_job = Db::table('joborder')->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->where('Status',3)->whereTime('JobDate', 'between', [$launch_date['launch_date'], $job_datas['JobDate']])->count();
-                    $histroy_fol = Db::table('followuporder')->where('CustomerID',$job_datas['CustomerID'])->where('SType',$service_type)->where('Status',3)->whereTime('JobDate', 'between', [$launch_date['launch_date'], $job_datas['JobDate']])->count();
+                    $histroy_job = Db::table('joborder')->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->where('Status',3)->whereTime('JobDate', 'between', [$launch_date['launch_date'], $job_datas['JobDate']])->cache(true,60)->count();
+                    $histroy_fol = Db::table('followuporder')->where('CustomerID',$job_datas['CustomerID'])->where('SType',$service_type)->where('Status',3)->whereTime('JobDate', 'between', [$launch_date['launch_date'], $job_datas['JobDate']])->cache(true,60)->count();
                 }else{
-                    $histroy_job = Db::table('joborder')->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->where('Status',3)->whereTime('JobDate', '<', $job_datas['JobDate'])->count();
-                    $histroy_fol = Db::table('followuporder')->where('CustomerID',$job_datas['CustomerID'])->where('SType',$service_type)->where('Status',3)->whereTime('JobDate', '<', $job_datas['JobDate'])->count();
+                    $histroy_job = Db::table('joborder')->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->where('Status',3)->whereTime('JobDate', '<', $job_datas['JobDate'])->cache(true,60)->count();
+                    $histroy_fol = Db::table('followuporder')->where('CustomerID',$job_datas['CustomerID'])->where('SType',$service_type)->where('Status',3)->whereTime('JobDate', '<', $job_datas['JobDate'])->cache(true,60)->count();
                 }
                 
                 $job_datas['history'] = $histroy_job+$histroy_fol;
@@ -203,7 +216,8 @@ class Getjobbyid
         }else{
              $result['code'] = 0;
              $result['msg'] = '登录失效，请重新登陆';
-             $result['data'] = null;
+            $result['data'] = null;
+            $redis->delete($token_key);
         }
         return json($result);
     }

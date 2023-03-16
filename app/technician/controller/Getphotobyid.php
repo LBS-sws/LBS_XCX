@@ -34,7 +34,7 @@ class Getphotobyid
             $wheres['id'] = $_POST['id'];
             $wheres['job_id'] = $_POST['job_id'];
             $wheres['job_type'] = $_POST['job_type'];
-            $photo_datas = Db::table('lbs_service_photos')->where($wheres)->find();   
+            $photo_datas = Db::table('lbs_service_photos')->where($wheres)->cache(true,60)->find();   
              //返回数据
             $result['code'] = 1;
             $result['msg'] = '成功';
