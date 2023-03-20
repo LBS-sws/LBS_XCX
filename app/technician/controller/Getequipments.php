@@ -85,7 +85,8 @@ class Getequipments
                         Db::table('lbs_service_equipment_inherits')->insert($inherit);
                     }
             }
-             $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas')->select();
+//             $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas')->select();
+            $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas')->select();
             //使用区域
             $usearea_select1 = array(array("label"=>"全部区域","value"=>""));
             $usearea_select2 =  Db::table('lbs_service_equipments')->Distinct(true)->where($wheres)->where('equipment_area','not null')->field('equipment_area as label,equipment_area as value')->select()->toArray();
