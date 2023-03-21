@@ -44,7 +44,7 @@ class Getjobbyid
             // $job_wheres['j.Staff01'] = $staffid;
             if($jobtype==1){
                 $job_wheres['j.JobID'] = $jobid;
-                $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName')->find();
+                $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,c.CustomerType')->find();
                 $service_type = $job_datas['ServiceType'];
                 //查询技术员备注
 
@@ -79,7 +79,7 @@ class Getjobbyid
                 // $result['xinu'] = $xinu;
             }elseif ($jobtype==2) {
                 $job_wheres['j.FollowUpID'] = $jobid;
-                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType')->cache(true,60)->find();
+                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->cache(true,60)->find();
                 $service_type = $job_datas['SType'];
             }
            

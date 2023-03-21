@@ -41,7 +41,7 @@ class Getequipmentsbyid
          
             if($equipment_datas['eq']['check_datas']==null){
             	$check_datas = [];
-                $targets = explode(',',$equipment_datas['eq']['check_targt']);
+                $targets = $equipment_datas['eq']['check_targt']?explode(',',$equipment_datas['eq']['check_targt']):[];
                 if ($equipment_datas['eq']['type']==1) {
                     for ($j=0; $j < count($targets); $j++) { 
                         $check_datas[$j]['label'] =  $targets[$j];
@@ -53,7 +53,7 @@ class Getequipmentsbyid
                         $cd['check_targt'] = $j;
                         $cd['equipment_type_id'] = $equipment_datas['eq']['tid'];
                         $cd_value = Db::table('lbs_service_equipment_type_selects')->where($cd)->find();
-                        $selects =  explode(',',$cd_value['check_selects']);
+                        $selects =  $cd_value['check_selects']?explode(',',$cd_value['check_selects']):[];
                         $g_s =array();
                         for ($m=0; $m < count($selects); $m++) { 
                             $g_s[$m]['label'] = $selects[$m];
@@ -70,7 +70,7 @@ class Getequipmentsbyid
             }
             if($equipment_datas['eq']['check_handles']){
                 $check_handles = [];
-                $check_handle = explode(',',$equipment_datas['eq']['check_handles']); 
+                $check_handle = $equipment_datas['eq']['check_handles']?explode(',',$equipment_datas['eq']['check_handles']):[]; 
                 for ($j=0; $j < count($check_handle); $j++) { 
                     $check_handles[$j]['label'] =  $check_handle[$j];
                     $check_handles[$j]['value'] = $check_handle[$j];

@@ -42,7 +42,7 @@ class Searchequipments
             }
             
             //所有设备
-            $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value')->select();
+            $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas,equipment_number as number')->select();
             if ($service_data) {
                 //返回数据
                 $result['code'] = 1;

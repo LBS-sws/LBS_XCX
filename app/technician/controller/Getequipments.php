@@ -73,6 +73,7 @@ class Getequipments
                                 $data['equipment_type_id'] = $last_equipments[$i]['equipment_type_id'];
                                 $data['equipment_name'] = $last_equipments[$i]['equipment_type_name'];
                                 $data['equipment_area'] = $last_equipments[$i]['equipment_area'];
+                                $data['equipment_number'] = $last_equipments[$i]['equipment_number'];
                                 $data['creat_time'] = date('Y-m-d H:i:s', time());
                                 $save_datas = Db::table('lbs_service_equipments')->insert($data);
                             }
@@ -85,19 +86,18 @@ class Getequipments
                         Db::table('lbs_service_equipment_inherits')->insert($inherit);
                     }
             }
-//             $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas')->select();
-            $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas')->select();
+             $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('equipment_number', 'desc')->order('id', 'asc')->field('equipment_name as label,id as value,check_datas,equipment_number as number')->select();
             //使用区域
             $usearea_select1 = array(array("label"=>"全部区域","value"=>""));
             $usearea_select2 =  Db::table('lbs_service_equipments')->Distinct(true)->where($wheres)->where('equipment_area','not null')->field('equipment_area as label,equipment_area as value')->select()->toArray();
-            $service_data['usearea_select'] = array_merge($usearea_select1,$usearea_select2);
+            $service_data['usearea_select'] = $usearea_select2?array_merge($usearea_select1,$usearea_select2):'';
             //所有设备
             $equipment_select1 =  array(array("label"=>"全部设备","value"=>""));
             $equipment_select2 =  Db::table('lbs_service_equipments')->Distinct(true)->where($wheres)->field('equipment_type_id as value,equipment_name as label')->select()->toArray();
-             $service_data['equipment_select'] = array_merge($equipment_select1,$equipment_select2);
+             $service_data['equipment_select'] = $equipment_select2?array_merge($equipment_select1,$equipment_select2):'';
             //新增所有设备
             $allow_eqs = Db::table('lbs_service_serviceequipments')->where('city',$city)->where('service_type',$_POST['service_type'])->find();
-            $service_data['equipment_add_lists'] =  Db::table('lbs_service_equipment_type')->where('city',$city)->whereIn('id',$allow_eqs['equipment_ids'])->field('name as label,id as value')->select();
+            $service_data['equipment_add_lists'] = $allow_eqs ? Db::table('lbs_service_equipment_type')->where('city',$city)->whereIn('id',$allow_eqs['equipment_ids'])->field('name as label,id as value')->select():'';
             if ($service_data) {
                 //返回数据
                 $result['code'] = 1;
