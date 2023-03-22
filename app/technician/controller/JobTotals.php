@@ -63,7 +63,7 @@ class JobTotals
                 $result['msg'] = '成功';
                 $data = $this->array_combine($job_datas, $follow_datas);
                 $result['data'] = $data;
-                $redis->set($job_total_cache, $result,60);
+                $redis->set($job_total_cache, $result,3600);
             }
 //            $result['data']['follows'] = $follow_datas;
         } else {

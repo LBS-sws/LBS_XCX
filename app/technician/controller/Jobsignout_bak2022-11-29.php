@@ -51,7 +51,7 @@ class Jobsignout
                     $jobcardtable = "JobCardGeneric";
                 }
                 $arr = array('staffid'=>$staffid,'jobid'=>$jobid,'jobtype'=>$jobtype,'token'=>$token,'finishdate'=>$signdate,'starttime'=>$job_time['StartTime'],'finishtime'=>$starttime,'contractid'=>$job_time['ContractID'],'staffname'=>$job_time['StaffName'],'jobcardtable'=>$jobcardtable,'invoice'=>$invoice,'firstjob'=>$job_time['FirstJob'],'servicetype'=>$job_time['ServiceType'],'contractnumber'=>$job_time['ContractNumber'],'customerid'=>$job_time['CustomerID']);
-                $xinu_data = $this->curl_post('https://app.lbsapps.cn/web/ajax/editJobStatus.php',$arr);
+                $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobStatus.php',$arr);
                 $xinu = json_decode($xinu_data,true);
                 if($xinu['code']==1){
                     $job_datas = Db::table('joborder')->where('JobID', $jobid)->update(['FinishDate' => $signdate , 'FinishTime' => $starttime,'Status'=>3]);
@@ -77,7 +77,7 @@ class Jobsignout
                }
                 //回传新U登录状态
                 $arr = array('staffid'=>$staffid,'jobid'=>$jobid,'jobtype'=>$jobtype,'token'=>$token,'finishdate'=>$job_time['FinishDate'],'starttime'=>$job_time['StartTime'],'finishtime'=>$starttime,'jobreport'=>$jobreport);
-                $xinu_data = $this->curl_post('https://app.lbsapps.cn/web/ajax/editJobStatus.php',$arr);
+                $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobStatus.php',$arr);
                 $xinu = json_decode($xinu_data,true);
                 if($xinu['code']==1){
                    $job_datas = Db::table('followuporder')->where('FollowUpID', $jobid)->update(['FinishTime' => $starttime,'Status'=>3,'JobReport'=>$jobreport]);

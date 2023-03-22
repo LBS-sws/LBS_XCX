@@ -30,5 +30,9 @@ return [
     // 显示错误信息
     'show_error_msg'   => true,
     // 开启多应用
-    'auto_multi_app'   => true
+    'auto_multi_app'   => true,
+    //xinuapp配置
+    //测试服  https://appuat.lbsapps.cn
+    //正式服  https://app.lbsapps.cn
+    'uapp_url'   => 'https://app.lbsapps.cn',
 ];

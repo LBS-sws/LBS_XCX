@@ -42,7 +42,7 @@ class Login
                 }
                 //回传新U登录状态
                 $arr = array('staffid'=>$staffid,'password'=>$password,'token'=>$token);
-                $xinu_data = $this->curl_post('https://app.lbsapps.cn/web/ajax/editJobToken.php',$arr);
+                $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobToken.php',$arr);
                 $xinu = json_decode($xinu_data,true);
                  if($xinu['code']==1){
                     //返回状态
