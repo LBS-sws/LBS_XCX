@@ -36,7 +36,7 @@ class Savetechremarks
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24)) {
             $arr = array('staffid'=>$staffid,'token'=>$token,'contractnumber'=>$contractnumber,'customerid'=>$customerid,'servicetype'=>$servicetype,'techremarks'=>$techremarks);
-            $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editTechRemarks.php',$arr);
+            $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_remarks'),$arr);
             $job_datas = Db::table('servicecontract')->where('ContractNumber', $contractnumber)->where('CustomerID', $customerid)->where('ServiceType', $servicetype)->update(['TechRemarks' => $techremarks]);
             //返回数据
             $result['code'] = 1;

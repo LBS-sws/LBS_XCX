@@ -10,7 +10,8 @@ class Login
 {
     public function index()
     {
-        
+
+//        var_dump(config('app.uapp_url').config('app.uapi_list.edit_token'));exit();
 
         $result['code'] = 0;
         $result['msg'] = '请输入用户名和密码';
@@ -42,7 +43,7 @@ class Login
                 }
                 //回传新U登录状态
                 $arr = array('staffid'=>$staffid,'password'=>$password,'token'=>$token);
-                $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobToken.php',$arr);
+                $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_token'),$arr);
                 $xinu = json_decode($xinu_data,true);
                  if($xinu['code']==1){
                     //返回状态

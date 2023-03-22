@@ -41,7 +41,7 @@ class Jobsignout
         $user_info = Db::name('staff')->field('StaffID,Password')->where('StaffID',$staffid)->find();
         //回传新U登录状态
         $user_data = ['staffid'=>$user_info['StaffID'],'password'=>$user_info['Password'],'token'=>$token];
-        $xinu_result = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobToken.php',$user_data);
+        $xinu_result = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_token') ,$user_data);
         $xinu_check = json_decode($xinu_result,true);
         if($xinu_check['code'] == 0){
             $result['code'] = 0;
@@ -69,7 +69,7 @@ class Jobsignout
                 }
                 $arr = array('staffid'=>$staffid,'jobid'=>$jobid,'jobtype'=>$jobtype,'token'=>$token,'finishdate'=>$signdate,'starttime'=>$job_time['StartTime'],'finishtime'=>$starttime,'contractid'=>$job_time['ContractID'],'staffname'=>$job_time['StaffName'],'jobcardtable'=>$jobcardtable,'invoice'=>$invoice,'firstjob'=>$job_time['FirstJob'],'servicetype'=>$job_time['ServiceType'],'contractnumber'=>$job_time['ContractNumber'],'customerid'=>$job_time['CustomerID']);
 
-                $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobStatus.php',$arr);
+                $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
                 
                 $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
@@ -103,7 +103,7 @@ class Jobsignout
                 }
                 //回传新U登录状态
                 $arr = array('staffid'=>$staffid,'jobid'=>$jobid,'jobtype'=>$jobtype,'token'=>$token,'finishdate'=>$job_time['FinishDate'],'starttime'=>$job_time['StartTime'],'finishtime'=>$starttime,'jobreport'=>$jobreport);
-                $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/ajax/editJobStatus.php',$arr);
+                $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
                 if($xinu['code']==1){
                     $job_datas = Db::table('followuporder')->where('FollowUpID', $jobid)->update(['FinishTime' => $starttime,'Status'=>3,'JobReport'=>$jobreport]);

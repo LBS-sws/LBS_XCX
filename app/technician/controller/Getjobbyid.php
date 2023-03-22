@@ -62,7 +62,7 @@ class Getjobbyid
                 
                 //布防图
                 // $arr = array('contractid'=>$job_datas['ContractID'],'staffid'=>$staffid,'token'=>$token);
-                // $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') . '/web/remote/getAttachment.php',$arr);
+                // $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') ). '/web/remote/getAttachment.php',$arr);
                 // $xinu = json_decode($xinu_data,true);
                 // if($xinu['code']==1){
                 //     $job_datas['set_img'] = [];

@@ -34,5 +34,11 @@ return [
     //xinuapp配置
     //测试服  https://appuat.lbsapps.cn
     //正式服  https://app.lbsapps.cn
-    'uapp_url'   => 'https://app.lbsapps.cn',
+    'uapp_url'   => 'https://appuat.lbsapps.cn',
+    //新U 接口列表
+    'uapi_list' =>[
+        'edit_token'=>'/web/ajax/editJobToken.php', //编辑新U token
+        'edit_job_status' =>'/web/ajax/editJobStatus.php', // 编辑工作单状态
+        'edit_remarks' =>'/web/ajax/editTechRemarks.php', // 编辑技术员备注
+    ]
 ];
