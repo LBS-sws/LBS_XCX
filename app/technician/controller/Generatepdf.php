@@ -147,8 +147,10 @@ class Generatepdf
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
 
-                        $equipmenthz_datas[$i]['table_title'][0] = '编号';
+                        $equipmenthz_datas[$i]['table_title'][0] = '序号';
                         $equipmenthz_datas[$i]['content'][$j][0] = sprintf('%02s', $j+1);
+                        $equipmenthz_datas[$i]['table_title'][1] = '编号';
+	            		$equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_number'];
                         $equipmenthz_datas[$i]['table_title'][1] = '区域';
                         $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_area'];
                         for ($m=0; $m < count($check_data); $m++) {
@@ -506,6 +508,7 @@ EOF;
                 $eimageSrc02 = !empty($autograph_data['staff_id02_url']) ? $sign_url . $autograph_data['staff_id02_url'] : '';
                 $eimageSrc03 = !empty($autograph_data['staff_id03_url']) ? $sign_url . $autograph_data['staff_id03_url'] : '';
                 $cimageSrc = !empty($autograph_data['customer_signature_url']) ? $sign_url . $autograph_data['customer_signature_url'] : '';
+                $cimageSrc_add = !empty($autograph_data['customer_signature_url_add']) ? $sign_url . $autograph_data['customer_signature_url_add'] : '';
                 $customer_grade = !empty($autograph_data['customer_grade']) ? $autograph_data['customer_grade'] : '';
                 $employee02_signature = '';
                 $employee03_signature = '';
@@ -601,7 +604,7 @@ EOF;
             }
             $html .= <<<EOF
                 </td>
-                <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"></td>
+                <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"><img src="{$cimageSrc_add}" width="130" height="80" style="magin:20px 50px;"></td>
                 </tr>
 EOF;
             $html .= <<<EOF
