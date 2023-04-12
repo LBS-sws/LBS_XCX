@@ -39,6 +39,13 @@ class Delequipments
             $data['job_type'] = $_POST['job_type'];
             $del_ids = explode(',',$del_ids);
             for ($i=0; $i < count($del_ids); $i++) { 
+
+                $e = Db::table('lbs_service_equipments')->where('id',$del_ids[$i])->find();
+                $data_up['eq_type_id'] = $e['equipment_type_id'];
+                $data_up['equipment_number'] = $e['equipment_number'];
+				$up_eqn = Db::table('lbs_service_equipment_numbers')->where($data_up)->update(['status' => '0']);
+
+                
                 $save_datas = Db::table('lbs_service_equipments')->delete($del_ids[$i]);
             }
             if ($save_datas) {

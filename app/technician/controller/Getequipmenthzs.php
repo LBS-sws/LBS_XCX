@@ -47,13 +47,15 @@ class Getequipmenthzs
             		for($j=0; $j < count($check_datas); $j++){
 	            		$check_data = json_decode($check_datas[$j]['check_datas'],true);
 	            		
-	            		$equipmenthz_datas[$i]['table_title'][0] = '编号';
+	            		$equipmenthz_datas[$i]['table_title'][0] = '序号';
 	            		$equipmenthz_datas[$i]['content'][$j][0] = sprintf('%02s', $j+1);
-	            		$equipmenthz_datas[$i]['table_title'][1] = '区域';
-                        $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_area'];
+                        $equipmenthz_datas[$i]['table_title'][1] = '编号';
+	            		$equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_number'];
+	            		$equipmenthz_datas[$i]['table_title'][2] = '区域';
+                        $equipmenthz_datas[$i]['content'][$j][2] = $check_datas[$j]['equipment_area'];
                         for ($m=0; $m < count($check_data); $m++) { 
-                            $equipmenthz_datas[$i]['table_title'][$m+2] = $check_data[$m]['label'];
-                            $equipmenthz_datas[$i]['content'][$j][$m+2] = $check_data[$m]['value'];
+                            $equipmenthz_datas[$i]['table_title'][$m+3] = $check_data[$m]['label'];
+                            $equipmenthz_datas[$i]['content'][$j][$m+3] = $check_data[$m]['value'];
                         } 
 	            		
             		}
