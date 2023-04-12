@@ -25,6 +25,7 @@ class Upload extends BaseController
         if($version > 1){
             try {
                 $file = request()->file();
+                dd($file);
                 if (null === $file) {
                     return error(-1,'请选择图片',[]);
                 }
@@ -120,58 +121,5 @@ class Upload extends BaseController
         return $fileNameCopy;
     }
 
-    public function newStr($str = ""){
-        $length = $this->utf8_strlen($str);
-        $start = 0;
-        $str_length = 10;
-        $arr = [];
-        // var_dump(ceil($length/$str_length));
-        for ($i = 1; $i <=ceil($length/$str_length); $i++) {
-            $arr[] = $this->msubstr($str,$start,$str_length);
-            $start = $start+10;
-        }
-        $new_str = implode('|',$arr);
-        return $new_str;
-
-    }
-
-
-    public function utf8_strlen($string = null) {
-        // 将字符串分解为单元
-        preg_match_all("/./us", $string, $match);
-        // 返回单元个数
-        return count($match[0]);
-    }
-
-
-    /**
-     * 字符串截取，支持中文
-     * @param $str
-     * @param int $start
-     * @param $length
-     * @param string $charset
-     * @param bool $suffix
-     * @return false|string
-     * @author 王耽误
-     */
-    public function msubstr($str, $start = 0, $length, $charset = "utf-8", $suffix = false)
-    {
-        if (function_exists("mb_substr")) {
-            if ($suffix) {
-                if (strlen($str) > $length)
-                    return mb_substr($str, $start, $length, $charset) . "...";
-                else
-                    return mb_substr($str, $start, $length, $charset);
-            } else {
-                return mb_substr($str, $start, $length, $charset);
-            }
-        } elseif (function_exists('iconv_substr')) {
-            if ($suffix) {
-                return iconv_substr($str, $start, $length, $charset);
-            } else {
-                return iconv_substr($str, $start, $length, $charset);
-            }
-        }
-    }
 
 }

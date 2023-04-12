@@ -7,9 +7,10 @@ use app\technician\model\CustomerCompany;
 use app\technician\model\JobOrder;
 use app\technician\model\ServiceEquipments;
 use app\technician\model\ServiceItems;
+use app\technician\model\StatisticsReport;
+use beyong\echarts\charts\Bar;
 use beyong\echarts\charts\Line;
 use beyong\echarts\charts\Pie;
-use beyong\echarts\charts\Bar;
 use beyong\echarts\ECharts;
 use beyong\echarts\Option;
 use think\App;
@@ -29,6 +30,7 @@ class Analyse extends BaseController
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
     protected $serviceEquipments = null;
+    protected $statistics_report = null;
     protected $serviceItems = [];
 
     /**
@@ -46,433 +48,11 @@ class Analyse extends BaseController
         $this->customerCompanyModel = new CustomerCompany();
         $serviceItemsModel = new ServiceItems();
         $this->serviceEquipments = new ServiceEquipments();
+        $this->statistics_report = new StatisticsReport();
         //加载所有items内容
         $this->serviceItems = $serviceItemsModel->items;
         parent::__construct($app);
     }
-
-    public function checkCustInfo(int $job_id)
-    {
-        if (!empty($job_id)) {
-            $where = ['JobID' => $job_id];
-            $data = [];
-            $cust = $this->jobOrderModel->alias('j')
-                ->join('service s', 'j.ServiceType=s.ServiceType')->join('staff u', 'j.Staff01=u.StaffID')
-                ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')
-                ->join('officecity oc', 'oc.City=u.City', 'left')
-                ->join('officesettings os', 'os.Office=oc.Office', 'left')
-                ->where($where)
-                ->field('j.CustomerID,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate,os.Tel')
-                ->find()->toArray();
-            $cust_name = '';
-            if($cust['Staff01'] != ''){
-                $cust['Staff01'];
-            }
-            $cust_name = $cust['Staff01'].'、'.$cust['Staff02'].'、'.$cust['Staff03'];
-            dd($cust_name);
-            exit();
-            $data['custInfo'] = $cust;
-            if (!empty($data['custInfo'])) {
-                $where_c = [
-                    'CustomerID' => $cust['CustomerID'],
-//                    'CustomerType' => $this->custType,
-                ];
-                //查询是工厂客户才会继续走接下来的流程
-                $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();
-                if ($cust_c) {
-                    $data['cust_details'] = $cust_c;
-                    return $data;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 获取基本信息资料
-     * @param string $month
-     * @param int $job_id
-     */
-//    PDYGR001-SH
-    public function getBaseInfo(string $month = '2023-03', int $job_id = 1685128)
-    {
-        $mian_info = [];
-        $cust = $this->checkCustInfo($job_id);
-
-        $where = [
-            'CustomerID' => $cust['cust_details']['CustomerID'],
-//            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
-        ];
-        //查看有哪些订单和日期
-        $job_orders = $this->jobOrderModel->field('MAX(JobID) as JobID,GROUP_CONCAT(JobID) as joborders,GROUP_CONCAT(JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find();
-        //查询有哪些 服务项目
-        $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find()->toArray();
-
-        foreach ($this->serviceItems as $key => $val) {
-            if ($key == $cust['custInfo']['ServiceType']) {
-                $result = $val;
-                break;
-            }
-        }
-        $service_subject = '';
-        foreach ($result as $k => $v) {
-            if ($job_items[$k] > 0) {
-                if ($v[1] > 0) {
-                    $service_subject .= $v[0] . ' ' . $job_items[$k . 'Rmk'] . '、';
-                } else {
-                    $service_subject .= $v[0] . '、';
-                }
-            }
-        }
-        //拼接 服务项目
-        $service_subject = rtrim($service_subject, '、');
-        //获取所有的设备情况
-        $equpments = '';
-        $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', 'in', $job_orders['joborders'])->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
-        foreach ($equpment_nums as $k => $v) {
-            $equpments .= $v['name'] . '-' . $v['num'] . '、';
-        }
-        $equpments = rtrim($equpments, '、');
-        $mian_info['cust'] = $cust;
-        $mian_info['service_subject'] = $service_subject;
-        $mian_info['equpments'] = $equpments;
-        return json($mian_info);
-    }
-
-
-    public function echars(): string
-    {
-        $echarts = ECharts::init("#myChart");
-        $option = new Option();
-        $option->animation(false);
-        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
-        $option->xAxis(["data" => ['鼠(捕获)', '鼠(盗食)', '蟑螂', '苍蝇', '蚊子', '其他']]);
-        $option->yAxis([]);
-        $option->title([
-            "text" => '8月虫害统计图',
-            "left" => 'center'
-        ]);
-        $chart = new Bar();
-        $chart->data = [[
-            'value' => 200,
-            'itemStyle' => [
-                'color' => '#4587E7'
-            ]],
-            ['value' => 270,
-                'itemStyle' => [
-                    'color' => '#2f4554'
-                ]],
-            ['value' => 866,
-                'itemStyle' => [
-                    'color' => '#61a0a8'
-                ]],
-            ['value' => 220,
-                'itemStyle' => [
-                    'color' => '#d48265'
-                ]],
-            ['value' => 210,
-                'itemStyle' => [
-                    'color' => '#91c7ae'
-                ]],
-            ['value' => 620,
-                'itemStyle' => [
-                    'color' => '#749f83'
-                ],
-            ]];
-        $chart->name = "8月害虫统计";
-        $chart->itemStyle = [
-            'normal' => [
-                'label' => [
-                    'show' => true,
-                    'position' => 'top',
-                    'textStyle' => [
-                        'color' => 'black',
-                        'fontSize' => 18
-                    ]
-                ]
-            ]
-        ];
-        $option->addSeries($chart);
-        $echarts->option($option);
-        return $echarts->render();
-    }
-
-
-    public function chartLine()
-    {
-        $echarts = ECharts::init("#chartLine");
-        $option = new Option();
-        $option->animation(false);
-        $option->title([
-            "text" => '虫害趋势分析图',
-            "left" => 'center',
-            "borderWidth" => 0
-        ]);
-        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
-        $option->xAxis([
-            "type" => "category",
-//            "boundaryGap" => false,
-            "data" => [
-                '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'
-            ],
-        ]);
-//        设置Y轴
-        $option->yAxis([
-            'name' => '数量(相对)',
-            'type' => 'value',
-            'min' => 0,
-//            'max' =>10000 ,
-            'splitNumber' => 5
-        ]);
-
-
-        $option->grid([
-                'left' => '3%',
-                'right' => '4%',
-                'bottom' => '3%',
-                'containLabel' => true
-            ]
-        );
-
-        $option->legend([
-            "data" => [
-                '鼠(捕获)', '鼠(盗食)', '蟑螂', '苍蝇', '蚊子', '其他'
-            ],
-            "backgroundColor" => 'white',
-            "top" => '8%',
-        ]);
-
-        $option->series([
-            [
-                'name' => '鼠(捕获)',
-                'type' => 'line',
-                'stack' => 'Total',
-                'data' => [2210, 1321, 1301, 134, 1123, 2320, 210, 2134, 1690, 1230, 2170, 330],
-                'itemStyle' => [
-                    'normal' => [
-                        'label' => [
-                            'show' => true,
-                            'position' => 'top',
-                            'textStyle' => [
-                                'color' => 'black',
-                                'fontSize' => 8
-                            ]
-                        ]
-                    ]
-                ],
-
-            ],
-            [
-                'name' => '鼠(盗食)',
-                'type' => 'line',
-                'stack' => 'Total',
-                'data' => [5111, 1821, 1491, 2134, 2490, 3330, 3110, 1354, 3190, 2310, 1210, 3430],
-                'itemStyle' => [
-                    'normal' => [
-                        'label' => [
-                            'show' => true,
-                            'position' => 'top',
-                            'textStyle' => [
-                                'color' => 'black',
-                                'fontSize' => 8
-                            ]
-                        ]
-                    ]
-                ],
-            ],
-            [
-                'name' => '蟑螂',
-                'type' => 'line',
-                'stack' => 'Total',
-                'data' => [1520, 2312, 2301, 4154, 4190, 4330, 4104, 1434, 4490, 2530, 2140, 4330],
-                'itemStyle' => [
-                    'normal' => [
-                        'label' => [
-                            'show' => true,
-                            'position' => 'top',
-                            'textStyle' => [
-                                'color' => 'black',
-                                'fontSize' => 8
-                            ]
-                        ]
-                    ]
-                ],
-            ],
-            [
-                'name' => '苍蝇',
-                'type' => 'line',
-                'stack' => 'Total',
-                'data' => [3260, 3362, 3601, 3374, 3790, 3380, 3260, 1343, 903, 6230, 4210, 3301],
-                'itemStyle' => [
-                    'normal' => [
-                        'label' => [
-                            'show' => true,
-                            'position' => 'top',
-                            'textStyle' => [
-                                'color' => 'black',
-                                'fontSize' => 8
-                            ]
-                        ]
-                    ]
-                ],
-            ]
-        ]);
-        $chart = new Line();
-        $chart->name = "8月害虫统计";
-        $chart->itemStyle = [
-            'normal' => [
-                'label' => [
-                    'show' => true,
-                    'position' => 'top',
-                    'textStyle' => [
-                        'color' => 'black',
-                        'fontSize' => 8
-                    ]
-                ]
-            ]
-        ];
-
-        $option->addSeries($chart);
-        $echarts->option($option);
-        return $echarts->render();
-    }
-
-
-    public function chartPie()
-    {
-        $echarts = ECharts::init("#chartPie");
-        $option = new Option();
-        $option->animation(false);
-        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
-        $option->title([
-            "text" => '设备占比图',
-            "left" => 'center'
-        ]);
-        $option->legend([
-            "orient" => 'vertical',
-            "left" => 'left',
-
-        ]);
-        $option->series([
-//                'name' => 'Access From',
-                'type' => 'pie',
-                'radius' => '70%',
-                'data' => [
-                    ['value' => 1048, 'name' => '灭蝇灯'],
-                    ['value' => 735, 'name' => '鼠饵站'],
-                    ['value' => 580, 'name' => '粘鼠板'],
-                ],
-                "backgroundColor" => 'white',
-                'label' => [
-                    'normal' => [
-                        'formatter' => '{b}:{c}: ({d}%)',
-                        'textStyle' => [
-                            'fontWeight' => 'normal',
-                            'color' => 'black',
-                            'fontSize' => 18
-                        ]
-
-                    ]
-                ],
-                'emphasis' => [
-                    'itemStyle' => [
-                        'shadowBlur' => 10,
-                        'shadowOffsetX' => 0,
-                        'shadowColor' => 'rgba(0, 0, 0, 0.5)'
-                    ]
-                ],
-            ]
-        );
-//        $option->yAxis([]);
-        $chart = new Pie();
-//        $chart->name = "8月害虫统计";
-        $chart->itemStyle = [
-            'normal' => [
-                'label' => [
-                    'show' => true,
-                    'position' => 'top',
-                    'textStyle' => [
-                        'color' => 'black',
-                        'fontSize' => 18
-                    ]
-                ]
-            ]
-        ];
-        $option->addSeries($chart);
-        $echarts->option($option);
-        return $echarts->render();
-    }
-
-    /**
-     * 昆虫图表绘制
-     * @return array
-     **/
-    public function moreInsectCharsBar(): array
-    {
-        $id = 1;
-        $color = ['#4587E7'];
-        $data = [5, 20, 36, 10, 10, 20, 3, 123, 41, 41, 45, 12];
-        for ($i = 0; $i <= 2; $i++) {
-            $result[] = $this->createEcharsBar($id . $i, $color, $data);
-        }
-        return $result;
-    }
-
-    /**
-     * 鼠类图表绘制
-     * @return array
-     **/
-    public function moreRodentEcharsBar(): array
-    {
-        $id = 1;
-        $color = ['#e81010'];
-        $data = [5, 213, 52, 5, 10, 20, 3, 123, 41, 41, 45, 12];
-        for ($i = 0; $i <= 1; $i++) {
-            $result[] = $this->createEcharsBar($id . '_1_' . $i, $color, $data);
-        }
-        return $result;
-    }
-
-
-    /**
-     * 生成更多的bar 自定义
-     * @param int $id
-     * @param string[] $color
-     * @param int[] $data
-     * @return mixed
-     * */
-    public function createEcharsBar(string $id = '0', array $color = ['#4587E7'], array $data = []): string
-    {
-        $echarts = ECharts::init("#myChart" . $id);
-        $option = new Option();
-        $option->animation(false);
-        $option->color($color);
-        $option->xAxis(["data" => ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']]);
-        $option->yAxis([]);
-        $option->title([
-            "text" => '各数据库占有数据源情况柱状图',
-            "left" => 'center'
-        ]);
-        $chart = new Bar();
-        $chart->data = $data;
-        $chart->name = "8月害虫统计";
-        $chart->itemStyle = [
-            'normal' => [
-                'label' => [
-                    'show' => true,
-                    'position' => 'top',
-                    'textStyle' => [
-                        'color' => 'black',
-                        'fontSize' => 18
-                    ]
-                ]
-            ]
-        ];
-        $option->addSeries($chart);
-        $echarts->option($option);
-        return $echarts->render();
-    }
-
 
     public function index()
     {
@@ -566,7 +146,7 @@ class Analyse extends BaseController
 
         .style-table th,
         .style-table td {
-            padding: 12px 15px;
+            padding: 12px 10px;
         }
 
         .style-table tbody tr {
@@ -587,7 +167,7 @@ class Analyse extends BaseController
         }
 
         .first-th {
-            font-size: x-large;
+            font-size: 20px;
             border: 1px solid #cad9ea;
             color: #0c0c0c;
             height: 30px;
@@ -596,7 +176,7 @@ class Analyse extends BaseController
         }
 
         .first-td {
-            font-size: x-large;
+            font-size: 18px;
             border: 1px solid #dddddd;
             color: #0c0c0c;
             height: 30px;
@@ -615,7 +195,7 @@ class Analyse extends BaseController
             border: 1px solid #cad9ea;
             color: #0c0c0c;
             width: 32px;
-            padding: 10px 10px 5px 0;
+            padding: 10px 10px 5px 10px;!important;
         }
         
         .third-th {
@@ -689,7 +269,7 @@ class Analyse extends BaseController
         <tr>
             <td>
                 <div class="big-title">史伟莎有害生物控制总结及趋势分析报告</div>
-                <div class="title-right">2023年8月份</div>
+                <div class="title-right">{$this->getBaseInfo()['month']}份</div>
             </td>
     </table>
     <table class="style-table">
@@ -700,31 +280,31 @@ class Analyse extends BaseController
         </thead>
         <tr>
             <th class="first-th">客户名称</th>
-            <td class="first-td " colspan="12">史伟莎有害生物控制工厂史伟莎有害生史伟莎有害生物控制总结及趋势分析报告物控制总结及趋势分析报告</td>
+            <td class="first-td " colspan="12">{$this->getBaseInfo()['cust']['cust_details']['NameZH']}</td>
         </tr>
         <tr>
             <th class="first-th">客户地址</th>
-            <td class="first-td" colspan="12">成都市青羊区北大街正成财富领地</td>
+            <td class="first-td" colspan="12">{$this->getBaseInfo()['cust']['cust_details']['Addr']}</td>
         </tr>
         <tr>
             <th class="first-th" colspan="1">服务类型</th>
-            <td class="first-td" colspan="6">灭虫</td>
+            <td class="first-td" colspan="6">{$this->getBaseInfo()['cust']['custInfo']['ServiceName']}</td>
             <th class="first-th" colspan="1">服务项目</th>
-            <td class="first-td" colspan="6">老鼠、蟑螂、果蝇、</td>
+            <td class="first-td" colspan="6">{$this->getBaseInfo()['service_subject']}</td>
         </tr>
         <tr>
             <th class="first-th">服务人员</th>
-            <td class="first-td" colspan="6">李华</td>
+            <td class="first-td" colspan="6">{$this->getBaseInfo()['cust']['custInfo']['staffs']}</td>
             <th class="first-th">联系电话</th>
-            <td class="first-td" colspan="7">4008649998</td>
+            <td class="first-td" colspan="7">{$this->getBaseInfo()['cust']['custInfo']['Tel']}</td>
         </tr>
         <tr>
             <th class="first-th">监测设备</th>
-            <td class="first-td" colspan="12">灭蝇灯-10、鼠饵站-20、粘鼠板-10</td>
+            <td class="first-td" colspan="12">{$this->getBaseInfo()['equpments']}</td>
         </tr>
         <tr>
             <th class="first-th">服务日期安排</th>
-            <td class="first-td" colspan="12">8月6日、8月15日、8月23日、8月29日</td>
+            <td class="first-td" colspan="12">{$this->getBaseInfo()['joborder']['jobdate']}</td>
         </tr>
     </table>
     <table class="echart-table-1">
@@ -754,6 +334,9 @@ class Analyse extends BaseController
         </tr>
     </table>
     <table class="style-table">
+
+EOF;
+        $html .= <<<EOF
         <tr class="secend-th">
             <td class="secend-td">类型</td>
             <td class="secend-td">1月</td>
@@ -769,66 +352,30 @@ class Analyse extends BaseController
             <td class="secend-td">11月</td>
             <td class="secend-td">12月</td>
         </tr>
+EOF;
+$month_data = $this->getBaseInfo()['lion_origin'];
+foreach ($month_data as $k =>$v){
+    $data_ret = explode(",", $v[0]['k1']);
+    $html .= <<<EOF
         <tr class="secend-th">
-            <td class="secend-td">老鼠1</td>
-            <td class="secend-td">0</td>
-            <td class="secend-td">1</td>
-            <td class="secend-td">3</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">7</td>
+            <td class="secend-td">{$k}</td>
+            <td class="secend-td">{$data_ret[0]}</td>
+            <td class="secend-td">{$data_ret[1]}</td>
+            <td class="secend-td">{$data_ret[2]}</td>
+            <td class="secend-td">{$data_ret[3]}</td>
+            <td class="secend-td">{$data_ret[4]}</td>
+            <td class="secend-td">{$data_ret[5]}</td>
+            <td class="secend-td">{$data_ret[6]}</td>
+            <td class="secend-td">{$data_ret[7]}</td>
+            <td class="secend-td">{$data_ret[8]}</td>
+            <td class="secend-td">{$data_ret[9]}</td>
+            <td class="secend-td">{$data_ret[10]}</td>
+            <td class="secend-td">{$data_ret[11]}</td>
         </tr>
-        <tr class="secend-th">
-            <td class="secend-td">老鼠1123</td>
-            <td class="secend-td">0</td>
-            <td class="secend-td">1</td>
-            <td class="secend-td">3</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">7</td>
-        </tr>
-        <tr class="secend-th">
-            <td class="secend-td">老鼠1123</td>
-            <td class="secend-td">0</td>
-            <td class="secend-td">1</td>
-            <td class="secend-td">3</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">7</td>
-        </tr>
-        <tr class="secend-th">
-            <td class="secend-td">老鼠1</td>
-            <td class="secend-td">0</td>
-            <td class="secend-td">1</td>
-            <td class="secend-td">3</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">4</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">5</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">6</td>
-            <td class="secend-td">7</td>
-        </tr>
+EOF;
+}
+    $html .= <<<EOF
+
     </table>
     <table class="echart-table-1">
        <thead>
@@ -858,7 +405,6 @@ EOF
     </table>
     
     <table class="text-table-1" style="border: 1px solid;margin-top: 200px">
-       
         <tr>
             <th colspan="13">
                 飞虫分析：
@@ -1022,7 +568,7 @@ b）粘鼠板：常规服务未发现鼠类捕获，情况良好。
         <tr class="third-th">
             <td class="third-td" colspan="14">
             本月检查虫害设备时，发现（ ）只蚊子尸体，（ ）老鼠尸体，已全部清理。经过上述统计分析，
-虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁ÿ□ 集中灭鼠□）控制措
+虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁□ 集中灭鼠□）控制措
 施。
 </td>
         </tr>
@@ -1089,7 +635,7 @@ b）粘鼠板：常规服务未发现鼠类捕获，情况良好。
         <tr class="third-th">
             <td class="third-td" colspan="14">
             本月检查虫害设备时，发现（ ）只蚊子尸体，（ ）老鼠尸体，已全部清理。经过上述统计分析，
-虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁ÿ□ 集中灭鼠□）控制措
+虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁□ 集中灭鼠□）控制措
 施。
 </td>
         </tr>
@@ -1154,7 +700,7 @@ b）粘鼠板：常规服务未发现鼠类捕获，情况良好。
         <tr class="third-th">
             <td class="third-td" colspan="14">
             本月检查虫害设备时，发现（ ）只蚊子尸体，（ ）老鼠尸体，已全部清理。经过上述统计分析，
-虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁ÿ□ 集中灭鼠□）控制措
+虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁□ 集中灭鼠□）控制措
 施。
 </td>
         </tr>
@@ -1172,7 +718,6 @@ b）粘鼠板：常规服务未发现鼠类捕获，情况良好。
         </tr>
     </table>
     <!--    表格2-->
-
 </div>
 </body>
 </html>
@@ -1180,6 +725,490 @@ EOF;
 //        echo $html;exit();
         $res = $this->outputHtml($html);
         var_dump($res);
+    }
+
+
+    public function checkCustInfo(int $job_id)
+    {
+        if (!empty($job_id)) {
+            $where = ['JobID' => $job_id];
+            $cust = $this->jobOrderModel->alias('j')
+                ->join('service s', 'j.ServiceType=s.ServiceType')->join('staff u', 'j.Staff01=u.StaffID')
+                ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')
+                ->join('officecity oc', 'oc.City=u.City', 'left')
+                ->join('officesettings os', 'os.Office=oc.Office', 'left')
+                ->where($where)
+                ->field('j.CustomerID,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate,os.Tel')
+                ->find()->toArray();
+            $cust_name = '';
+            if ($cust['Staff01'] != '') {
+                $cust_name .= $cust['Staff01'];
+            }
+            if ($cust['Staff02'] != '') {
+                $cust_name .= '、' . $cust['Staff02'];
+            }
+            if ($cust['Staff03'] != '') {
+                $cust_name .= '、' . $cust['Staff03'];
+            }
+            $data['custInfo'] = $cust;
+            $data['custInfo']['staffs'] = $cust_name;
+            if (!empty($data['custInfo'])) {
+                $where_c = [
+                    'CustomerID' => $cust['CustomerID'],
+//                    'CustomerType' => $this->custType,
+                ];
+                //查询是工厂客户才会继续走接下来的流程
+                $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();
+                if ($cust_c) {
+                    $data['cust_details'] = $cust_c;
+                    return $data;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * 获取基本信息资料
+     * @param string $month
+     * @param int $job_id
+     * @return array
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
+     */
+//    PDYGR001-SH
+
+    public function getBaseInfo(string $month = '2023-03', int $job_id = 1685139)
+    {
+        $mian_info = [];
+        $cust = $this->checkCustInfo($job_id);
+
+        $where = [
+            'CustomerID' => $cust['cust_details']['CustomerID'],
+//            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
+        ];
+        //查看有哪些订单和日期
+        $job_orders = $this->jobOrderModel->field('MAX(JobID) as JobID,GROUP_CONCAT(JobID) as joborders,GROUP_CONCAT(JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find();
+        //查询有哪些 服务项目
+//        dd($job_orders);
+
+        $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find()->toArray();
+        foreach ($this->serviceItems as $key => $val) {
+            if ($key == $cust['custInfo']['ServiceType']) {
+                $result = $val;
+                break;
+            }
+        }
+        $service_subject = '';
+        foreach ($result as $k => $v) {
+            if ($job_items[$k] > 0) {
+                if ($v[1] > 0) {
+                    $service_subject .= $v[0] . ' ' . $job_items[$k . 'Rmk'] . '、';
+                } else {
+                    $service_subject .= $v[0] . '、';
+                }
+            }
+        }
+        //拼接 服务项目
+        $service_subject = rtrim($service_subject, '、');
+        //获取所有的设备情况
+        $equpments = '';
+        $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', 'in', $job_orders['joborders'])->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
+        foreach ($equpment_nums as $k => $v) {
+            $equpments .= $v['name'] . '-' . $v['num'] . '、';
+        }
+        $equpments = rtrim($equpments, '、');
+
+        //虫害情况  只查询捕捉到的数据
+        $catch_equment = $this->serviceEquipments->field('check_datas')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->select()->toArray();
+        $original_array = [];
+        foreach ($catch_equment as $k => $v) {
+            $original_array[] = ($v['check_datas']);
+        }
+        $original_array = array_filter($original_array);
+        $total = [];
+        foreach ($original_array as $k => $array) {
+            $json = json_decode($array, true);
+            foreach ($json as $item) {
+                $total[][$item['label']] = $item['value'];
+            }
+        }
+        $sums = [];
+        foreach ($total as $subarray) {
+            foreach ($subarray as $key => $value) {
+                if (isset($sums[$key])) {
+                    $sums["$key"] += $value;
+                } else {
+                    $sums["$key"] = $value;
+                }
+            }
+        }
+
+        $line_keys = array_keys($sums);
+        $line_keys_im = implode(',', $line_keys);
+        $line['keys'] = explode(",", $line_keys_im);
+
+
+        $line_values = array_values($sums);
+        $line_values_im = implode(',', $line_values);
+        $line_values_arr = explode(",", $line_values_im);
+
+        $new_array = [];
+        foreach ($line_values_arr as $value) {
+            if ($value !== null) {
+                $new_array[] = [
+                    'value' => $value
+                ];
+            }
+        }
+        $line['values'] = $new_array;
+        $mian_info['line'] = $line;
+
+        //处理线条统计图
+
+        $statistics_str = explode('-', $month);
+        $year = intval($statistics_str[0]);
+        $month = intval($statistics_str[1]);
+        $statistics_where = [
+            'year' => $year,
+            'month' => $month,
+            'customer_id' => $cust['cust_details']['CustomerID'],
+            'update_flag' => 1,
+            'delete_flag' => 0
+        ];
+        //查询到本月此客户有数据了 就不去更新表了 除非去强制更新
+        $has_value = $this->statistics_report->where($statistics_where)->count();
+        $force_update = 0;
+        if ($has_value <= 0 || $force_update == 1) {
+            $insert_data = [];
+            foreach ($sums as $k => $v) {
+                $insert_data[$k]['year'] = $year;
+                $insert_data[$k]['month'] = $month;
+                $insert_data[$k]['customer_id'] = $cust['cust_details']['CustomerID'];
+                $insert_data[$k]['type_name'] = $k;
+                $insert_data[$k]['type_value'] = $v;
+                $insert_data[$k]['update_flag'] = 1;
+                $insert_data[$k]['delete_flag'] = 0;
+            }
+            $res = $this->statistics_report->insertAll($insert_data);
+        }
+        //接下来的数据就直接查询该表中的数据就行
+        $has_data = $this->statistics_report->where($statistics_where)->select()->toArray();
+
+        //类型名称arr
+        $type_name = [];
+        foreach ($has_data as $id => $value) {
+            $type_name[] = $value['type_name'];
+        }
+
+        $data_line = [];
+        foreach ($type_name as $k1 => $v1) {
+            $data_line[$v1] = Db::query("SELECT GROUP_CONCAT(total_data_list) as k1 from(
+SELECT COALESCE(SUM(type_value), 0) AS total_data_list
+FROM (
+  SELECT 1 AS month
+  UNION SELECT 2 AS month
+  UNION SELECT 3 AS month
+  UNION SELECT 4 AS month
+  UNION SELECT 5 AS month
+  UNION SELECT 6 AS month
+  UNION SELECT 7 AS month
+  UNION SELECT 8 AS month
+  UNION SELECT 9 AS month
+  UNION SELECT 10 AS month
+  UNION SELECT 11 AS month
+  UNION SELECT 12 AS month
+) AS months
+LEFT JOIN lbs_statistics_report ON months.month = lbs_statistics_report.month AND lbs_statistics_report.year = ? AND lbs_statistics_report.type_name = ? AND lbs_statistics_report.delete_flag = 0
+GROUP BY months.month) as k", [$year, $v1]);
+        }
+        $arr = [];
+        foreach ($data_line as $k => $v) {
+            $data_ret = explode(",", $v[0]['k1']);
+            $arr[] = [
+                //线条的title
+                'name' => $k,
+                'type' => 'line',
+                'stack' => 'Total',
+                'data' => $data_ret,
+                'itemStyle' => [
+                    'normal' => [
+                        'label' => [
+                            'show' => true,
+                            'position' => 'top',
+                            'textStyle' => [
+                                'color' => 'black',
+                                'fontSize' => 8
+                            ]
+                        ]
+                    ]
+                ],
+
+            ];
+        }
+        //防止没设置group by炸裂
+
+        Db::execute("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));");
+        $equment_type = $this->serviceEquipments->field('equipment_type_id,equipment_name as name,count(1) as value')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->group('equipment_type_id')->select()->toArray();
+
+        //查询飞虫的数据
+        $data_insect_bar = [];
+        $data_rodent_bar = [];
+        foreach ($data_line as $k => $v){
+
+            if($k == '老鼠'){
+                $data_rodent_bar['鼠饵站'.'-'.$k] = explode(',',$v[0]['k1']);
+            }else{
+                $data_insect_bar['灭蝇灯'.'-'.$k] = explode(',',$v[0]['k1']);
+            }
+
+        }
+        $mian_info['data_insect_bar'] = $data_insect_bar;
+        $mian_info['data_rodent_bar'] = $data_rodent_bar;
+
+        $mian_info['pie'] = $equment_type;
+        $mian_info['lion_title'] = $type_name;
+        $mian_info['lion_origin'] = $data_line;
+        $mian_info['lion_content'] = $arr;        //先去查询构造表里边有没有数据
+        $mian_info['cust'] = $cust;
+        $mian_info['joborder'] = $job_orders;
+        $mian_info['service_subject'] = $service_subject;
+        $mian_info['equpments'] = $equpments;
+        $mian_info['month'] = date('Y年m月', strtotime($month));
+        return ($mian_info);
+    }
+
+
+    public function echars(): string
+    {
+        $echarts = ECharts::init("#myChart");
+        $option = new Option();
+        $option->animation(false);
+        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
+        $option->xAxis(["data" => $this->getBaseInfo()['line']['keys']]);
+        $option->yAxis([]);
+        $option->title([
+            "text" => '8月虫害统计图',
+            "left" => 'center'
+        ]);
+        $chart = new Bar();
+        $chart->data = $this->getBaseInfo()['line']['values'];
+
+        $chart->name = "8月害虫统计";
+        $chart->itemStyle = [
+            'normal' => [
+                'label' => [
+                    'show' => true,
+                    'position' => 'top',
+                    'textStyle' => [
+                        'color' => 'black',
+                        'fontSize' => 18
+                    ]
+                ]
+            ]
+        ];
+        $option->addSeries($chart);
+        $echarts->option($option);
+        return $echarts->render();
+    }
+
+    public function chartLine()
+    {
+        $echarts = ECharts::init("#chartLine");
+        $option = new Option();
+        $option->animation(false);
+        $option->title([
+            "text" => '虫害趋势分析图',
+            "left" => 'center',
+            "borderWidth" => 0
+        ]);
+        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
+        $option->xAxis([
+            "type" => "category",
+//            "boundaryGap" => false,
+            "data" => [
+                '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'
+            ],
+        ]);
+//        设置Y轴
+        $option->yAxis([
+            'name' => '数量(相对)',
+            'type' => 'value',
+            'min' => 0,
+//            'max' =>10000 ,
+            'splitNumber' => 5
+        ]);
+
+
+        $option->grid([
+                'left' => '3%',
+                'right' => '4%',
+                'bottom' => '3%',
+                'containLabel' => true
+            ]
+        );
+
+        $option->legend([
+            "data" => $this->getBaseInfo()['lion_title'],
+            "backgroundColor" => 'white',
+            "top" => '8%',
+        ]);
+
+        $option->series($this->getBaseInfo()['lion_content']);
+        $chart = new Line();
+        $chart->name = "8月害虫统计";
+        $chart->itemStyle = [
+            'normal' => [
+                'label' => [
+                    'show' => true,
+                    'position' => 'top',
+                    'textStyle' => [
+                        'color' => 'black',
+                        'fontSize' => 8
+                    ]
+                ]
+            ]
+        ];
+
+        $option->addSeries($chart);
+        $echarts->option($option);
+        return $echarts->render();
+    }
+
+    public function chartPie()
+    {
+        $echarts = ECharts::init("#chartPie");
+        $option = new Option();
+        $option->animation(false);
+        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
+        $option->title([
+            "text" => '设备占比图',
+            "left" => 'center'
+        ]);
+        $option->legend([
+            "orient" => 'vertical',
+            "left" => 'left',
+
+        ]);
+        $option->series([
+//                'name' => 'Access From',
+                'type' => 'pie',
+                'radius' => '70%',
+                'data' => $this->getBaseInfo()['pie'],
+                "backgroundColor" => 'white',
+                'label' => [
+                    'normal' => [
+                        'formatter' => '{b}:{c}: ({d}%)',
+                        'textStyle' => [
+                            'fontWeight' => 'normal',
+                            'color' => 'black',
+                            'fontSize' => 18
+                        ]
+
+                    ]
+                ],
+                'emphasis' => [
+                    'itemStyle' => [
+                        'shadowBlur' => 10,
+                        'shadowOffsetX' => 0,
+                        'shadowColor' => 'rgba(0, 0, 0, 0.5)'
+                    ]
+                ],
+            ]
+        );
+//        $option->yAxis([]);
+        $chart = new Pie();
+//        $chart->name = "8月害虫统计";
+        $chart->itemStyle = [
+            'normal' => [
+                'label' => [
+                    'show' => true,
+                    'position' => 'top',
+                    'textStyle' => [
+                        'color' => 'black',
+                        'fontSize' => 18
+                    ]
+                ]
+            ]
+        ];
+        $option->addSeries($chart);
+        $echarts->option($option);
+        return $echarts->render();
+    }
+
+    /**
+     * 昆虫图表绘制
+     * @return array
+     **/
+    public function moreInsectCharsBar(): array
+    {
+        $color = ['#4587E7'];
+        $data_bar = $this->getBaseInfo()['data_insect_bar'];
+        $id = 1;
+        $result = [];
+        foreach ($data_bar as $k => $v){
+            $result[] = $this->createEcharsBar($k .'_'. $id,strval($k), $color, $v);
+            $id++;
+        }
+        return $result;
+    }
+
+    /**
+     * 生成更多的bar 自定义
+     * @param int $id
+     * @param string[] $color
+     * @param int[] $data
+     * @return mixed
+     * */
+    public function createEcharsBar(string $id = '0',string $title = '柱状图', array $color = ['#4587E7'], array $data = []): string
+    {
+        $echarts = ECharts::init("#myChart" . $id);
+        $option = new Option();
+        $option->animation(false);
+        $option->color($color);
+        $option->xAxis(["data" => ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']]);
+        $option->yAxis([]);
+        $option->title([
+            "text" => $title,
+            "left" => 'center'
+        ]);
+        $chart = new Bar();
+        $chart->data = $data;
+        $chart->name = "8月害虫统计";
+        $chart->itemStyle = [
+            'normal' => [
+                'label' => [
+                    'show' => true,
+                    'position' => 'top',
+                    'textStyle' => [
+                        'color' => 'black',
+                        'fontSize' => 18
+                    ]
+                ]
+            ]
+        ];
+        $option->addSeries($chart);
+        $echarts->option($option);
+        return $echarts->render();
+    }
+
+    /**
+     * 鼠类图表绘制
+     * @return array
+     **/
+    public function moreRodentEcharsBar(): array
+    {
+        $color = ['#e81010'];
+        $data_bar = $this->getBaseInfo()['data_rodent_bar'];
+        $id = 1;
+        $result = [];
+        foreach ($data_bar as $k => $v){
+            $result[] = $this->createEcharsBar($k .'_'. $id,strval($k), $color, $v);
+            $id++;
+        }
+        return $result;
     }
 
     public function outputHtml($ctx)

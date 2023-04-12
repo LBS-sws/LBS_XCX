@@ -59,7 +59,7 @@ class Saveautograph
                 if($return_val === 0){
                     $data['conversion_flag'] = 0;
                 }
-                if($is_grade != 0){
+                if($is_grade > 0 ){
                     $data['customer_grade'] = $_POST['customer_grade'];
                 }
                 $save_datas = $autographV2Model->where('id','=',$result['id'])->update($data);
@@ -68,7 +68,9 @@ class Saveautograph
                 $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir);
                 $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
                 $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
-                $data['customer_grade'] = $_POST['customer_grade'];
+                if($is_grade > 0 ){
+                    $data['customer_grade'] = $_POST['customer_grade'];
+                }
                 $data['creat_time'] = date('Y-m-d H:i:s');
                 $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
                 $cmd = " /usr/bin/convert -resize 50%x50% -rotate -90 $imgPath  $imgPath 2>&1";
@@ -78,6 +80,7 @@ class Saveautograph
                 }
                 $save_datas = $autographV2Model->insert($data);
             }
+
             if ($save_datas) {
                 //返回数据
                 $result['code'] = 1;
@@ -109,7 +112,6 @@ class Saveautograph
             }elseif($data['job_type']==2){
                 $result['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$data['job_id'])->field('j.Staff01 as jStaff01,j.Staff02 as jStaff02,j.Staff03 as jStaff03')->find();
             }
-
             $autographV2Model =new AutographV2();
             $result['autograph'] = $autographV2Model->where($data)->find();
             if(!isset($result['autograph']['employee01_signature']) || !isset($result['autograph']['employee02_signature']) || !isset($result['autograph']['employee03_signature'])){
@@ -131,6 +133,5 @@ class Saveautograph
         }catch (\Exception $exception){
             return error(-1,$exception->getMessage(),[]);
         }
-
     }
 }
