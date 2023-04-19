@@ -79,8 +79,17 @@ class Saveautograph
                     $data['conversion_flag'] = 0;
                 }
                 $save_datas = $autographV2Model->insert($data);
+                if($data['job_type'] == 1){
+                    $more_sign = $this->checkOrders($data['job_type'],$_POST['staffid']);
+                    unset($_POST['job_id']);
+                    $more_sign_data = [];
+                    foreach ($more_sign as $k =>$v){
+                        $more_sign_data[] =$data;
+                        $more_sign_data[$k]['job_id'] =$v['JobID'];
+                    }
+                    $save_datas = $autographV2Model->insertAll($more_sign_data);
+                }
             }
-
             if ($save_datas) {
                 //返回数据
                 $result['code'] = 1;
@@ -99,6 +108,27 @@ class Saveautograph
         return json($result);
     }
 
+    /**
+     * @param string $job_id 订单id
+     * @param string $staffid 员工id
+     * @return array
+     * */
+    public function checkOrders($job_id = '',$staffid = ''){
+        if(empty($job_id) || $staffid){
+            return [];
+        }
+        //根据工作id查询出客户编号是多少
+        $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
+        $where = [
+            'j.JobDate' =>$result['JobDate'],
+            'j.CustomerID' =>$result['CustomerID'],
+            'j.Staff01' =>$staffid,
+            //   [],
+        ];
+        //->where('j.StartTime','<>', '')
+        return Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '')->field('j.JobID')->select()->toArray();
+    }
+
 
     public function getStaffAutograph(){
         //autograph
@@ -112,6 +142,7 @@ class Saveautograph
             }elseif($data['job_type']==2){
                 $result['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$data['job_id'])->field('j.Staff01 as jStaff01,j.Staff02 as jStaff02,j.Staff03 as jStaff03')->find();
             }
+
             $autographV2Model =new AutographV2();
             $result['autograph'] = $autographV2Model->where($data)->find();
             if(!isset($result['autograph']['employee01_signature']) || !isset($result['autograph']['employee02_signature']) || !isset($result['autograph']['employee03_signature'])){
@@ -133,5 +164,6 @@ class Saveautograph
         }catch (\Exception $exception){
             return error(-1,$exception->getMessage(),[]);
         }
+
     }
 }

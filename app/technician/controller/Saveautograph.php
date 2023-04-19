@@ -4,6 +4,9 @@ declare (strict_types = 1);
 namespace app\technician\controller;
 use app\BaseController;
 use app\technician\model\AutographV2;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\facade\Request;
 use think\facade\Db;
 
@@ -69,7 +72,7 @@ class Saveautograph
 //                $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
 //                $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
 //                $data['customer_grade'] = $_POST['customer_grade'];
-                if($is_grade != 0){
+                if($is_grade > 0){
                     $data['customer_grade'] = $_POST['customer_grade'];
                 }
                 $save_datas = $autographV2Model->where('id','=',$result['id'])->update($data);
@@ -92,6 +95,16 @@ class Saveautograph
                     $data['conversion_flag'] = 0;
                 }
                 $save_datas = $autographV2Model->insert($data);
+                if($data['job_type'] == 1){
+                    $more_sign = $this->checkOrders($data['job_id'],$_POST['staffid']);
+                    unset($_POST['job_id']);
+                    $more_sign_data = [];
+                    foreach ($more_sign as $k =>$v){
+                        $more_sign_data[] =$data;
+                        $more_sign_data[$k]['job_id'] =$v['JobID'];
+                    }
+                    $save_datas = $autographV2Model->insertAll($more_sign_data);
+                }
             }
             if ($save_datas) {
                 //返回数据
@@ -115,6 +128,27 @@ class Saveautograph
             $result['data'] = null;
         }
         return json($result);
+    }
+
+    /**
+     * @param string $job_id 订单id
+     * @param string $staffid 员工id
+     * @return array
+     * */
+    public function checkOrders($job_id = '',$staffid = ''){
+        if(empty($job_id) || $staffid){
+            return [];
+        }
+        //根据工作id查询出客户编号是多少
+        $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
+        $where = [
+            'j.JobDate' =>$result['JobDate'],
+            'j.CustomerID' =>$result['CustomerID'],
+            'j.Staff01' =>$staffid,
+            //   [],
+        ];
+        //->where('j.StartTime','<>', '')
+        return Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '')->field('j.JobID')->select()->toArray();
     }
 
     public function getStaffAutograph(){
