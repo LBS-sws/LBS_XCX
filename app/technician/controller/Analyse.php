@@ -4,6 +4,7 @@ namespace app\technician\controller;
 
 use app\BaseController;
 use app\technician\model\CustomerCompany;
+use app\technician\model\EquipmentAnalyse;
 use app\technician\model\JobOrder;
 use app\technician\model\ServiceEquipments;
 use app\technician\model\ServiceItems;
@@ -31,7 +32,12 @@ class Analyse extends BaseController
     protected $customerCompanyModel = null;
     protected $serviceEquipments = null;
     protected $statistics_report = null;
+    protected $equipment_analyse = null;
     protected $serviceItems = [];
+
+    protected $result = [];
+
+    protected $catch_equment = [];
 
     /**
      * 检查是不是工厂客户
@@ -49,8 +55,10 @@ class Analyse extends BaseController
         $serviceItemsModel = new ServiceItems();
         $this->serviceEquipments = new ServiceEquipments();
         $this->statistics_report = new StatisticsReport();
+        $this->equipment_analyse = new EquipmentAnalyse();
         //加载所有items内容
         $this->serviceItems = $serviceItemsModel->items;
+        $this->result = $this->getBaseInfo();
         parent::__construct($app);
     }
 
@@ -64,6 +72,54 @@ class Analyse extends BaseController
     <meta charset="utf-8">
     <title>史伟莎有害生物控制总结及趋势分析报告</title>
     <style>
+        .pest{
+            margin: 50px auto;
+            /*font-size: 0.9em;*/
+            width: 800px;
+            background-color: #a1efbf;
+        }
+         .inline-table {
+            /*margin-right: 20px;*/
+            width: 50%;
+            float: left;
+            /*font-size: 0.9em;*/
+            border-collapse: collapse;
+
+          }
+          
+          
+          .inline-table thead tr {
+            background-color: rgb(220, 230, 242);
+            color: #ffffff;
+            text-align: left;
+            border-collapse: collapse;
+
+        }
+        
+        .inline-table th,
+        .inline-table td {
+            padding: 12px 4px;
+            height: 30px;
+
+        }
+        
+        .inline-table tbody tr {
+            border: 1px solid #dddddd;
+        }
+        
+        .inline-table tbody tr:nth-of-type(even) {
+            background-color: #ffffff;
+        }
+        
+        .inline-table tbody tr:last-of-type {
+            border: 1px solid #5f7288;
+        }
+        
+        .inline-table tbody tr.active-row {
+            font-weight: bold;
+            /*color: #0398dd;*/
+        }
+          /*******************这里是个分隔符 前端写不明白******************/
         .style-table {
             border-collapse:collapse;
             margin: 50px auto;
@@ -146,7 +202,7 @@ class Analyse extends BaseController
 
         .style-table th,
         .style-table td {
-            padding: 12px 10px;
+            padding: 12px 8px;
         }
 
         .style-table tbody tr {
@@ -217,7 +273,7 @@ class Analyse extends BaseController
         .third-td {
             border: 1px solid #cad9ea;
             color: #0c0c0c;
-            width: 32px;
+            /*width: 32px;*/
             padding: 10px 10px 5px 0;
         }
         .style-table-content {
@@ -269,7 +325,7 @@ class Analyse extends BaseController
         <tr>
             <td>
                 <div class="big-title">史伟莎有害生物控制总结及趋势分析报告</div>
-                <div class="title-right">{$this->getBaseInfo()['month']}份</div>
+                <div class="title-right">{$this->result['month']}份</div>
             </td>
     </table>
     <table class="style-table">
@@ -280,31 +336,31 @@ class Analyse extends BaseController
         </thead>
         <tr>
             <th class="first-th">客户名称</th>
-            <td class="first-td " colspan="12">{$this->getBaseInfo()['cust']['cust_details']['NameZH']}</td>
+            <td class="first-td " colspan="12">{$this->result['cust']['cust_details']['NameZH']}</td>
         </tr>
         <tr>
             <th class="first-th">客户地址</th>
-            <td class="first-td" colspan="12">{$this->getBaseInfo()['cust']['cust_details']['Addr']}</td>
+            <td class="first-td" colspan="12">{$this->result['cust']['cust_details']['Addr']}</td>
         </tr>
         <tr>
             <th class="first-th" colspan="1">服务类型</th>
-            <td class="first-td" colspan="6">{$this->getBaseInfo()['cust']['custInfo']['ServiceName']}</td>
+            <td class="first-td" colspan="6">{$this->result['cust']['custInfo']['ServiceName']}</td>
             <th class="first-th" colspan="1">服务项目</th>
-            <td class="first-td" colspan="6">{$this->getBaseInfo()['service_subject']}</td>
+            <td class="first-td" colspan="6">{$this->result['service_subject']}</td>
         </tr>
         <tr>
             <th class="first-th">服务人员</th>
-            <td class="first-td" colspan="6">{$this->getBaseInfo()['cust']['custInfo']['staffs']}</td>
+            <td class="first-td" colspan="6">{$this->result['cust']['custInfo']['staffs']}</td>
             <th class="first-th">联系电话</th>
-            <td class="first-td" colspan="7">{$this->getBaseInfo()['cust']['custInfo']['Tel']}</td>
+            <td class="first-td" colspan="7">{$this->result['cust']['custInfo']['Tel']}</td>
         </tr>
         <tr>
             <th class="first-th">监测设备</th>
-            <td class="first-td" colspan="12">{$this->getBaseInfo()['equpments']}</td>
+            <td class="first-td" colspan="12">{$this->result['equpments']}</td>
         </tr>
         <tr>
             <th class="first-th">服务日期安排</th>
-            <td class="first-td" colspan="12">{$this->getBaseInfo()['joborder']['jobdate']}</td>
+            <td class="first-td" colspan="12">{$this->result['joborder']['jobdate']}</td>
         </tr>
     </table>
     <table class="echart-table-1">
@@ -353,10 +409,10 @@ EOF;
             <td class="secend-td">12月</td>
         </tr>
 EOF;
-$month_data = $this->getBaseInfo()['lion_origin'];
-foreach ($month_data as $k =>$v){
-    $data_ret = explode(",", $v[0]['k1']);
-    $html .= <<<EOF
+        $month_data = $this->result['lion_origin'];
+        foreach ($month_data as $k => $v) {
+            $data_ret = explode(",", $v[0]['k1']);
+            $html .= <<<EOF
         <tr class="secend-th">
             <td class="secend-td">{$k}</td>
             <td class="secend-td">{$data_ret[0]}</td>
@@ -373,8 +429,8 @@ foreach ($month_data as $k =>$v){
             <td class="secend-td">{$data_ret[11]}</td>
         </tr>
 EOF;
-}
-    $html .= <<<EOF
+        }
+        $html .= <<<EOF
 
     </table>
     <table class="echart-table-1">
@@ -508,203 +564,116 @@ b）粘鼠板：常规服务未发现鼠类捕获，情况良好。
             </td>
         </tr>
     </table>
-    
-    
-<!--    表格2-->
-<table class="style-table">
-        <tr class="third-th">
-            <td class="third-td title" sty colspan="14">1月份</td>
-        </tr>
-        
-        <tr class="third-th">
-            <td class="third-td td-title">日期</td>
-            <td class="third-td">序号</td>
-            <td class="third-td" colspan="2">灭蝇灯编号</td>
-            <td class="third-td">数量</td>
-            <td class="third-td" colspan="2">区域</td>
-            <td class="third-td td-title">日期</td>
-            <td class="third-td">序号</td>
-            <td class="third-td" colspan="2">灭蝇灯编号</td>
-            <td class="third-td">数量</td>
-            <td class="third-td" colspan="2">区域</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        
-        <tr class="third-th">
-            <td class="third-td" colspan="14">
-            本月检查虫害设备时，发现（ ）只蚊子尸体，（ ）老鼠尸体，已全部清理。经过上述统计分析，
-虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁□ 集中灭鼠□）控制措
-施。
-</td>
-        </tr>
-    </table>
-<!--    表格2-->
-    
-    
-      
-<!--    表格2-->
-<table class="style-table">
-        <tr class="third-th">
-            <td class="third-td title" sty colspan="14">2月份</td>
-        </tr>
-        
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        
-        <tr class="third-th">
-            <td class="third-td" colspan="14">
-            本月检查虫害设备时，发现（ ）只蚊子尸体，（ ）老鼠尸体，已全部清理。经过上述统计分析，
-虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁□ 集中灭鼠□）控制措
-施。
-</td>
-        </tr>
-    </table>
-<!--    表格2-->
+EOF;
+        foreach ($this->result['pest_grouped_data'] as $k =>$v){
+            $html .= <<<EOF
+    <p style="width: 800px;margin: 50px auto;">{$k}</p>
+    <div class="pest">
+EOF;
+            foreach ($v as $k1 => $v1){
+            if($k1 == '14'){
 
-  
-<!--    表格2-->
-<table class="style-table">
-        <tr class="third-th">
-            <td class="third-td title" sty colspan="14">3月份</td>
-        </tr>
-        
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-            <td class="third-td td-title">2023-3-30</td>
-            <td class="third-td">0001</td>
-            <td class="third-td" colspan="2">EPS-12309-123</td>
-            <td class="third-td">2</td>
-            <td class="third-td" colspan="2">公司的饮水机上5</td>
-        </tr>
-        <tr class="third-th">
-            <td class="third-td" colspan="14">
-            本月检查虫害设备时，发现（ ）只蚊子尸体，（ ）老鼠尸体，已全部清理。经过上述统计分析，
-虫鼠害发生情况（上升□ 下降□）趋势，建议采取（常规□ 定期清洁□ 集中灭鼠□）控制措
-施。
-</td>
-        </tr>
-    </table>
+                $html .= <<<EOF
+        <table class="inline-table" >
+            <tr class="third-th">
+                <td class="third-td td-title">日期</td>
+                <td class="third-td">灭蝇灯编号</td>
+                <td class="third-td">数量</td>
+                <td class="third-td">区域</td>
+            </tr>
+EOF;
+                if(count($v1)>=1){
+                    foreach ($v1 as $k2 => $v2){
+                        $html .= <<<EOF
+          <tr class="third-th">
+                <td class="third-td td-title" >{$v2['job_date']}</td>
+                <td class="third-td" >{$v2['equ_type_num']}</td>
+                <td class="third-td">{$v2['pest_num']}</td>
+                <td class="third-td">{$v2['equ_area']}</td>
+            </tr>
+EOF;
+                    }
+                    for ($x = 3;$x>count($v1);$x--){
+                        $html .= <<<EOF
+          <tr class="third-th">
+                <td class="third-td td-title"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+            </tr>
+EOF;
+                    }
+                }else{
+                    for ($x = 0;$x<3;$x++){
+                        $html .= <<<EOF
+          <tr class="third-th">
+                <td class="third-td td-title"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+            </tr>
+EOF;
+                    }
+                }
+                $html .= <<<EOF
+                </table>   
+EOF;
+            }elseif($k1 == '15'){
+                $html .= <<<EOF
+        <table class="inline-table" >
+            <tr class="third-th">
+                <td class="third-td td-title">日期</td>
+                <td class="third-td">鼠饵站编号</td>
+                <td class="third-td">数量</td>
+                <td class="third-td">区域</td>
+            </tr>
+EOF;
+                if(count($v1)>=1){
+                    foreach ($v1 as $k2 => $v2){
+                        $html .= <<<EOF
+          <tr class="third-th">
+                 <td class="third-td td-title">{$v2['job_date']}</td>
+                <td class="third-td">{$v2['equ_type_num']}</td>
+                <td class="third-td">{$v2['pest_num']}</td>
+                <td class="third-td">{$v2['equ_area']}</td>
+            </tr>
+EOF;
+                    }
+                    for ($x = 3;$x>count($v1);$x--){
+                        $html .= <<<EOF
+          <tr class="third-th">
+                <td class="third-td td-title"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+            </tr>
+EOF;
+                    }
+                }else{
+                    for ($x = 0;$x<3;$x++){
+
+                        $html .= <<<EOF
+          <tr class="third-th">
+                <td class="third-td td-title"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+                <td class="third-td"></td>
+            </tr>
+EOF;
+                    }
+                }
+                $html .= <<<EOF
+                </table>   
+EOF;
+            }
+}
+        $html .= <<<EOF
+</div>
+    <hr style="FILTER:alpha(opacity=100,finishopacity=0,style=2)" width="800px" color=#cad9ea SIZE=0>
+
+EOF;
+            }
+        $html .= <<<EOF
 <!--    表格2-->
    <!--    表格2-->
     <table class="style-table-content">
@@ -784,7 +753,6 @@ EOF;
     {
         $mian_info = [];
         $cust = $this->checkCustInfo($job_id);
-
         $where = [
             'CustomerID' => $cust['cust_details']['CustomerID'],
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
@@ -792,8 +760,6 @@ EOF;
         //查看有哪些订单和日期
         $job_orders = $this->jobOrderModel->field('MAX(JobID) as JobID,GROUP_CONCAT(JobID) as joborders,GROUP_CONCAT(JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find();
         //查询有哪些 服务项目
-//        dd($job_orders);
-
         $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find()->toArray();
         foreach ($this->serviceItems as $key => $val) {
             if ($key == $cust['custInfo']['ServiceType']) {
@@ -816,16 +782,22 @@ EOF;
         //获取所有的设备情况
         $equpments = '';
         $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', 'in', $job_orders['joborders'])->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
+
         foreach ($equpment_nums as $k => $v) {
             $equpments .= $v['name'] . '-' . $v['num'] . '、';
         }
         $equpments = rtrim($equpments, '、');
 
-        //虫害情况  只查询捕捉到的数据
-        $catch_equment = $this->serviceEquipments->field('check_datas')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->select()->toArray();
+        /** 虫害情况  只查询捕捉到的数据 113是【驱虫喷机】 */
+        //->where('equipment_type_id', '<>', '113') 暂时不管
+        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->select()->toArray();
+        $this->catch_equment = $catch_equment;
+
+
         $original_array = [];
         foreach ($catch_equment as $k => $v) {
-            $original_array[] = ($v['check_datas']);
+            $original_array[] = $v['check_datas'];
+//            $original_array[] = $v['job_id'];
         }
         $original_array = array_filter($original_array);
         $total = [];
@@ -835,6 +807,7 @@ EOF;
                 $total[][$item['label']] = $item['value'];
             }
         }
+
         $sums = [];
         foreach ($total as $subarray) {
             foreach ($subarray as $key => $value) {
@@ -845,6 +818,7 @@ EOF;
                 }
             }
         }
+//        dd($sums);
 
         $line_keys = array_keys($sums);
         $line_keys_im = implode(',', $line_keys);
@@ -880,6 +854,8 @@ EOF;
         ];
         //查询到本月此客户有数据了 就不去更新表了 除非去强制更新
         $has_value = $this->statistics_report->where($statistics_where)->count();
+//        dd($has_value);exit();
+
         $force_update = 0;
         if ($has_value <= 0 || $force_update == 1) {
             $insert_data = [];
@@ -953,21 +929,90 @@ GROUP BY months.month) as k", [$year, $v1]);
         Db::execute("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));");
         $equment_type = $this->serviceEquipments->field('equipment_type_id,equipment_name as name,count(1) as value')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->group('equipment_type_id')->select()->toArray();
 
+//        dd($equment_type);
         //查询飞虫的数据
         $data_insect_bar = [];
         $data_rodent_bar = [];
-        foreach ($data_line as $k => $v){
-
-            if($k == '老鼠'){
-                $data_rodent_bar['鼠饵站'.'-'.$k] = explode(',',$v[0]['k1']);
-            }else{
-                $data_insect_bar['灭蝇灯'.'-'.$k] = explode(',',$v[0]['k1']);
+        foreach ($data_line as $k => $v) {
+            if ($k == '老鼠') {
+                $data_rodent_bar['鼠饵站' . '-' . $k] = explode(',', $v[0]['k1']);
+            } else {
+                $data_insect_bar['灭蝇灯' . '-' . $k] = explode(',', $v[0]['k1']);
             }
-
         }
+
+        //查询某个设备捕捉到的虫害数量最多的统计
+//        $equment_type1 = $this->serviceEquipments->field('equipment_area,equipment_type_id,equipment_name as name,count(1) as value')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->group('equipment_type_id')->select()->toArray();
+
+        $month_data = [];
+        foreach ($this->catch_equment as $k => $v) {
+            if ($v['check_datas']) {
+                $data = json_decode($v['check_datas'], true);
+                $month_data[$k] = $v;
+                $total = 0;
+                if ($data != '') {
+                    foreach ($data as $item) {
+                        $total += $item['value'];
+                    }
+                    $month_data[$k]['total'] = $total;
+                }
+            }
+        }
+        $force_update = 0;
+        if ($force_update == 1) {
+            $equipment_analyse_data = [];
+            foreach ($month_data as $k => $v) {
+                $equipment_analyse_data[$k]['job_id'] = $v['job_id'];
+                $equipment_analyse_data[$k]['job_date'] = '2023-5-20';;
+                $equipment_analyse_data[$k]['customer_id'] = $cust['cust_details']['CustomerID'];
+                $equipment_analyse_data[$k]['equ_type_id'] = $v['equipment_type_id'];
+                $equipment_analyse_data[$k]['equ_type_num'] = $v['equipment_number'];
+                $equipment_analyse_data[$k]['equ_area'] = $v['equipment_area'];
+                $equipment_analyse_data[$k]['equ_type_name'] = $v['equipment_name'];
+                $equipment_analyse_data[$k]['pest_num'] = $v['total'];
+                $equipment_analyse_data[$k]['created_at'] = date('Y-m-d H:i:s');
+            }
+            $res = $this->equipment_analyse->insertAll($equipment_analyse_data);
+        }
+
+        // 查询每个月设备捕捉数量最多的设备（只展示每个种类的前3条数据）
+
+        $pest_res = Db::query("  SELECT
+	t1.job_month,
+  t1.equ_type_id,
+  t1.pest_num,t1.equ_type_name,t1.equ_area,t1.job_date,t1.equ_type_num
+FROM (
+  SELECT
+    DATE_FORMAT(job_date, '%Y-%m') AS job_month,
+    equ_type_id,
+    pest_num,
+		customer_id,
+		equ_type_name,
+		equ_type_num,
+		job_date,
+		equ_area,
+    (
+      SELECT COUNT(DISTINCT t2.pest_num)
+      FROM lbs_service_equipment_analyse t2
+      WHERE t2.equ_type_id = t1.equ_type_id
+        AND t2.pest_num > t1.pest_num
+        AND DATE_FORMAT(t2.job_date, '%Y-%m') = DATE_FORMAT(t1.job_date, '%Y-%m')
+    ) AS rank
+  FROM lbs_service_equipment_analyse t1
+) t1
+WHERE t1.rank < 3
+AND t1.customer_id = ?
+GROUP BY t1.job_month, t1.equ_type_id, t1.pest_num
+ORDER BY t1.job_month, t1.equ_type_id, t1.pest_num DESC;",[$cust['cust_details']['CustomerID']]);
+
+        $pest_grouped_data = array_reduce($pest_res, function($result, $item) {
+            $result[$item['job_month']][$item['equ_type_id']][] = $item;
+            return $result;
+        }, []);
+        $mian_info['pest_grouped_data'] = $pest_grouped_data;
+
         $mian_info['data_insect_bar'] = $data_insect_bar;
         $mian_info['data_rodent_bar'] = $data_rodent_bar;
-
         $mian_info['pie'] = $equment_type;
         $mian_info['lion_title'] = $type_name;
         $mian_info['lion_origin'] = $data_line;
@@ -977,7 +1022,7 @@ GROUP BY months.month) as k", [$year, $v1]);
         $mian_info['service_subject'] = $service_subject;
         $mian_info['equpments'] = $equpments;
         $mian_info['month'] = date('Y年m月', strtotime($month));
-        return ($mian_info);
+        return $this->result = $mian_info;
     }
 
 
@@ -987,14 +1032,14 @@ GROUP BY months.month) as k", [$year, $v1]);
         $option = new Option();
         $option->animation(false);
         $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
-        $option->xAxis(["data" => $this->getBaseInfo()['line']['keys']]);
+        $option->xAxis(["data" => $this->result['line']['keys']]);
         $option->yAxis([]);
         $option->title([
             "text" => '8月虫害统计图',
             "left" => 'center'
         ]);
         $chart = new Bar();
-        $chart->data = $this->getBaseInfo()['line']['values'];
+        $chart->data = $this->result['line']['values'];
 
         $chart->name = "8月害虫统计";
         $chart->itemStyle = [
@@ -1051,12 +1096,12 @@ GROUP BY months.month) as k", [$year, $v1]);
         );
 
         $option->legend([
-            "data" => $this->getBaseInfo()['lion_title'],
+            "data" => $this->result['lion_title'],
             "backgroundColor" => 'white',
             "top" => '8%',
         ]);
 
-        $option->series($this->getBaseInfo()['lion_content']);
+        $option->series($this->result['lion_content']);
         $chart = new Line();
         $chart->name = "8月害虫统计";
         $chart->itemStyle = [
@@ -1096,7 +1141,7 @@ GROUP BY months.month) as k", [$year, $v1]);
 //                'name' => 'Access From',
                 'type' => 'pie',
                 'radius' => '70%',
-                'data' => $this->getBaseInfo()['pie'],
+                'data' => $this->result['pie'],
                 "backgroundColor" => 'white',
                 'label' => [
                     'normal' => [
@@ -1145,11 +1190,11 @@ GROUP BY months.month) as k", [$year, $v1]);
     public function moreInsectCharsBar(): array
     {
         $color = ['#4587E7'];
-        $data_bar = $this->getBaseInfo()['data_insect_bar'];
+        $data_bar = $this->result['data_insect_bar'];
         $id = 1;
         $result = [];
-        foreach ($data_bar as $k => $v){
-            $result[] = $this->createEcharsBar($k .'_'. $id,strval($k), $color, $v);
+        foreach ($data_bar as $k => $v) {
+            $result[] = $this->createEcharsBar($k . '_' . $id, strval($k), $color, $v);
             $id++;
         }
         return $result;
@@ -1162,7 +1207,7 @@ GROUP BY months.month) as k", [$year, $v1]);
      * @param int[] $data
      * @return mixed
      * */
-    public function createEcharsBar(string $id = '0',string $title = '柱状图', array $color = ['#4587E7'], array $data = []): string
+    public function createEcharsBar(string $id = '0', string $title = '柱状图', array $color = ['#4587E7'], array $data = []): string
     {
         $echarts = ECharts::init("#myChart" . $id);
         $option = new Option();
@@ -1201,11 +1246,11 @@ GROUP BY months.month) as k", [$year, $v1]);
     public function moreRodentEcharsBar(): array
     {
         $color = ['#e81010'];
-        $data_bar = $this->getBaseInfo()['data_rodent_bar'];
+        $data_bar = $this->result['data_rodent_bar'];
         $id = 1;
         $result = [];
-        foreach ($data_bar as $k => $v){
-            $result[] = $this->createEcharsBar($k .'_'. $id,strval($k), $color, $v);
+        foreach ($data_bar as $k => $v) {
+            $result[] = $this->createEcharsBar($k . '_' . $id, strval($k), $color, $v);
             $id++;
         }
         return $result;
@@ -1225,12 +1270,13 @@ GROUP BY months.month) as k", [$year, $v1]);
 
     public function exec()
     {
+        header('Content-Type:text/html;charset=utf-8');
+
         $cmd = "wkhtmltopdf demo1.html demo.pdf 2>&1";
         @exec($cmd, $output, $return_val);
         if ($return_val === 0) {
             print_r($output);
         }
-
     }
 
 
