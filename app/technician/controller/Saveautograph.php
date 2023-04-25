@@ -4,9 +4,6 @@ declare (strict_types = 1);
 namespace app\technician\controller;
 use app\BaseController;
 use app\technician\model\AutographV2;
-use think\db\exception\DataNotFoundException;
-use think\db\exception\DbException;
-use think\db\exception\ModelNotFoundException;
 use think\facade\Request;
 use think\facade\Db;
 
@@ -28,7 +25,7 @@ class Saveautograph
         }
         //获取信息
         $staffid = $_POST['staffid'];
-        $is_grade = isset($_REQUEST['is_grade'])?$_REQUEST['is_grade']:1;
+        $is_grade = isset($_REQUEST['is_grade'])?$_REQUEST['is_grade']:0;
 
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
@@ -53,28 +50,28 @@ class Saveautograph
 
             if($result !== null) {
                 if(isset($_POST['customer_signature']) && $_POST['customer_signature'] != ''){
-                    if(strpos($_POST['customer_signature'],$customer_dir) !== false){
-
+                    if(isset($_POST['customer_grade']) && $_POST['customer_grade']>0){
+                        $data['customer_grade'] = $_POST['customer_grade'];
+                        $is_grade = $_POST['customer_grade'];
                     }else{
-                        //不存在
-                        $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
-                        $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
-                        $cmd = " /usr/bin/convert -resize 50%x50% -rotate -90 $imgPath  $imgPath 2>&1";
-                        @exec($cmd,$output,$return_val);
-                        if($return_val === 0){
-                            $data['conversion_flag'] = 0;
+                        if(strpos($_POST['customer_signature'],$customer_dir) !== false){
+
+                        }else{
+                            //不存在
+                            $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
+                            $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
+                            $cmd = " /usr/bin/convert -resize 50%x50% -rotate -90 $imgPath  $imgPath 2>&1";
+                            @exec($cmd,$output,$return_val);
+                            if($return_val === 0){
+                                $data['conversion_flag'] = 0;
+                            }
                         }
                     }
+
                 }
                 //如果查出来不是空的那么这里就需要进行update  只需要更新客户的评分以及客户的签名即可
                 $data['pid']=$result['pid']+1;
-//                $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir);
-//                $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
-//                $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
-//                $data['customer_grade'] = $_POST['customer_grade'];
-                if($is_grade > 0){
-                    $data['customer_grade'] = $_POST['customer_grade'];
-                }
+
                 $save_datas = $autographV2Model->where('id','=',$result['id'])->update($data);
             }else{
                 if(isset($_POST['customer_signature']) && $_POST['customer_signature'] != ''){
@@ -95,15 +92,18 @@ class Saveautograph
                     $data['conversion_flag'] = 0;
                 }
                 $save_datas = $autographV2Model->insert($data);
-                if($data['job_type'] == 1){
-                    $more_sign = $this->checkOrders($data['job_id'],$_POST['staffid']);
-                    unset($_POST['job_id']);
-                    $more_sign_data = [];
-                    foreach ($more_sign as $k =>$v){
-                        $more_sign_data[] =$data;
-                        $more_sign_data[$k]['job_id'] =$v['JobID'];
+                if ($data['job_type'] == 1) {
+                    $more_sign = $this->checkOrders($data['job_id'], $_POST['staffid']);
+                    if (!empty($more_sign)) {
+                        unset($_POST['job_id']);
+                        $more_sign_data = [];
+                        foreach ($more_sign as $k => $v) {
+                            $more_sign_data[] = $data;
+                            $more_sign_data[$k]['job_id'] = $v['JobID'];
+                        }
+                        $save_datas = $autographV2Model->insertAll($more_sign_data);
                     }
-                    $save_datas = $autographV2Model->insertAll($more_sign_data);
+
                 }
             }
             if ($save_datas) {
@@ -130,15 +130,7 @@ class Saveautograph
         return json($result);
     }
 
-    /**
-     * @param string $job_id 订单id
-     * @param string $staffid 员工id
-     * @return array
-     * */
-    public function checkOrders($job_id = '',$staffid = ''){
-        if(empty($job_id) || $staffid){
-            return [];
-        }
+    public function checkOrders($job_id = '0',$staffid = '0'){
         //根据工作id查询出客户编号是多少
         $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
         $where = [
@@ -147,8 +139,8 @@ class Saveautograph
             'j.Staff01' =>$staffid,
             //   [],
         ];
-        //->where('j.StartTime','<>', '')
-        return Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '')->field('j.JobID')->select()->toArray();
+        $more_sign =  Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '00:00:00')->field('j.JobID')->select()->toArray();
+        return $more_sign;
     }
 
     public function getStaffAutograph(){
@@ -163,7 +155,6 @@ class Saveautograph
             }elseif($data['job_type']==2){
                 $result['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$data['job_id'])->field('j.Staff01 as jStaff01,j.Staff02 as jStaff02,j.Staff03 as jStaff03')->find();
             }
-
             $autographV2Model =new AutographV2();
             $result['autograph'] = $autographV2Model->where($data)->find();
             if(!isset($result['autograph']['employee01_signature']) || !isset($result['autograph']['employee02_signature']) || !isset($result['autograph']['employee03_signature'])){
