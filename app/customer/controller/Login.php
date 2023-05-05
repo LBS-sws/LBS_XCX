@@ -44,10 +44,10 @@ class Login
                     }else{
                         $token_save = Db::name('cuztoken')->insert($data_token);
                     }
-                    
-                    
+
+
                     //办公室电话
-                    $office = Db::name('customercompany')->alias('cc')->join('officecity oc ','cc.City=oc.City')->join('officesettings os ','oc.Office=os.Office')->where('cc.CustomerID', $user['CustomerID'])->field('os.Tel,cc.isHQ')->find();
+                    $office = Db::name('customercompany')->alias('cc')->join('officecity oc ','cc.City=oc.City')->join('officesettings os ','oc.Office=os.Office')->where('cc.CustomerID', $user['CustomerID'])->field('os.Tel,cc.isHQ,cc.NameZH,cc.City')->find();
                     //查询(1)总店还是(0)分店
                     // $main_store = 0;
                     //返回状态
@@ -57,6 +57,8 @@ class Login
                     $result['data']['mobile'] = $user['Mobile'];
                     $result['data']['contactname'] = $user['ContactName'];
                     $result['data']['customerid'] = $user['CustomerID'];
+                    $result['data']['NameZH'] = $office['NameZH'];
+                    $result['data']['City'] = $office['City'];
                     $result['data']['officetel'] = $office['Tel'];
                     $result['data']['mainstore'] = $office['isHQ'];
                     $result['data']['token'] = $token;
