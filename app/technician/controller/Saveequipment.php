@@ -39,7 +39,7 @@ class Saveequipment
             $data['check_handle'] = isset($_POST['check_handle']) ? $_POST['check_handle'] : null;
             $data['more_info'] = $_POST['more_info'];
             $save_datas = Db::table('lbs_service_equipments')->where('id', $_POST['id'])->update($data);
-            
+            $redis = new Redis();
             if ($save_datas) {
                 //返回数据
                 $result['code'] = 1;
@@ -49,6 +49,11 @@ class Saveequipment
                 $result['code'] = 1;
                 $result['msg'] = '保存成功';
                 $result['data'] = null;
+            }
+            $lock_key = 'lock_equipment_'.$_POST['id'];
+            $lock_content = $redis->has($lock_key);
+            if($lock_content){
+                $redis->delete($lock_key);
             }
         }else{
              $result['code'] = 0;
