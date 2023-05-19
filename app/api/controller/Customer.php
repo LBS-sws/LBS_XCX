@@ -25,8 +25,7 @@ class Customer extends BaseController
     {
         $search = $_GET['q'] ?? '';
         $city = $_GET['city'] ?? '';
-//        $city_en = Db::query("select GROUP_CONCAT(City) as citys from enums as e left join officecity as o on o.Office=e.EnumID where e.Text= ? and e.EnumType = 8
-//",[$city]);
+        $daterange = $_GET['daterange'];
         $where = [];
         if(isset($city) && $city!= ''){
             $where[]=['city','=',$city];
@@ -34,11 +33,15 @@ class Customer extends BaseController
         if(isset($search) && $search!= ''){
             $where[]=[['customer_id','like','%'.$search.'%']];
         }
+        if(isset($daterange) && $daterange!= ''){
+            $date_de = json_decode($daterange);
+            $where[]=['date','>=',date('Y-m',strtotime($date_de[0]))];
+            $where[]=['date','<=',date('Y-m',strtotime($date_de[1]))];
+        }
         if(isset($city) && $city == 'CN' ){
             $where=[];
         }
-        $cust = $this->analyseReport->field("customer_id,customer_name,date,city")->where($where)->paginate();
-
+        $cust = $this->analyseReport->field("customer_id,customer_name,date,city,url_id,url")->where($where)->paginate();
         return success(0,'success',$cust);
     }
 
@@ -53,14 +56,15 @@ class Customer extends BaseController
         if(isset($city) && $city == 'CN' ){
             $where=[];
         }
+
         if(isset($search) && $search!= ''){
             $where[]=[['customer_name','like','%'.$search.'%']];
         }
-        $cust = $this->analyseReport->field("customer_id as label,customer_name as value,date,city")->where($where)->limit(10)->select()->toArray();
+        $cust = $this->analyseReport->field("customer_id as label,customer_name as value,date,city,url_id,url")->where($where)->limit(10)->select()->toArray();
         return success(0,'success',$cust);
     }
 
-    public function getPdf($month = '2023-04',$cust = '',$custzh = '',$city = '',$city_id = '',$is_cust = 0,$is_force = 0){
+    public function getPdf($month = '202304',$cust = '',$custzh = '',$city = '',$city_id = '',$is_cust = 0,$is_force = 0){
         if($month == '' || $cust == '' ){
             return error(-1,'输入参数有误',[]);
         }
@@ -69,21 +73,16 @@ class Customer extends BaseController
 ;",[$city_id]);
             $city = $city_ret[0]['Text'];
         }
-        $where = [
-            'customer_id' =>$cust,
-            'date' =>$month,
-            'city' =>$city,
-        ];
-        $cust_info = $this->analyseReport->field("customer_id,customer_name,date,city,url_id")->where($where)->findOrEmpty()->toArray();
-        $file_path = 'analyse/'.$month.'/'.$cust_info['url_id'].'.pdf';
+        $file_path = 'analyse/'.$month.'/'.$custzh.'.pdf';
         if (is_file($file_path)) {
             $domain = $this->request->domain().'/';
             $url = $domain.$file_path;
             //有报告就返回，没返回就
             return success(0,'success',$url);
+
         } else {
             $res =  new Analyse();
-            $report = $res->index($month,$cust,$city,$cust_info['url_id']);
+            $report = $res->index($month,$cust,$city);
             if($report){
                 $domain = $this->request->domain().'/';
                 $url = $domain.$file_path;
