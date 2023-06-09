@@ -22,13 +22,13 @@ class CheckLockStatus
             if(!$lock_content){
                 $is_locked = $redis->set($lock_key,$staff_id,3600*24);
                 if($is_locked){
-                    return success();
+                    return success(0,'success',[]);
                 }
             }else{
                 $lock_content = $redis->get($lock_key);
                 if($staff_id == $lock_content){
                     //继续执行 并且保持锁
-                    return success();
+                    return success(0,'success',[]);
                 }else{
                     //告诉其他人，当前设备已经有人操作了
                     return error(-1,'此设备已锁定,ID:【'.$id.'】-'.$staff_id);
@@ -46,7 +46,7 @@ class CheckLockStatus
         $lock_content = $redis->has($lock_key);
         if($lock_content){
             $redis->delete($lock_key);
-            return success();
+            return success(0,'success',[]);
         }else{
             return error(-1,"请稍后再试！");
         }

@@ -31,8 +31,8 @@ class Analyse extends BaseController
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
     protected $serviceEquipments = null;
-    protected $statistics_report = null;
-    protected $equipment_analyse = null;
+    protected $statisticsReport = null;
+    protected $equipmentAnalyse = null;
     protected $serviceItems = [];
 
     protected $result = [];
@@ -868,10 +868,10 @@ EOF;
                 $insert_data[$k]['update_flag'] = 1;
                 $insert_data[$k]['delete_flag'] = 0;
             }
-            $res = $this->statistics_report->insertAll($insert_data);
+            $res = $this->statisticsReport->insertAll($insert_data);
         }
         //接下来的数据就直接查询该表中的数据就行
-        $has_data = $this->statistics_report->where($statistics_where)->select()->toArray();
+        $has_data = $this->statisticsReport->where($statistics_where)->select()->toArray();
 
         //类型名称arr
         $type_name = [];
@@ -972,7 +972,7 @@ GROUP BY months.month) as k", [$year, $v1]);
                 $equipment_analyse_data[$k]['pest_num'] = $v['total'];
                 $equipment_analyse_data[$k]['created_at'] = date('Y-m-d H:i:s');
             }
-            $res = $this->equipment_analyse->insertAll($equipment_analyse_data);
+            $res = $this->equipmentAnalyse->insertAll($equipment_analyse_data);
         }
 
         // 查询每个月设备捕捉数量最多的设备（只展示每个种类的前3条数据）
