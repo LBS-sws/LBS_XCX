@@ -21,7 +21,7 @@ use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use think\facade\Db;
 use think\Model;
-
+use think\cache\driver\Redis;
 class Crontab extends BaseController
 {
     /**
@@ -65,6 +65,13 @@ class Crontab extends BaseController
         $this->serviceItems = $serviceItemsModel->items;
 //        $this->result = $this->getBaseInfo();
         parent::__construct($app);
+    }
+
+    public function index()
+    {
+        $redis = new Redis();
+        $res = $redis->clear();
+        print_r($res);
     }
 
     public function getStatistics($info = []){
@@ -253,7 +260,7 @@ class Crontab extends BaseController
         }
         // $date = '2023-03-24';//date('Y-m-d')    ;
         $cc_where = [
-//            'cc.CustomerType' => $this->custType,
+            'cc.CustomerType' => $this->custType,
             'j.JobDate' => $date,
         ];
         //查询今天有哪些工厂客户
@@ -337,6 +344,7 @@ class Crontab extends BaseController
                             }
                         }else{
                             $result = $item['value'];
+                            $result = gettype($result) == 'string' ? 0 : $result;
                         }
                         $total += $result;
 

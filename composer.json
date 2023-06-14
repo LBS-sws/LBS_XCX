@@ -26,7 +26,8 @@
         "topthink/think-multi-app": "^1.0",
         "youyiio/php-echarts": "^0.2.1",
         "tecnickcom/tcpdf": "^6.4",
-        "topthink/think-filesystem": "1.0.1"
+        "topthink/think-filesystem": "1.0.1",
+        "phpoffice/phpspreadsheet": "^1.28"
     },
     "require-dev": {
         "symfony/var-dumper": "^4.2",

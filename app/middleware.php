@@ -7,6 +7,6 @@ return [
     // \think\middleware\LoadLangPack::class,
     // Session初始化
     \think\middleware\SessionInit::class,
-    // 全局中间件定义文件
+    // 全局中间跨域
     \think\middleware\AllowCrossDomain::class,
 ];
