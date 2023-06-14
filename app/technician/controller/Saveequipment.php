@@ -5,6 +5,7 @@ namespace app\technician\controller;
 use app\BaseController;
 use think\facade\Request;
 use think\facade\Db;
+use think\cache\driver\Redis;
 
 
 class Saveequipment

@@ -573,7 +573,7 @@ EOF;
 
 
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-
+            $pdf->SetFont('cid0cs', '');
             $html .= <<<EOF
                         <tr class="myTitle">
                             <th width="100%" align="left">客户点评</th>
