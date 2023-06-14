@@ -31,7 +31,7 @@ class Saveequipments
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             for ($i=0; $i < count($equipments); $i++) { 
                 $data['equipment_name'] = $equipments[$i]['equipment_name'];
                 $data['equipment_area'] =$equipments[$i]['equipment_area'];

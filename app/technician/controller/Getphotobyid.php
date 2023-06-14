@@ -30,11 +30,11 @@ class Getphotobyid
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             $wheres['id'] = $_POST['id'];
             $wheres['job_id'] = $_POST['job_id'];
             $wheres['job_type'] = $_POST['job_type'];
-            $photo_datas = Db::table('lbs_service_photos')->where($wheres)->cache(true,60)->find();   
+            $photo_datas = Db::table('lbs_service_photos')->where($wheres)->find();   
              //返回数据
             $result['code'] = 1;
             $result['msg'] = '成功';

@@ -18,10 +18,10 @@ class AddequipmentsOFasn
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['add_ids'])  || !isset($_POST['add_number'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['add_ids']) || empty($_POST['add_number'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -35,11 +35,11 @@ class AddequipmentsOFasn
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             
             $data['job_id'] = $_POST['job_id'];
             $data['job_type'] = $_POST['job_type'];
-    
+
             $type_ids = explode(',',$add_ids);
                 for($n=0;$n<$add_number;$n++){
                     for ($i=0; $i < count($type_ids); $i++) {
@@ -59,7 +59,7 @@ class AddequipmentsOFasn
                         $save_datas = Db::table('lbs_service_equipments')->insert($data);
                     }
                 }
-            
+
             if ($save_datas) {
                 //返回数据
                 $result['code'] = 1;

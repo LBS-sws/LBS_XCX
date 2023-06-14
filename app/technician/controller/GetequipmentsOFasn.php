@@ -18,10 +18,10 @@ class GetequipmentsOFasn
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['city']) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['service_type'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['city']) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['service_type'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -65,10 +65,10 @@ class GetequipmentsOFasn
                 //         $last_e['e.job_type'] = 2;
                 //     }
                 // }
-                 if (empty($equipment_inherit) && !empty($last_job)) {      
+                 if (empty($equipment_inherit) && !empty($last_job)) {
                         $last_equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('e.*,t.name as equipment_type_name')->where($last_e)->order('id', 'asc')->select();
                         if (count($last_equipments)>0) {
-                            for ($i=0; $i < count($last_equipments); $i++) { 
+                            for ($i=0; $i < count($last_equipments); $i++) {
                                 $data['job_id'] = $job_id;
                                 $data['job_type'] = $job_type;
                                 $data['equipment_type_id'] = $last_equipments[$i]['equipment_type_id'];
@@ -79,7 +79,7 @@ class GetequipmentsOFasn
                                 $data['creat_time'] = date('Y-m-d H:i:s', time());
                                 $save_datas = Db::table('lbs_service_equipments')->insert($data);
                             }
-                           
+
                         }
                         $inherit['job_id'] = $job_id;
                         $inherit['job_type'] = $job_type;

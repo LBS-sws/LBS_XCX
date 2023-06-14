@@ -10,8 +10,7 @@ class Login
 {
     public function index()
     {
-
-//        var_dump(config('app.uapp_url').config('app.uapi_list.edit_token'));exit();
+        
 
         $result['code'] = 0;
         $result['msg'] = '请输入用户名和密码';

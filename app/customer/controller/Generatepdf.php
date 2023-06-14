@@ -18,10 +18,10 @@ class Generatepdf
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type'])){
-            return json($result); 
+            return json($result);
         }
          //获取信息
         $staffid = $_POST['staffid'];
@@ -38,7 +38,7 @@ class Generatepdf
             if ($job_type==1) {
                 $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('j.JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate')->find();
                 $job_datas = Db::table('joborder')->where('JobID',$job_id)->find();
-                
+
             }elseif($job_type==2){
                 $report_datas['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$job_id)->field('j.FollowUpID as JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,s.ServiceType')->find();
                 $job_datas = Db::table('followuporder')->where('FollowUpID',$job_id)->find();
@@ -53,7 +53,7 @@ class Generatepdf
             $eq['e.job_id'] = $job_id;
             $eq['e.job_type'] = $job_type;
             $basic_equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($eq)->Distinct(true)->select();
-            for ($i=0; $i < count($basic_equipments); $i++) { 
+            for ($i=0; $i < count($basic_equipments); $i++) {
                 $n['job_id'] = $job_id;
                 $n['job_type'] = $job_type;
                 $n['equipment_type_id'] = $basic_equipments[$i]['equipment_type_id'];
@@ -62,7 +62,7 @@ class Generatepdf
                     $report_datas['basic']['equipments'] = $basic_equipments[$i]['name'].'-'.$numbers;
                 }else{
                     $report_datas['basic']['equipments'] =$report_datas['basic']['equipments'].','.$basic_equipments[$i]['name'].'-'.$numbers;
-                }   
+                }
             }
             $report_datas['basic']['Staffall'] = $report_datas['basic']['Staff01'].($report_datas['basic']['Staff02']?','.$report_datas['basic']['Staff02']:'').($report_datas['basic']['Staff03']?','.$report_datas['basic']['Staff03']:'');
             if ($job_type==1) {
@@ -74,7 +74,7 @@ class Generatepdf
             }else{
                 $report_datas['basic']['task_type'] = "跟进服务";
             }
-            
+
              //服务项目
             $service_projects = '';
             if($job_type==1 && $service_type==1){//洁净
@@ -100,7 +100,7 @@ class Generatepdf
                 if ($job_datas["Item06"] > 0) $service_projects .= "水剂喷机：".$job_datas["Item06"]." ".$job_datas["Item06Rmk"] . ",";
                 if ($job_datas["Item07"] > 0) $service_projects .= "罐装灭虫喷机：".$job_datas["Item07"]." ".$job_datas["Item07Rmk"] . ",";
                 if ($job_datas["Item10"] > 0) $service_projects .= "灭蝇灯：".$job_datas["Item10"]." ".$job_datas["Item10Rmk"] . ",";
-                if ($job_datas["Item08"] > 0) $service_projects .= "其他：".$job_datas["Item08"]." ".$job_datas["Item08Rmk"] . ",";    
+                if ($job_datas["Item08"] > 0) $service_projects .= "其他：".$job_datas["Item08"]." ".$job_datas["Item08Rmk"] . ",";
             }else if($job_type==1 && $service_type==3){//灭虫喷焗
                 if ($job_datas["Item01"] > 0) $service_projects .= "蚊子,";
                 if ($job_datas["Item02"] > 0) $service_projects .= "苍蝇,";
@@ -130,9 +130,9 @@ class Generatepdf
 
             //material
             $report_datas['material'] = Db::table('lbs_service_materials')->where($w)->select();
-            
+
             //risk
-            $report_datas['risk'] = Db::table('lbs_service_risks')->where($w)->select();  
+            $report_datas['risk'] = Db::table('lbs_service_risks')->where($w)->select();
 
             //equipment
             $equipmenthz_datas = [];
@@ -147,15 +147,15 @@ class Generatepdf
                 if ($check_datas) {
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
-                        
+
                         $equipmenthz_datas[$i]['table_title'][0] = '编号';
                         $equipmenthz_datas[$i]['content'][$j][0] = sprintf('%02s', $j+1);
                         $equipmenthz_datas[$i]['table_title'][1] = '区域';
                         $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_area'];
-                        for ($m=0; $m < count($check_data); $m++) { 
+                        for ($m=0; $m < count($check_data); $m++) {
                             $equipmenthz_datas[$i]['table_title'][$m+2] = $check_data[$m]['label'];
                             $equipmenthz_datas[$i]['content'][$j][$m+2] = $check_data[$m]['value'];
-                        } 
+                        }
                         $equipmenthz_datas[$i]['table_title'][$m+2] = '检查与处理';
                         $equipmenthz_datas[$i]['content'][$j][$m+2] = $check_datas[$j]['check_handle'];
                         $equipmenthz_datas[$i]['table_title'][$m+3] = '补充说明';
@@ -166,7 +166,7 @@ class Generatepdf
             }
             $report_datas['equipment'] = $equipmenthz_datas;
             //photo
-            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit(4)->select();  
+            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit(4)->select();
 
             //autograph
 //            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
@@ -186,7 +186,7 @@ class Generatepdf
                 //autograph
                 $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
             }
-            
+
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();
             if($service_sections){
@@ -195,8 +195,8 @@ class Generatepdf
                 $report_datas['service_sections'] = '';
             }
             $baseUrl_imgs = "../public";
-            
-            
+
+
             $company_img = "../public/pdf/company/".$city.".jpg";
             //pdf生成
             $html = <<<EOD
@@ -306,7 +306,7 @@ class Generatepdf
                         </tr>
                         EOF;
                 for ($p=0; $p < count($report_datas['photo']); $p++) {
-                 
+
                     $html .= <<<EOF
                         <tr>
                         <td width="20%" align="left">{$report_datas['photo'][$p]['remarks']}</td>
@@ -325,10 +325,10 @@ class Generatepdf
                             $html .= <<<EOF
                             <td width="20%" align="center"></td>
                             EOF;
-                        } 
+                        }
                     $html .= <<<EOF
                                 </tr>  
-                            EOF; 
+                            EOF;
                 }
             }
             }
@@ -361,7 +361,7 @@ class Generatepdf
                         <td width="12%" align="left">{$report_datas['material'][$m]['use_area']}</td>
                         <td width="22%" align="left">{$report_datas['material'][$m]['matters_needing_attention']}</td>
                         </tr>  
-                        EOF; 
+                        EOF;
                 }
             }
             }
@@ -395,7 +395,7 @@ class Generatepdf
                         </tr>
                         <tr>
                         <td width="16%">风险图片</td>
-                    EOF; 
+                    EOF;
                     $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
                      for ($sp=0; $sp < count($site_photos); $sp++) {
                         $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
@@ -410,7 +410,7 @@ class Generatepdf
                             $html .= <<<EOF
                             <td width="21%" align="center"></td>
                             EOF;
-                        } 
+                        }
                     $html .= <<<EOF
                         </tr>  
                         EOF;
@@ -475,8 +475,8 @@ class Generatepdf
                             $html .= <<<EOF
                                     </tr>
                                     EOF;
-                           
-                        } 
+
+                        }
                     }else{
                         $html .= <<<EOF
                                     <tr>
@@ -505,6 +505,8 @@ class Generatepdf
                 $eimageSrc02 = isset($autograph_data['staff_id02_url']) ? $sign_url . $autograph_data['staff_id02_url'] : '';
                 $eimageSrc03 = isset($autograph_data['staff_id03_url']) ? $sign_url . $autograph_data['staff_id03_url'] : '';
                 $cimageSrc = isset($autograph_data['customer_signature_url']) ? $sign_url . $autograph_data['customer_signature_url'] : '';
+                $cimageSrc_add = !empty($autograph_data['customer_signature_url_add']) ? $sign_url . $autograph_data['customer_signature_url_add'] : '';
+
                 $customer_grade = isset($autograph_data['customer_grade']) ? $autograph_data['customer_grade'] : '';
                 $employee02_signature = '';
                 $employee03_signature = '';
@@ -566,7 +568,7 @@ class Generatepdf
 
 
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-
+            $pdf->SetFont('cid0cs', '');
             $html .= <<<EOF
                         <tr class="myTitle">
                             <th width="100%" align="left">客户点评</th>
@@ -595,9 +597,10 @@ class Generatepdf
                         <img src="{$eimageSrc03}" width="130" height="80" style="magin:20px 50px;">
                     EOF;
             }
+           $cimageSrc_add =  $cimageSrc_add??'';
             $html .= <<<EOF
                 </td>
-                <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"></td>
+                <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"><img src="{$cimageSrc_add}" width="130" height="80" style="magin:20px 50px;"></td>
                 </tr>
                 EOF;
             $html .= <<<EOF
@@ -605,7 +608,7 @@ class Generatepdf
             <img src="{$company_img}">
             </body>
             EOF;
-           
+
 
             // set some language-dependent strings (optional)
             if (@file_exists(dirname(__FILE__).'/lang/chi.php')) {
@@ -619,11 +622,11 @@ class Generatepdf
             //$pdf->setTextShadow(array('enabled'=>true, 'depth_w'=>0.2, 'depth_h'=>0.2, 'color'=>array(196,196,196), 'opacity'=>1, 'blend_mode'=>'Normal'));
 
             // Set some content to print
-            
+
 
             // Print text using writeHTMLCell()
             // $pdf->writeHTMLCell(0, 0, '', '', $html, 0, 1, 0, true, '', true);
-           
+
             // ---------------------------------------------------------
             $pdf->WriteHTML($html, 1);
             //Close and output PDF document
@@ -637,26 +640,26 @@ class Generatepdf
             //============================================================+
         }
     }
-    
+
     function pic_rotating($degrees,$url){
         $srcImg = imagecreatefrompng($url);     //获取图片资源
         $rotate = imagerotate($srcImg, $degrees, 0);        //原图旋转
-     
+
         //获取旋转后的宽高
-        $srcWidth = imagesx($rotate);       
+        $srcWidth = imagesx($rotate);
         $srcHeight = imagesy($rotate);
-     
+
         //创建新图
         $newImg = imagecreatetruecolor($srcWidth, $srcHeight);
-     
+
         //分配颜色 + alpha，将颜色填充到新图上
         $alpha = imagecolorallocatealpha($newImg, 0, 0, 0, 127);
         imagefill($newImg, 0, 0, $alpha);
-     
+
         //将源图拷贝到新图上，并设置在保存 PNG 图像时保存完整的 alpha 通道信息
         imagecopyresampled($newImg, $rotate, 0, 0, 0, 0, $srcWidth, $srcHeight, $srcWidth, $srcHeight);
         imagesavealpha($newImg, true);
-        
+
         //生成新图
         imagepng($newImg, $url);
     }

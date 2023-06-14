@@ -510,6 +510,7 @@ EOF;
                 $cimageSrc = !empty($autograph_data['customer_signature_url']) ? $sign_url . $autograph_data['customer_signature_url'] : '';
                 $cimageSrc_add = !empty($autograph_data['customer_signature_url_add']) ? $sign_url . $autograph_data['customer_signature_url_add'] : '';
                 $customer_grade = !empty($autograph_data['customer_grade']) ? $autograph_data['customer_grade'] : '';
+                $cimageSrc_add = !empty($autograph_data['customer_signature_url_add']) ? $sign_url . $autograph_data['customer_signature_url_add'] : '';
                 $employee02_signature = '';
                 $employee03_signature = '';
                 // 如果flag == 1则需要作翻转处理
@@ -561,6 +562,7 @@ EOF;
                     $this->pic_rotating($degrees,$url);
                 }else{
                     $cimageSrc='';
+                    $cimageSrc_add = '';
                 }
                 //签名
                 $customer_grade = $report_datas['autograph']['customer_grade'];

@@ -7,7 +7,7 @@ use think\facade\Request;
 use think\facade\Db;
 
 
-class Saverisk
+class SaveriskOFasn
 {
     public function index()
     {
@@ -16,12 +16,22 @@ class Saverisk
         $result['data'] = null;
 
         $token = request()->header('token');
-        if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['risk_targets']) || !isset($_POST['risk_types']) || !isset($_POST['risk_rank']) || !isset($_POST['risk_label']) || !isset($_POST['risk_description']) || !isset($_POST['site_photos'])){
-            return json($result); 
+        if($_POST['ct']==1){
+            if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['risk_targets']) || !isset($_POST['risk_types']) || !isset($_POST['risk_rank']) || !isset($_POST['risk_label']) || !isset($_POST['risk_description']) || !isset($_POST['risk_area'])){
+                return json($result);
+            }
+            if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['risk_targets']) || empty($_POST['risk_types']) || empty($_POST['risk_rank']) || empty($_POST['risk_label'])  || empty($_POST['risk_description'])  || empty($_POST['risk_area'])){
+                return json($result);
+            }
+        }else{
+            if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['risk_targets']) || !isset($_POST['risk_types']) || !isset($_POST['risk_rank']) || !isset($_POST['risk_label']) || !isset($_POST['risk_description']) || !isset($_POST['site_photos'])){
+                return json($result);
+            }
+            if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['risk_targets']) || empty($_POST['risk_types']) || empty($_POST['risk_rank']) || empty($_POST['risk_label'])  || empty($_POST['risk_description'])  || empty($_POST['site_photos'])){
+                return json($result);
+            }
         }
-        if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['risk_targets']) || empty($_POST['risk_types']) || empty($_POST['risk_rank']) || empty($_POST['risk_label'])  || empty($_POST['risk_description'])  || empty($_POST['site_photos'])){
-            return json($result); 
-        }
+
         //获取信息
         $staffid = $_POST['staffid'];
         //获取用户登录信息
@@ -30,8 +40,9 @@ class Saverisk
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
             $id = $_POST['id']?$_POST['id']:0;
+//            dd($id);
             $data['job_id'] = $_POST['job_id'];
             $data['job_type'] = $_POST['job_type'];
             $data['risk_targets'] = $_POST['risk_targets'];
@@ -42,7 +53,7 @@ class Saverisk
             $data['risk_description'] = $_POST['risk_description'];
             $data['risk_proposal'] = $_POST['risk_proposal'];
             $data['take_steps'] = $_POST['take_steps'];
-        
+            $data['risk_area'] = $_POST['risk_area'];
             if ($id>0) {
 
                $update_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
@@ -50,7 +61,7 @@ class Saverisk
             }else{
                $data['creat_time'] = date('Y-m-d H:i:s', time());
                $save_datas = Db::table('lbs_service_risks')->insert($data);
-            } 
+            }
             if ($save_datas) {
                 //返回数据
                 $result['code'] = 1;

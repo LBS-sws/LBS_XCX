@@ -110,23 +110,25 @@ class Saveautograph
 
     /**
      * @param string $job_id 订单id
-     * @param string $staffid 员工id
+     * @param string $customer 员工id
      * @return array
      * */
-    public function checkOrders($job_id = '',$staffid = ''){
-        if(empty($job_id) || $staffid){
+    public function checkOrders($job_id = '',$customer = ''){
+        //var_dump($job_id);var_dump($staffid);exit();
+        if(empty($job_id)){
             return [];
         }
         //根据工作id查询出客户编号是多少
-        $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
+        $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->field('j.CustomerID,j.JobDate')->find();
         $where = [
             'j.JobDate' =>$result['JobDate'],
             'j.CustomerID' =>$result['CustomerID'],
-            'j.Staff01' =>$staffid,
             //   [],
         ];
         //->where('j.StartTime','<>', '')
-        return Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '')->field('j.JobID')->select()->toArray();
+        $more_sign =  Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '00:00:00')->field('j.JobID')->select()->toArray();
+        // dd(Db::table('joborder')->getLastSql());
+        return $more_sign;
     }
 
 

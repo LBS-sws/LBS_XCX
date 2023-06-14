@@ -27,7 +27,7 @@ class CheckLogin
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
              $result['code'] = 1;
              $result['msg'] = 'ok';
              $result['data'] = [];

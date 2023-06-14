@@ -54,7 +54,7 @@ class Jobsignout
         // dump($c_time);exit;
 
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             if($jobtype==1){
                 $job_time = Db::table('joborder')->alias('j')->join('staff s','j.Staff01=s.StaffID')->where('j.JobID', $jobid)->field('j.StartTime,j.ContractID,s.StaffName,ServiceType,j.FirstJob,j.ContractNumber,j.CustomerID')->find();
                 //回传新U登录状态

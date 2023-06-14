@@ -18,16 +18,16 @@ class Getjobbyid
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['jobid']) || !isset($_POST['jobtype'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['jobid']) || empty($_POST['jobtype'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
         $jobid = $_POST['jobid'];
         $jobtype = $_POST['jobtype'];
-        
+
        //获取用户登录信息
         $redis = new Redis();
         $token_key = 'token_' . $staffid;
@@ -47,42 +47,49 @@ class Getjobbyid
                 $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,c.CustomerType')->find();
                 $service_type = $job_datas['ServiceType'];
                 //查询技术员备注
+//                var_dump($job_datas['CustomerType']);exit();
 
                 $servicecontract_key = 'servicecontract_'. $jobid;
                 $technician_remarks = $redis->get($servicecontract_key);
                 if(!$technician_remarks){
                     $technician_remarks = Db::table('servicecontract')->where('ContractNumber',$job_datas['ContractNumber'])->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->field('TechRemarks')->find();
-                    $redis->set($servicecontract_key, $technician_remarks,3600);
+                    $redis->set($servicecontract_key, $technician_remarks,30);
                 }
                 if ($technician_remarks) {
                     $job_datas['TechRemarks'] = $technician_remarks['TechRemarks'];
                 }else{
                     $job_datas['TechRemarks'] = '';
                 }
-                
-                //布防图
-                // $arr = array('contractid'=>$job_datas['ContractID'],'staffid'=>$staffid,'token'=>$token);
-                // $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') ). '/web/remote/getAttachment.php',$arr);
-                // $xinu = json_decode($xinu_data,true);
-                // if($xinu['code']==1){
-                //     $job_datas['set_img'] = [];
-                //     for ($i = 0; $i < count($xinu['data']); $i++) {
-                //         if ($xinu['data'][$i]['filetype']=='jpg' || $xinu['data'][$i]['filetype']=='jpeg' || $xinu['data'][$i]['filetype']=='png') {
-                //             $set_img = 'data:image/' . $xinu['data'][$i]['filetype'] . ';base64,' . $xinu['data'][$i]['content'];
-                //             array_push($job_datas['set_img'],$set_img);
-                //         }
-                //     }
-                // }else{
-                //   //返回数据
-                //     $result['xinu_msg'] = $xinu['msg'];
-                // }
-                // $result['xinu'] = $xinu;
+
+                // 工厂的才放开
+                if($job_datas['CustomerType'] == 203){
+                    //布防图
+                    $arr = array('contractid'=>$job_datas['ContractID'],'staffid'=>$staffid,'token'=>$token);
+                    $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') ). '/web/remote/getAttachment.php',$arr);
+                    if(!empty($xinu_data)){
+                        $xinu = json_decode($xinu_data,true);
+                        if($xinu['code']==1){
+                            $job_datas['set_img'] = [];
+                            for ($i = 0; $i < count($xinu['data']); $i++) {
+                                if ($xinu['data'][$i]['filetype']=='jpg' || $xinu['data'][$i]['filetype']=='jpeg' || $xinu['data'][$i]['filetype']=='png') {
+                                    $set_img = 'data:image/' . $xinu['data'][$i]['filetype'] . ';base64,' . $xinu['data'][$i]['content'];
+                                    array_push($job_datas['set_img'],$set_img);
+                                }
+                            }
+                        }else{
+                            //返回数据
+                            $result['xinu_msg'] = $xinu['msg'];
+                        }
+                        $result['xinu'] = $xinu;
+                    }
+                }
+
             }elseif ($jobtype==2) {
                 $job_wheres['j.FollowUpID'] = $jobid;
                 $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->cache(true,60)->find();
                 $service_type = $job_datas['SType'];
             }
-           
+
             if ($job_datas) {
                 //数据添加
                 $job_datas['type'] = $jobtype;
@@ -97,7 +104,7 @@ class Getjobbyid
                     $StaffName02 = Db::table('staff')->where('StaffID',$job_datas['Staff03'])->field('StaffName')->cache(true,60)->find();
                     $job_datas['StaffName02'] = $StaffName02['StaffName'];
                 }
-                 
+
                 if ($jobtype==1) {
                     $job_datas['Watchdog'] = '';
                     //查询当前设备
@@ -105,7 +112,7 @@ class Getjobbyid
                     $where_dq['e.job_type'] = 1;
                     $dq_eqs = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($where_dq)->Distinct(true)->cache(true,60)->select();
                     if (count($dq_eqs)>0) {
-                                for ($i=0; $i < count($dq_eqs); $i++) { 
+                                for ($i=0; $i < count($dq_eqs); $i++) {
                                     $n['job_id'] = $jobid;
                                     $n['job_type'] = 1;
                                     $n['equipment_type_id'] = $dq_eqs[$i]['equipment_type_id'];
@@ -114,9 +121,9 @@ class Getjobbyid
                                         $job_datas['Watchdog'] = $dq_eqs[$i]['name'].'-'.$numbers;
                                     }else{
                                         $job_datas['Watchdog'] = $job_datas['Watchdog'].','.$dq_eqs[$i]['name'].'-'.$numbers;
-                                    }   
-                                } 
-                        
+                                    }
+                                }
+
                     }else{
                         //查询上一个设备情况
                         $last_job = Db::table('joborder')->where('ContractID',$job_datas['ContractID'])->where('ServiceType',$job_datas['ServiceType'])->where('Status',3)->order('JobDate', 'desc')->field('JobID')->cache(true,60)->find();
@@ -125,7 +132,7 @@ class Getjobbyid
                            $wherel['e.job_type'] = 1;
                            $equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($wherel)->Distinct(true)->cache(true,60)->select();
                            if (count($equipments)>0) {
-                                for ($i=0; $i < count($equipments); $i++) { 
+                                for ($i=0; $i < count($equipments); $i++) {
                                     $n['job_id'] = $last_job['JobID'];
                                     $n['job_type'] = 1;
                                     $n['equipment_type_id'] = $equipments[$i]['equipment_type_id'];
@@ -134,15 +141,15 @@ class Getjobbyid
                                         $job_datas['Watchdog'] = $equipments[$i]['name'].'-'.$numbers;
                                     }else{
                                         $job_datas['Watchdog'] = $job_datas['Watchdog'].','.$equipments[$i]['name'].'-'.$numbers;
-                                    }   
-                                }    
+                                    }
+                                }
                            }else{
                                 $job_datas['Watchdog'] = '无设备';
                            }
                         }
                     }
-                    
-                   
+
+
                     //服务项目
                     $service_projects = '';
                     if($jobtype==1 && $service_type==1){//洁净
@@ -169,7 +176,7 @@ class Getjobbyid
                         if ($job_datas["Item07"] > 0) $service_projects .= "罐装灭虫喷机：".$job_datas["Item07"]." ".$job_datas["Item07Rmk"] . ",";
                         if ($job_datas["Item10"] > 0) $service_projects .= "灭蝇灯：".$job_datas["Item10"]." ".$job_datas["Item10Rmk"] . ",";
                         if ($job_datas["Item08"] > 0) $service_projects .= "其他：".$job_datas["Item08"]." ".$job_datas["Item08Rmk"] . ",";
-                        
+
                     }else if($jobtype==1 && $service_type==3){//灭虫喷焗
                         if ($job_datas["Item01"] > 0) $service_projects .= "蚊子,";
                         if ($job_datas["Item02"] > 0) $service_projects .= "苍蝇,";
@@ -201,9 +208,9 @@ class Getjobbyid
                     $histroy_job = Db::table('joborder')->where('CustomerID',$job_datas['CustomerID'])->where('ServiceType',$service_type)->where('Status',3)->whereTime('JobDate', '<', $job_datas['JobDate'])->cache(true,60)->count();
                     $histroy_fol = Db::table('followuporder')->where('CustomerID',$job_datas['CustomerID'])->where('SType',$service_type)->where('Status',3)->whereTime('JobDate', '<', $job_datas['JobDate'])->cache(true,60)->count();
                 }
-                
+
                 $job_datas['history'] = $histroy_job+$histroy_fol;
-                
+
                 //返回数据
                 $result['code'] = 1;
                 $result['msg'] = '成功';

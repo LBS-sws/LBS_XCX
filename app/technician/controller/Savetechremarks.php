@@ -34,7 +34,7 @@ class Savetechremarks
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             $arr = array('staffid'=>$staffid,'token'=>$token,'contractnumber'=>$contractnumber,'customerid'=>$customerid,'servicetype'=>$servicetype,'techremarks'=>$techremarks);
             $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_remarks'),$arr);
             $job_datas = Db::table('servicecontract')->where('ContractNumber', $contractnumber)->where('CustomerID', $customerid)->where('ServiceType', $servicetype)->update(['TechRemarks' => $techremarks]);

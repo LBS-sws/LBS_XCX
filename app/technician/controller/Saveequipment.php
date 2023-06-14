@@ -18,10 +18,10 @@ class Saveequipment
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['id']) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['equipment_name']) || !isset($_POST['equipment_area']) || !isset($_POST['check_datas']) ){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['id']) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['equipment_name']) || empty($_POST['equipment_area']) || empty($_POST['check_datas'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -31,7 +31,7 @@ class Saveequipment
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
           
             $data['equipment_name'] = $_POST['equipment_name'];
             $data['equipment_area'] =$_POST['equipment_area'];

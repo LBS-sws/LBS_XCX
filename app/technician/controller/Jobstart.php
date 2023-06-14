@@ -35,13 +35,13 @@ class Jobstart
         $user_token = $redis->get($token_key);
         if (!$user_token) {
             $user_token = Db::name('token')->where('StaffID',$staffid)->find();
-            $redis->set($token_key,$user_token,600);
+            $redis->set($token_key,$user_token,60);
         }
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             // $job_wheres['j.Staff01'] = $staffid;
             /**
              * 添加 redis缓存

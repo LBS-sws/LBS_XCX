@@ -19,22 +19,22 @@ class Upload extends BaseController
     /**
      * 微信小程序上传图片
      * */
-    public function imgswx(){
+    public function imgswx()
+    {
         //查看上传的版本
-        $version = request()->param('version',0);
-        if($version > 1){
+        $version = request()->param('version', 0);
+        if ($version > 1) {
             try {
                 $file = request()->file();
-                dd($file);
                 if (null === $file) {
-                    return error(-1,'请选择图片',[]);
+                    return error(-1, '请选择图片', []);
                 }
                 $files = request()->file('file');
                 validate(['file' => 'fileExt:jpg,png,gif,jpeg'])->check(['file' => $file]);
                 // \validate(['image'=>'fileExt:jpg,png,gif,pdf'])->check($file);
-                $savename = \think\facade\Filesystem::disk('public')->putFile( 'img', $files);
-                $savename = "/storage/".$savename;
-                $savename = str_replace("\\",'/',$savename);
+                $savename = \think\facade\Filesystem::disk('public')->putFile('img', $files);
+                $savename = "/storage/" . $savename;
+                $savename = str_replace("\\", '/', $savename);
                 $source = $_SERVER['DOCUMENT_ROOT'] . $savename; // 上传后的路径
                 $percent = 0.70;  #缩放比例
                 (new CompressImg($source, $percent))->compressImg($source);  //压缩
@@ -71,29 +71,29 @@ class Upload extends BaseController
                     $newImg->okIsRun($config);
                 }*/
                 // 先压缩再加水印就会GG[现在不会了，因为图片画布问题，裂开]
-                return success(0,'ok',['file_name'=>$savename]);
+                return success(0, 'ok', ['file_name' => $savename]);
             } catch (\think\exception\ValidateException $e) {
-                return error(-1,$e->getMessage(),[]);
+                return error(-1, $e->getMessage(), []);
             }
-        }else{
+        } else {
             try {
                 $file = request()->file('file');
                 // var_dump($file);exit;
-                $savename_original = \think\facade\Filesystem::disk('public')->putFile( 'img', $file);
-                $savename_new = "/storage/".$savename_original;
-                $savename = str_replace("\\",'/',$savename_new);
+                $savename_original = \think\facade\Filesystem::disk('public')->putFile('img', $file);
+                $savename_new = "/storage/" . $savename_original;
+                $savename = str_replace("\\", '/', $savename_new);
                 $source = $_SERVER['DOCUMENT_ROOT'] . $savename; // 上传后的路径
                 // $water = new Water();
                 $percent = 0.75;  #缩放比例
                 (new CompressImg($source, $percent))->compressImg($source);  //压缩
                 return json($savename);
-            }catch (\Exception $exception){
+            } catch (\Exception $exception) {
                 $orgin_path = '/storage/upload_exception/err_pic.png';
-                $source = $_SERVER['DOCUMENT_ROOT'].$orgin_path;
-                $end_path =$_SERVER['DOCUMENT_ROOT'].'/storage/upload_exception/'.date('Y-m-d').'/';
-                $fileName = $this->fileCopy($source,$end_path);
+                $source = $_SERVER['DOCUMENT_ROOT'] . $orgin_path;
+                $end_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/upload_exception/' . date('Y-m-d') . '/';
+                $fileName = $this->fileCopy($source, $end_path);
                 // 上传错误 使用错误图片标识
-                $data = "/storage/upload_exception/".date('Y-m-d')."/".$fileName;
+                $data = "/storage/upload_exception/" . date('Y-m-d') . "/" . $fileName;
                 return json($exception->getMessage());
             }
         }
@@ -104,22 +104,37 @@ class Upload extends BaseController
 
     /**
      * @description: 文件复制
-     * @param  string $file 文件
-     * @param  string $path 文件路径
+     * @param string $file 文件
+     * @param string $path 文件路径
      * @return:
      */
-    protected function fileCopy(string $file, string $path){
-        $dir=dirname($file);
-        $fileName= str_replace( $dir. '/','', $file);  //获取文件名
-        if(!is_dir($path)){   //判断目录是否存在
+    protected function fileCopy(string $file, string $path)
+    {
+        $dir = dirname($file);
+        $fileName = str_replace($dir . '/', '', $file);  //获取文件名
+        if (!is_dir($path)) {   //判断目录是否存在
             //不存在则创建
             //   mkdir($pathcurr,0777))
-            mkdir(iconv("UTF-8", "GBK",$path),0777,true); //iconv方法是为了防止中文乱码，保证可以创建识别中文目录，不用iconv方法格式的话，将无法创建中文目录,第三参数的开启递归模式，默认是关闭的
+            mkdir(iconv("UTF-8", "GBK", $path), 0777, true); //iconv方法是为了防止中文乱码，保证可以创建识别中文目录，不用iconv方法格式的话，将无法创建中文目录,第三参数的开启递归模式，默认是关闭的
         }
-        $fileNameCopy = uniqid().'_'.$fileName;
-        copy($file,$path.$fileNameCopy);   //public_path()是laravel的自带方法生成public目录的绝对路径
+        $fileNameCopy = uniqid() . '_' . $fileName;
+        copy($file, $path . $fileNameCopy);   //public_path()是laravel的自带方法生成public目录的绝对路径
         return $fileNameCopy;
     }
 
+    public function newStr($str = "")
+    {
+        $length = $this->utf8_strlen($str);
+        $start = 0;
+        $str_length = 10;
+        $arr = [];
+        // var_dump(ceil($length/$str_length));
+        for ($i = 1; $i <= ceil($length / $str_length); $i++) {
+            $arr[] = $this->msubstr($str, $start, $str_length);
+            $start = $start + 10;
+        }
+        $new_str = implode('|', $arr);
+        return $new_str;
 
+    }
 }
