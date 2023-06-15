@@ -17,10 +17,10 @@ class Delequipments
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['del_ids']) ){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['del_ids'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -34,18 +34,18 @@ class Delequipments
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
-        
+
             $data['job_id'] = $_POST['job_id'];
             $data['job_type'] = $_POST['job_type'];
             $del_ids = explode(',',$del_ids);
-            for ($i=0; $i < count($del_ids); $i++) { 
+            for ($i=0; $i < count($del_ids); $i++) {
 
                 $e = Db::table('lbs_service_equipments')->where('id',$del_ids[$i])->find();
                 $data_up['eq_type_id'] = $e['equipment_type_id'];
                 $data_up['equipment_number'] = $e['equipment_number'];
-				$up_eqn = Db::table('lbs_service_equipment_numbers')->where($data_up)->update(['status' => '0']);
+//				$up_eqn = Db::table('lbs_service_equipment_numbers')->where($data_up)->update(['status' => '0']);
 
-                
+
                 $save_datas = Db::table('lbs_service_equipments')->delete($del_ids[$i]);
             }
             if ($save_datas) {
