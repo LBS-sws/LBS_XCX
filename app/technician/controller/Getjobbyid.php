@@ -28,7 +28,7 @@ class Getjobbyid
         $jobid = $_POST['jobid'];
         $jobtype = $_POST['jobtype'];
 
-       //获取用户登录信息
+        //获取用户登录信息
         $redis = new Redis();
         $token_key = 'token_' . $staffid;
         $user_token = $redis->get($token_key);
@@ -65,7 +65,7 @@ class Getjobbyid
                 if($job_datas['CustomerType'] == 203){
                     //布防图
                     $arr = array('contractid'=>$job_datas['ContractID'],'staffid'=>$staffid,'token'=>$token);
-                    $xinu_data = $this->curl_post($this->curl_post(config('app.uapp_url') ). '/web/remote/getAttachment.php',$arr);
+                    $xinu_data = $this->curl_post(config('app.uapp_url') . '/web/remote/getAttachment.php',$arr);
                     if(!empty($xinu_data)){
                         $xinu = json_decode($xinu_data,true);
                         if($xinu['code']==1){
@@ -112,26 +112,26 @@ class Getjobbyid
                     $where_dq['e.job_type'] = 1;
                     $dq_eqs = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($where_dq)->Distinct(true)->cache(true,60)->select();
                     if (count($dq_eqs)>0) {
-                                for ($i=0; $i < count($dq_eqs); $i++) {
-                                    $n['job_id'] = $jobid;
-                                    $n['job_type'] = 1;
-                                    $n['equipment_type_id'] = $dq_eqs[$i]['equipment_type_id'];
-                                    $numbers = Db::table('lbs_service_equipments')->where($n)->cache(true,60)->count();
-                                    if ($job_datas['Watchdog'] == '') {
-                                        $job_datas['Watchdog'] = $dq_eqs[$i]['name'].'-'.$numbers;
-                                    }else{
-                                        $job_datas['Watchdog'] = $job_datas['Watchdog'].','.$dq_eqs[$i]['name'].'-'.$numbers;
-                                    }
-                                }
+                        for ($i=0; $i < count($dq_eqs); $i++) {
+                            $n['job_id'] = $jobid;
+                            $n['job_type'] = 1;
+                            $n['equipment_type_id'] = $dq_eqs[$i]['equipment_type_id'];
+                            $numbers = Db::table('lbs_service_equipments')->where($n)->cache(true,60)->count();
+                            if ($job_datas['Watchdog'] == '') {
+                                $job_datas['Watchdog'] = $dq_eqs[$i]['name'].'-'.$numbers;
+                            }else{
+                                $job_datas['Watchdog'] = $job_datas['Watchdog'].','.$dq_eqs[$i]['name'].'-'.$numbers;
+                            }
+                        }
 
                     }else{
                         //查询上一个设备情况
                         $last_job = Db::table('joborder')->where('ContractID',$job_datas['ContractID'])->where('ServiceType',$job_datas['ServiceType'])->where('Status',3)->order('JobDate', 'desc')->field('JobID')->cache(true,60)->find();
-                         if ($last_job) {
-                           $wherel['e.job_id'] = $last_job['JobID'];
-                           $wherel['e.job_type'] = 1;
-                           $equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($wherel)->Distinct(true)->cache(true,60)->select();
-                           if (count($equipments)>0) {
+                        if ($last_job) {
+                            $wherel['e.job_id'] = $last_job['JobID'];
+                            $wherel['e.job_type'] = 1;
+                            $equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($wherel)->Distinct(true)->cache(true,60)->select();
+                            if (count($equipments)>0) {
                                 for ($i=0; $i < count($equipments); $i++) {
                                     $n['job_id'] = $last_job['JobID'];
                                     $n['job_type'] = 1;
@@ -143,9 +143,9 @@ class Getjobbyid
                                         $job_datas['Watchdog'] = $job_datas['Watchdog'].','.$equipments[$i]['name'].'-'.$numbers;
                                     }
                                 }
-                           }else{
+                            }else{
                                 $job_datas['Watchdog'] = '无设备';
-                           }
+                            }
                         }
                     }
 
@@ -221,8 +221,8 @@ class Getjobbyid
                 $result['data'] = null;
             }
         }else{
-             $result['code'] = 0;
-             $result['msg'] = '登录失效，请重新登陆';
+            $result['code'] = 0;
+            $result['msg'] = '登录失效，请重新登陆';
             $result['data'] = null;
             $redis->delete($token_key);
         }

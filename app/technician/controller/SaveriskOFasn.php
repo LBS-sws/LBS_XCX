@@ -42,6 +42,9 @@ class SaveriskOFasn
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24)) {
             $id = $_POST['id']?$_POST['id']:0;
+            if(isset($_POST['id']) && $_POST['id'] == 'undefined'){
+                $id = 0;
+            }
 //            dd($id);
             $data['job_id'] = $_POST['job_id'];
             $data['job_type'] = $_POST['job_type'];
@@ -55,12 +58,11 @@ class SaveriskOFasn
             $data['take_steps'] = $_POST['take_steps'];
             $data['risk_area'] = $_POST['risk_area'];
             if ($id>0) {
-
-               $update_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
-               $save_datas = $id;
+                $update_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
+                $save_datas = $id;
             }else{
-               $data['creat_time'] = date('Y-m-d H:i:s', time());
-               $save_datas = Db::table('lbs_service_risks')->insert($data);
+                $data['creat_time'] = date('Y-m-d H:i:s', time());
+                $save_datas = Db::table('lbs_service_risks')->insert($data);
             }
             if ($save_datas) {
                 //返回数据
@@ -73,9 +75,9 @@ class SaveriskOFasn
                 $result['data'] = null;
             }
         }else{
-             $result['code'] = 0;
-             $result['msg'] = '登录失效，请重新登陆';
-             $result['data'] = null;
+            $result['code'] = 0;
+            $result['msg'] = '登录失效，请重新登陆';
+            $result['data'] = null;
         }
         return json($result);
     }
