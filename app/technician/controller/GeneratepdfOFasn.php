@@ -7,7 +7,7 @@ use app\technician\model\AutographV2;
 use think\facade\Db;
 use think\facade\Request;
 use TCPDF;
-
+header('Content-Type: text/html; charset=utf-8');
 
 class GeneratepdfOFasn
 {
@@ -376,31 +376,35 @@ EOF;
                                 <th width="100%" align="left">现场风险评估与建议</th>
                             </tr>  
                             <tr>
-                            <td width="16%">风险类别</td>
+                            <td width="13%">风险类别</td>
                             <td width="19%">风险描述</td>
-                            <td width="13%">靶标</td>
+                            <td width="12%">靶标</td>
                             <td width="7%">级别</td>
-                            <td width="15%">整改建议</td>
-                            <td width="15%">采取措施</td>
-                            <td width="15%">跟进日期</td>
+                            <td width="9%">区域</td>
+                            <td width="13%">整改建议</td>
+                            <td width="13%">采取措施</td>
+                            <td width="14%">跟进日期</td>
                             </tr>
 EOF;
                     for ($r=0; $r < count($report_datas['risk']); $r++) {
                         $c_t =  date('Y-m-d',strtotime($report_datas['risk'][$r]['creat_time']));
                         $html .= <<<EOF
                         <tr>
-                        <td width="16%">{$report_datas['risk'][$r]['risk_types']}</td>
+                        <td width="13%">{$report_datas['risk'][$r]['risk_types']}</td>
                         <td width="19%">{$report_datas['risk'][$r]['risk_description']}</td>
-                        <td width="13%">{$report_datas['risk'][$r]['risk_targets']}</td>
+                        <td width="12%">{$report_datas['risk'][$r]['risk_targets']}</td>
                         <td width="7%">{$report_datas['risk'][$r]['risk_rank']}</td>
-                        <td width="15%">{$report_datas['risk'][$r]['risk_proposal']}</td>
-                        <td width="15%">{$report_datas['risk'][$r]['take_steps']}</td>
-                        <td width="15%">{$c_t}</td>
+                        <td width="9%">{$report_datas['risk'][$r]['risk_area']}</td>
+                        <td width="13%">{$report_datas['risk'][$r]['risk_proposal']}</td>
+                        <td width="13%">{$report_datas['risk'][$r]['take_steps']}</td>
+                        <td width="14%">{$c_t}</td>
                         </tr>
                         <tr>
                         <td width="16%">风险图片</td>
 EOF;
+                        if(isset($report_datas['risk'][$r]['site_photos']) == false){
                         $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
+                         
                         for ($sp=0; $sp < count($site_photos); $sp++) {
                             $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
                             $html .= <<<EOF
@@ -412,8 +416,13 @@ EOF;
                         $sy_unm = 4-count($site_photos);
                         for($j=0;$j<$sy_unm;$j++){
                             $html .= <<<EOF
-                            <td width="21%" align="center"></td>
+                            <td width="21%" align="center" height="100"></td>
 EOF;
+                        }
+                        }else{
+                             $html .= <<<EOF
+                            <td width="84%" align="center" height="10"></td>
+EOF;                            
                         }
                         $html .= <<<EOF
                         </tr>  
@@ -510,7 +519,6 @@ EOF;
                 $cimageSrc = !empty($autograph_data['customer_signature_url']) ? $sign_url . $autograph_data['customer_signature_url'] : '';
                 $cimageSrc_add = !empty($autograph_data['customer_signature_url_add']) ? $sign_url . $autograph_data['customer_signature_url_add'] : '';
                 $customer_grade = !empty($autograph_data['customer_grade']) ? $autograph_data['customer_grade'] : '';
-                $cimageSrc_add = !empty($autograph_data['customer_signature_url_add']) ? $sign_url . $autograph_data['customer_signature_url_add'] : '';
                 $employee02_signature = '';
                 $employee03_signature = '';
                 // 如果flag == 1则需要作翻转处理
@@ -562,7 +570,6 @@ EOF;
                     $this->pic_rotating($degrees,$url);
                 }else{
                     $cimageSrc='';
-                    $cimageSrc_add = '';
                 }
                 //签名
                 $customer_grade = $report_datas['autograph']['customer_grade'];
@@ -604,6 +611,7 @@ EOF;
                         <img src="{$eimageSrc03}" width="130" height="80" style="magin:20px 50px;">
 EOF;
             }
+            $cimageSrc_add = $cimageSrc_add ??'';
             $html .= <<<EOF
                 </td>
                 <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"><img src="{$cimageSrc_add}" width="130" height="80" style="magin:20px 50px;"></td>
