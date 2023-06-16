@@ -30,13 +30,14 @@ class Jobstart
         $jobtype = $_POST['jobtype'];
         $city = $_POST['city'];
         //获取用户登录信息
-        $redis = new Redis();
-        $token_key = 'token_' . $staffid;
-        $user_token = $redis->get($token_key);
-        if (!$user_token) {
-            $user_token = Db::name('token')->where('StaffID',$staffid)->find();
-            $redis->set($token_key,$user_token,60);
-        }
+//        $redis = new Redis();
+//        $token_key = 'token_' . $staffid;
+//        $user_token = $redis->get($token_key);
+//        if (!$user_token) {
+//            $user_token = Db::name('token')->where('StaffID',$staffid)->find();
+//            $redis->set($token_key,$user_token,60);
+//        }
+        $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
@@ -46,9 +47,10 @@ class Jobstart
             /**
              * 添加 redis缓存
              * */
-            $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
-            $job_datas = $redis->get($job_datas_key);
-            if(!$job_datas){
+//            $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
+//            $job_datas = $redis->get($job_datas_key);
+            $job_datas = [];
+//            if(!$job_datas){
                 if($jobtype==1){
                     $job_wheres['j.JobID'] = $jobid;
                     $job_datas = Db::table('joborder')->alias('j')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.Staff01,j.CustomerID,j.CustomerName,j.ContactName,j.Mobile,j.Tel,j.Addr,j.lat,j.lng,j.FinishTime,j.Status,j.ServiceType as service_type,u.StaffName,j.JobDate')->find();
@@ -56,11 +58,11 @@ class Jobstart
                     $job_wheres['j.FollowUpID'] = $jobid;
                     $job_datas = Db::table('followuporder')->alias('j')->join('staff u','j.Staff01=u.StaffID')->where($job_wheres)->field('j.Staff01,j.CustomerID,j.CustomerName,j.ContactName,j.Mobile,j.Tel,j.Addr,j.lat,j.lng,j.FinishTime,j.Status,j.SType as service_type,u.StaffName,j.JobDate')->find();
                 }
-            }
+//            }
 
 
             if ($job_datas) {
-                $redis->set($job_datas_key, $job_datas,600);
+//                $redis->set($job_datas_key, $job_datas,600);
                 //查询服务次数
                 $job_datas['service_number'] = Db::table('joborder')->where('ServiceType',$job_datas['service_type'])->where('CustomerID',$job_datas['CustomerID'])->where('Status',3)->where('JobDate','<=',$job_datas['JobDate'])->cache(true,60)->count();
                 //查询服务板块
@@ -105,7 +107,7 @@ class Jobstart
              $result['code'] = 0;
              $result['msg'] = '登录失效，请重新登陆';
              $result['data'] = null;
-             $redis->delete($token_key);
+//             $redis->delete($token_key);
         }
         return json($result);
     }
