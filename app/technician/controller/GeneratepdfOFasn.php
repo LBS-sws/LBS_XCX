@@ -402,7 +402,7 @@ EOF;
                         <tr>
                         <td width="16%">风险图片</td>
 EOF;
-                        if(isset($report_datas['risk'][$r]['site_photos']) == true){
+                        if(isset($report_datas['risk'][$r]['site_photos']) == false){
                         $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
                          
                         for ($sp=0; $sp < count($site_photos); $sp++) {
