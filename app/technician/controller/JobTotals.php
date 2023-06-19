@@ -35,12 +35,13 @@ class JobTotals
         //获取用户登录信息
         // var_dump($jobdate);exit;
         $redis = new Redis();
-        $token_key = 'token_' . $staffid;
-        $user_token = $redis->get($token_key);
-        if (!$user_token) {
-            $user_token = Db::name('token')->where('StaffID', $staffid)->find();
-            $redis->set($token_key, $user_token, 600);
-        }
+//        $token_key = 'token_' . $staffid;
+//        $user_token = $redis->get($token_key);
+        $user_token = Db::name('token')->where('StaffID', $staffid)->find();
+//        if (!$user_token) {
+//            $user_token = Db::name('token')->where('StaffID', $staffid)->find();
+//            $redis->set($token_key, $user_token, 600);
+//        }
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time) / 60 / 60;
@@ -82,7 +83,7 @@ GROUP BY j.JobDate;");
             $result['code'] = 0;
             $result['msg'] = '登录失效，请重新登陆';
             $result['data'] = null;
-            $redis->delete($token_key);
+//            $redis->delete($token_key);
         }
         return json($result);
     }

@@ -33,9 +33,17 @@ class Jobsignout
         $signdate = $_POST['signdate'];
         $starttime = date('H:i:s',time());//$_POST['starttime'];
         $invoice = $_POST['invoice'];
+        $pics = isset($_POST['pics'])?$_POST['pics']:'';
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
+        // 发票信息
+        $invoice_item = Db::table('lbs_invoice')->where('jobid',$jobid)->find();
 
+        if(!$invoice_item && $pics){
+
+            $invoice_data = ['jobid'=>$jobid, 'jobtype'=>$jobtype,'pics'=>$pics];
+            Db::table('lbs_invoice')->insert($invoice_data);
+        }
         //直接查询该token下的账号密码 重新给xinU安排一波
         //用户信息
         $user_info = Db::name('staff')->field('StaffID,Password')->where('StaffID',$staffid)->find();
@@ -71,14 +79,14 @@ class Jobsignout
 
                 $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
-                
+
                 $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
                 $job_start = $redis->get($job_datas_key);
                 if($job_start){
                     $redis->delete($job_datas_key);
                 }
 
-                
+
                 if($xinu['code']==1){
                     $job_datas = Db::table('joborder')->where('JobID', $jobid)->update(['FinishDate' => $signdate , 'FinishTime' => $starttime,'Status'=>3]);
 // Percy 發電郵
