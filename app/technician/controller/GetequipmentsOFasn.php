@@ -34,7 +34,7 @@ class GetequipmentsOFasn
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             $wheres['job_id'] = $job_id;
             $wheres['job_type'] = $job_type;
             //所有设备
@@ -52,7 +52,7 @@ class GetequipmentsOFasn
                         $last_e['e.job_id'] = $last_job['JobID'];
                         $last_e['e.job_type'] = 1;
                     }
-                    
+
                 }
                 // else if ($job_type == 2) {
                 //     $job = Db::table('followuporder')->where('FollowUpID',$job_id)->field('ContractID,SType')->find();

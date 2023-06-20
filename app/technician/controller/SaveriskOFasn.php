@@ -40,7 +40,7 @@ class SaveriskOFasn
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             $id = $_POST['id']?$_POST['id']:0;
             if(isset($_POST['id']) && $_POST['id'] == 'undefined'){
                 $id = 0;

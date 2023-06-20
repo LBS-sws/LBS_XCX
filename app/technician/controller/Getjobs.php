@@ -17,10 +17,10 @@ class Getjobs
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['jobdate'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['jobdate'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -31,11 +31,11 @@ class Getjobs
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             $job_wheres['j.JobDate'] = $jobdate;
             //服务单
             $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->where('j.Staff01|j.Staff02|j.Staff03','=',$staffid)->whereIn('j.Status',[-1,2,3])->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob,c.CustomerType')->select();
-           
+
             //跟进单
             $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->where('j.Staff01|j.Staff02|j.Staff03','=',$staffid)->whereIn('j.Status',[-1,2,3])->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime,c.CustomerType')->select();
              //获取城市

@@ -18,10 +18,10 @@ class GetreportOFasn
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['city']) || !isset($_POST['service_type'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['city']) || empty($_POST['service_type'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -29,21 +29,21 @@ class GetreportOFasn
         $job_type = $_POST['job_type'];
         $city = $_POST['city'];
         $service_type = $_POST['service_type'];
-        
+
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             if ($job_type==1) {
                 $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('IF (
 	j.StartTime >= j.FinishTime,
 date_format( date_add( j.FinishDate, INTERVAL - 1 DAY ), "%Y-%m-%d" ),
 date_format( j.FinishDate, "%Y-%m-%d" )) as startDate,j.JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.Staff01 as jStaff01,j.Staff02 as jStaff02,j.Staff03 as jStaff03,s.ServiceName,j.Status,j.FinishDate')->find();
                 $job_datas = Db::table('joborder')->where('JobID',$job_id)->find();
-                
+
             }elseif($job_type==2){
                 $report_datas['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$job_id)->field('IF (
 	j.StartTime >= j.FinishTime,
@@ -56,7 +56,7 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
             $eq['e.job_id'] = $job_id;
             $eq['e.job_type'] = $job_type;
             $basic_equipments = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($eq)->Distinct(true)->select();
-            for ($i=0; $i < count($basic_equipments); $i++) { 
+            for ($i=0; $i < count($basic_equipments); $i++) {
                 $n['job_id'] = $job_id;
                 $n['job_type'] = $job_type;
                 $n['equipment_type_id'] = $basic_equipments[$i]['equipment_type_id'];
@@ -65,7 +65,7 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
                     $report_datas['basic']['equipments'] = $basic_equipments[$i]['name'].'-'.$numbers;
                 }else{
                     $report_datas['basic']['equipments'] =$report_datas['basic']['equipments'].','.$basic_equipments[$i]['name'].'-'.$numbers;
-                }   
+                }
             }
             //服务项目
             $service_projects = '';
@@ -92,7 +92,7 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
                 if ($job_datas["Item06"] > 0) $service_projects .= "水剂喷机：".$job_datas["Item06"]." ".$job_datas["Item06Rmk"] . ",";
                 if ($job_datas["Item07"] > 0) $service_projects .= "罐装灭虫喷机：".$job_datas["Item07"]." ".$job_datas["Item07Rmk"] . ",";
                 if ($job_datas["Item10"] > 0) $service_projects .= "灭蝇灯：".$job_datas["Item10"]." ".$job_datas["Item10Rmk"] . ",";
-                if ($job_datas["Item08"] > 0) $service_projects .= "其他：".$job_datas["Item08"]." ".$job_datas["Item08Rmk"] . ",";    
+                if ($job_datas["Item08"] > 0) $service_projects .= "其他：".$job_datas["Item08"]." ".$job_datas["Item08Rmk"] . ",";
             }else if($job_type==1 && $service_type==3){//灭虫喷焗
                 if ($job_datas["Item01"] > 0) $service_projects .= "蚊子,";
                 if ($job_datas["Item02"] > 0) $service_projects .= "苍蝇,";
@@ -122,9 +122,9 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
 
             //material
             $report_datas['material'] = Db::table('lbs_service_materials')->where($w)->select();
-            
+
             //risk
-            $report_datas['risk'] = Db::table('lbs_service_risks')->where($w)->select();  
+            $report_datas['risk'] = Db::table('lbs_service_risks')->where($w)->select();
 
             //equipment
             $equipmenthz_datas = [];
@@ -134,28 +134,28 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
                 $equipmenthz_count = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->count();
                 $equipment_type = Db::table('lbs_service_equipment_type')->where('id',$equipment_type_ids[$i]['equipment_type_id'])->field('name')->find();
                 $equipmenthz_datas[$i]['title'] = $equipment_type['name']."(".$equipmenthz_count."/".$equipmenthz_allcount.")";
-                
+
                 $check_datas = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->order('id', 'asc')->select();
                 if ($check_datas) {
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
-                        
+
                         $equipmenthz_datas[$i]['table_title'][0] = '编号';
 	            		$equipmenthz_datas[$i]['content'][$j][0] = $check_datas[$j]['equipment_number'].sprintf('%02s', $check_datas[$j]['number']);
 	            		$equipmenthz_datas[$i]['table_title'][1] = '区域';
                         $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_area'];
-                        for ($m=0; $m < count($check_data); $m++) { 
+                        for ($m=0; $m < count($check_data); $m++) {
                             $equipmenthz_datas[$i]['table_title'][$m+2] = $check_data[$m]['label'];
                             $equipmenthz_datas[$i]['content'][$j][$m+2] = $check_data[$m]['value'];
-                        } 
-                        
+                        }
+
                     }
                 }
             }
             $report_datas['equipment'] = $equipmenthz_datas;
 
             //photo
-            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->select();  
+            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->select();
 
             //autograph
 //            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();

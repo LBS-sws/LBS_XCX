@@ -17,10 +17,10 @@ class Addequipmentbyscan
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['city']) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['scan_code'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['city']) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['scan_code'])){
-            return json($result); 
+            return json($result);
         }
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$_POST['staffid'])->find();
@@ -28,8 +28,8 @@ class Addequipmentbyscan
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
-            
+        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
+
             //查询设备
 			$n_where['n.equipment_number']= $_POST['scan_code'];
 			$n_where['t.city']= $_POST['city'];
@@ -47,9 +47,9 @@ class Addequipmentbyscan
 					    $data['equipment_name'] = $e_type['name'];
 					    $data['equipment_number'] = $e_type['equipment_number'];
 					    $data['job_id'] = $_POST['job_id'];
-					    $data['job_type'] = $_POST['job_type']; 
+					    $data['job_type'] = $_POST['job_type'];
 					    $data['creat_time'] = date('Y-m-d H:i:s', time());
-					    $id = Db::table('lbs_service_equipments')->insertGetId($data);	
+					    $id = Db::table('lbs_service_equipments')->insertGetId($data);
 					}else{
 					    $id = $equipment_is['id'];
 					}

@@ -27,7 +27,7 @@ class Analyse extends BaseController
     /**
      * 定义客户类型
      * */
-    protected $custType = '101';
+    protected $custType = '203';
 
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
@@ -610,6 +610,7 @@ a）鼠饵站：本月盗食情况较上月（{$this->result['pest'][2]['trend']
     </table>
 EOF;
         foreach ($this->result['pest_grouped_data'] as $k =>$v){
+            var_dump($v);
             $html .= <<<EOF
     <p style="width: 800px;margin: 50px auto;">{$k}(前三指标性数据)</p>
     <div class="pest">
@@ -775,7 +776,7 @@ EOF;
         if (!empty($data['custInfo'])) {
             $where_c = [
                 'CustomerID' => $cust['CustomerID'],
-//                    'CustomerType' => $this->custType,
+                'CustomerType' => $this->custType,
             ];
             //查询是工厂客户才会继续走接下来的流程
             $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();
@@ -999,23 +1000,27 @@ GROUP BY months.month) as k", [$year, $v1['type_name']]);
 
 //        dd($uniqueArray);
 
-        // dd($data_line1);
+        // 删除指定键为空的数组项
+
+// 使用 array_filter() 函数过滤掉空键名元素
+
         //查询飞虫的数据
         $data_insect_bar = [];$data_rodent_bar = [];
         foreach ($data_line1 as $k => $v) {
             foreach ($v as $k1 =>$v1){
-                foreach ($v1 as $k2 =>$v2){
-                    if ($k1 == 'MY') {
-                        $data_insect_bar['灭蝇灯' . '-' . $k2] = explode(',', $v2[0]['k1']);
-                    }elseif($k1 == 'SE'){
-                        //不处理
-                    } else {
-                        $data_rodent_bar[$this->type_data_zh[$k1].'-'.$k2] = explode(',', $v2[0]['k1']);
+                if(!empty($k1)){
+                    foreach ($v1 as $k2 =>$v2){
+                        if ($k1 == 'MY') {
+                            $data_insect_bar['灭蝇灯' . '-' . $k2] = explode(',', $v2[0]['k1']);
+                        }elseif($k1 == 'SE'){
+                            //不处理
+                        } else {
+                            $data_rodent_bar[$this->type_data_zh[$k1].'-'.$k2] = explode(',', $v2[0]['k1']);
+                        }
                     }
                 }
             }
         }
-
 //        //查询飞虫的数据
 //        $data_rodent_bar = [];
 //        foreach ($data_line2 as $k => $v) {
@@ -1184,7 +1189,6 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         }
         //总数
         $pest_month_total = $this->statisticsReport->where($pest_where)->sum('type_value');
-
         //某种类型的飞虫
         $pest_max_data = $this->statisticsReport->field('SUM(type_value) AS type_value, type_name')->where($pest_where)->group('type_name')->order('type_value DESC')->findOrEmpty()->toArray();
         $pest_result = [];
@@ -1217,8 +1221,9 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
             } else {
                 $pest_trend = '平稳';
             }
+//            var_dump($pest_sbj);exit();
             foreach ($pest_sbj as $k => $v) {
-                if ($v['type_name'] == $pest_max_data['type_name']) {
+                if ($v['insect_name'] == $pest_max_data['type_name']) {
                     $pest_result['sub'][] = $v['analysis_result'];
                     $pest_result['sub'][] = $v['suggestion'];
                     $pest_result['sub'][] = $v['measure'];

@@ -19,6 +19,7 @@ use think\App;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
+use think\Exception;
 use think\facade\Db;
 use think\Model;
 use think\cache\driver\Redis;
@@ -301,10 +302,7 @@ class Crontab extends BaseController
                 }
             }
         }
-
-
-
-        var_dump($get_today_statistics);
+        echo json_encode($get_today_statistics);
     }
     public function uuid_str() {
         return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
@@ -724,6 +722,16 @@ ORDER BY t1.job_month, t1.equ_type_id, t1.pest_num DESC;",[$cust['cust_details']
         if(empty($res)){
             return error();
         }
+        $empty_equ = $this->equipmentAnalyse::where('customer_id','=',$res->customer_id)->count();
+        if($empty_equ == 0){
+            try {
+                $equ_ret = $this->analyseReport->update(['id'=>$res->id,'make_flag'=>9]); // 9 就是已经噶了
+            }catch (Exception $e){
+                return error(0,$e->getMessage());
+            }
+            return error(0,$equ_ret);
+        }
+
         $file_path = 'analyse/'.$date.'/'.$res->url_id.'.pdf';
         $this->analyseReport->update(['id'=>$res->id,'make_flag'=>0]);
         if (is_file($file_path)) {
@@ -732,8 +740,8 @@ ORDER BY t1.job_month, t1.equ_type_id, t1.pest_num DESC;",[$cust['cust_details']
             //有报告就返回，没返回就
             return success(0,'success',$url);
         } else {
-            $res =  new Analyse();
-            $report = $res->index($date,$res->customer_id,$res->city);
+            $analyse_ret=  new Analyse();
+            $report = $analyse_ret->index($date,$res->customer_id,$res->city,$res->url_id);
             if($report){
                 $domain = $this->request->domain().'/';
                 $url = $domain.$file_path;
