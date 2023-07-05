@@ -21,6 +21,8 @@ use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use think\facade\Db;
 use think\Model;
+use think\Request;
+
 
 class Analyse extends BaseController
 {
@@ -97,7 +99,6 @@ class Analyse extends BaseController
             margin: 50px auto;
             /*font-size: 0.9em;*/
             width: 800px;
-            background-color: #a1efbf;
         }
          .inline-table {
             /*margin-right: 20px;*/
@@ -564,17 +565,23 @@ EOF
     </table>
     
     <table class="text-table-1" style="border: 1px solid;">
-       
         <tr>
             <th colspan="13">
                 鼠类分析：
             </th>
         </tr>
+EOF;
+        if(!empty($this->result['se_max'])){
+            $html .= <<<EOF
         <tr>
             <td colspan="13">
 a）鼠饵站：本月盗食情况较上月（{$this->result['pest'][2]['trend']}），盗食情况多发生在设备({$this->result['se_max']})。
             </td>
-        </tr> <tr>
+        </tr> 
+EOF;
+        }
+        $html .= <<<EOF
+        <tr>
             <td colspan="13">
  b）粘鼠板：本月捕获鼠类（{$this->result['pest'][1]['pest_month_total']}）只，较上月（{$this->result['pest'][1]['trend']}）。
             </td>
@@ -610,7 +617,7 @@ a）鼠饵站：本月盗食情况较上月（{$this->result['pest'][2]['trend']
     </table>
 EOF;
         foreach ($this->result['pest_grouped_data'] as $k =>$v){
-            var_dump($v);
+            // var_dump($v);
             $html .= <<<EOF
     <p style="width: 800px;margin: 50px auto;">{$k}(前三指标性数据)</p>
     <div class="pest">
@@ -805,13 +812,21 @@ EOF;
         $mian_info = [];
         $cust = $this->checkCustInfo($customer_id);
         $where = [
+            'j.CustomerID' => $cust['cust_details']['CustomerID'],
+            'j.Status' => 3,
+            'c.CustomerType' => $this->custType
+//            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
+        ];
+
+        $where_sub = [
             'CustomerID' => $cust['cust_details']['CustomerID'],
+            'Status' => 3,
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
         //查看有哪些订单和日期
-        $job_orders = $this->jobOrderModel->field('MAX(JobID) as JobID,GROUP_CONCAT(JobID) as joborders,GROUP_CONCAT(JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find();
+        $job_orders = $this->jobOrderModel->alias('j')->join('customercompany c',"c.CustomerID=j.CustomerID")->field('MAX(jobDate) as jobDate,MAX(JobID) as JobID,GROUP_CONCAT( distinct JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->order('jobDate','DESC')->find();
         //查询有哪些 服务项目
-        $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->findOrEmpty()->toArray();
+        $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where_sub)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->findOrEmpty()->toArray();
         $service_subject = '';
         if(!empty($job_items)) {
             foreach ($this->serviceItems as $key => $val) {
@@ -820,7 +835,6 @@ EOF;
                     break;
                 }
             }
-
             foreach ($result as $k => $v) {
                 if ($job_items[$k] > 0) {
                     if ($v[1] > 0) {
@@ -833,18 +847,41 @@ EOF;
             //拼接 服务项目
             $service_subject = rtrim($service_subject, '、');
         }
-        //获取所有的设备情况
+        //获取所有的设备情况 【】
         $equpments = '';
-        $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', 'in', $job_orders['joborders'])->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
-
+        $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', '=', $job_orders['JobID'])->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
 
         foreach ($equpment_nums as $k => $v) {
             $equpments .= $v['name'] . '-' . $v['num'] . '、';
         }
         $equpments = rtrim($equpments, '、');
+        // dd($equpments);
         //查询捕捉到的设备数据
-        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->select()->toArray();
-        $this->catch_equment = $catch_equment;
+        //$catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('job_id', '=', $job_orders['JobID'])->select()->toArray();
+
+        /*$job_datas['Watchdog'] = '';
+        //查询当前设备
+        $where_dq['e.job_id'] = $job_orders['JobID'];
+        $where_dq['e.job_type'] = 1;
+        $dq_eqs = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->field('t.name,e.equipment_type_id')->where($where_dq)->Distinct(true)->cache(true,60)->select();
+        if (count($dq_eqs)>0) {
+            for ($i = 0; $i < count($dq_eqs); $i++) {
+                $n['job_id'] = $job_orders['JobID'];
+                $n['job_type'] = 1;
+                $n['equipment_type_id'] = $dq_eqs[$i]['equipment_type_id'];
+                $numbers = Db::table('lbs_service_equipments')->where($n)->cache(true, 60)->count();
+                if ($job_datas['Watchdog'] == '') {
+                    $job_datas['Watchdog'] = $dq_eqs[$i]['name'] . '-' . $numbers;
+                } else {
+                    $job_datas['Watchdog'] = $job_datas['Watchdog'] . ',' . $dq_eqs[$i]['name'] . '-' . $numbers;
+                }
+            }
+        }
+
+
+        $equpments = $job_datas['Watchdog'];*/
+
+        // $equpments = $catch_equment;
 
         $statistics_str = explode('-', $month);
         $year = intval($statistics_str[0]);
@@ -852,13 +889,15 @@ EOF;
         $where_statistic = [
             'year'=>$year,
             'month'=>$singal_month,
+            'customer_id'=>$customer_id
         ];
-        $res = $this->statisticsReport->field('sum(type_value) as type_value,type_name')->where('type_code','not in','SE')->where($where_statistic)->group('year,month,type_name')->orderRaw('field(type_name,"蟑螂","苍蝇","蚊子","卫生性飞虫","绿化飞虫","仓储害虫","老鼠") ASC')->select()->toArray();
+        $res = $this->statisticsReport->field('sum(type_value) as type_value,type_name')->where('type_code','not in','SE')->where($where_statistic)->group('year,month,type_name')->orderRaw('field(type_name,"蟑螂","苍蝇","蚊子","卫生性飞虫","绿化飞虫","仓储害虫","老鼠","其他") ASC')->select()->toArray();
         $type_values = array_column($res, 'type_value');
         $type_names = array_column($res, 'type_name');
         //条形统计图的内容填充
         $line['keys'] = $type_names;
         $line['values'] = $type_values;
+//        dd($line);
 
         foreach ($line['keys'] as $key => $value) {
 
@@ -883,17 +922,33 @@ EOF;
         //查询到本月此客户有数据了 就不去更新表了 除非去强制更新
 
         //接下来的数据就直接查询该表中的数据就行
-        $has_data = $this->statisticsReport->where($statistics_where)->where('type_code','not in','SE')->orderRaw('field(type_name,"蟑螂") DESC')->select()->toArray();
+        $has_data = $this->statisticsReport->where($statistics_where)->where('type_code','not in','SE')->field('distinct type_name, type_code')->order('type_code')->orderRaw('field(type_name,"其他") DESC')->select()->toArray();
+//
+//        $has_data = [];
+//        foreach ($has_data1 as $k =>$v){
+//            $has_data[][$v['type_code']] = $v['type_name'];
+//        }
+//        dd($has_data);
         //类型名称arr
-
         // 先查询灭蝇灯的数据（飞虫）
-        $type_name = [];
+        $type_name1 = [];
         foreach ($has_data as $id => $value) {
             if ($value['type_name'] === '老鼠') {
                 $value['type_name'] = '老鼠(捕获)';
             }
-            $type_name[] = $value['type_name'];
+            if ($value['type_name'] === '其他') {
+                $value['type_code'] = 'OTH';
+            }
+            $type_name1[] = $value['type_name'];
         }
+        $uniqueArray = array_unique($type_name1);
+        $firstOccurrences = array_keys($uniqueArray);
+
+        $resultArray = [];
+        foreach ($firstOccurrences as $index) {
+            $resultArray[$index] = $type_name1[$index];
+        }
+        $type_name = array_values($resultArray);
         $data_line1 = [];$data_line2 = [];
         foreach ($has_data as $k1 => $v1) {
             $data_line1[][$v1['type_code']][$v1['type_name']] = Db::query("SELECT GROUP_CONCAT(total_data_list) as k1 from(
@@ -912,8 +967,8 @@ FROM (
   UNION SELECT 11 AS month
   UNION SELECT 12 AS month
 ) AS months
-LEFT JOIN lbs_statistics_report ON months.month = lbs_statistics_report.month AND lbs_statistics_report.year = ? AND lbs_statistics_report.type_name = ? AND lbs_statistics_report.type_code = ? AND lbs_statistics_report.delete_flag = 0  AND lbs_statistics_report.year <= '{$year}' AND lbs_statistics_report.month <= '{$singal_month}'
-GROUP BY months.month) as k", [$year, $v1['type_name'], $v1['type_code']]);
+LEFT JOIN lbs_statistics_report lsr ON months.month = lsr.month AND lsr.year = ? AND lsr.type_name = ? AND lsr.type_code = ? AND lsr.customer_id = ? AND lsr.delete_flag = 0  AND lsr.year <= '{$year}' AND lsr.month <= '{$singal_month}'
+GROUP BY months.month) as k", [$year, $v1['type_name'], $v1['type_code'],$customer_id]);
 
             $data_line2[][$v1['type_code']][$v1['type_name']] = Db::query("SELECT GROUP_CONCAT(total_data_list) as k1 from(
 SELECT COALESCE(SUM(type_value), 0) AS total_data_list
@@ -931,9 +986,11 @@ FROM (
   UNION SELECT 11 AS month
   UNION SELECT 12 AS month
 ) AS months
-LEFT JOIN lbs_statistics_report ON months.month = lbs_statistics_report.month AND lbs_statistics_report.year = ? AND lbs_statistics_report.type_name = ? AND lbs_statistics_report.delete_flag = 0 AND lbs_statistics_report.year <= '{$year}' AND lbs_statistics_report.month <= '{$singal_month}'
-GROUP BY months.month) as k", [$year, $v1['type_name']]);
+LEFT JOIN lbs_statistics_report lsr ON months.month = lsr.month AND lsr.year = ? AND lsr.type_name = ? AND lsr.customer_id = ? AND lsr.delete_flag = 0 AND lsr.year <= '{$year}' AND lsr.month <= '{$singal_month}'
+GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
         }
+
+
         $arr = [];$data_line = [];
         foreach ($data_line1 as $k => $v) {
             foreach ($v as $k1 =>$v1){
@@ -942,11 +999,17 @@ GROUP BY months.month) as k", [$year, $v1['type_name']]);
                         $k2 = "老鼠(捕获)";
                     }
                     $data_ret = explode(",", $v2[0]['k1']);
+                    // array_walk($data_ret, function(&$value) {
+                    //     if ($value == "0") {
+                    //         $value = null;
+                    //     }
+                    // });
+
                     $arr[] = [
                         //线条的title
                         'name' => $k1.'-'.$k2,
                         'type' => 'line',
-                        'stack' => 'Total',
+//                        'stack' => 'Total',
                         'data' => $data_ret,
                         'itemStyle' => [
                             'normal' => [
@@ -966,6 +1029,7 @@ GROUP BY months.month) as k", [$year, $v1['type_name']]);
             }
         }
         $arr_sb = [];$data_line_sb = [];
+//        dd($data_line2);
         foreach ($data_line2 as $k => $v) {
             foreach ($v as $k1 =>$v1){
                 foreach ($v1 as $k2 =>$v2){
@@ -973,11 +1037,16 @@ GROUP BY months.month) as k", [$year, $v1['type_name']]);
                         $k2 = "老鼠(捕获)";
                     }
                     $data_ret = explode(",", $v2[0]['k1']);
+                    // array_walk($data_ret, function(&$value) {
+                    //     if ($value == "0") {
+                    //         $value = null;
+                    //     }
+                    // });
                     $arr_sb[] = [
                         //线条的title
                         'name' => $k2,
                         'type' => 'line',
-                        'stack' => 'Total',
+//                        'stack' => 'Total',
                         'data' => $data_ret,
                         'itemStyle' => [
                             'normal' => [
@@ -996,10 +1065,9 @@ GROUP BY months.month) as k", [$year, $v1['type_name']]);
                 }
             }
         }
-        $arr_sb = array_map("unserialize", array_unique(array_map("serialize", $arr_sb)));
-
-//        dd($uniqueArray);
-
+//        dd($data_line_sb);
+//        $arr_sb = array_map("unserialize", array_unique(array_map("serialize", $arr_sb)));
+//        dd($arr_sb);
         // 删除指定键为空的数组项
 
 // 使用 array_filter() 函数过滤掉空键名元素
@@ -1145,9 +1213,11 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
 
     public function seSite(){
         $se_site_data = $this->result['se_site_data'];
-        $se_site_title = $this->result['se_site_title'];
-        $se_reult = $this->createEcharsBar( '鼠饵站_' . 1,'鼠饵站-老鼠', ["#e81010"], $se_site_data,$se_site_title,$x = "设备编号",$y="盗食次数");
-        return $se_reult;
+        if($se_site_data){
+            $se_site_title = $this->result['se_site_title'];
+            $se_reult = $this->createEcharsBar( '鼠饵站_' . 1,'鼠饵站-老鼠', ["#e81010"], $se_site_data,$se_site_title,$x = "设备编号",$y="盗食次数");
+            return $se_reult;
+        }
     }
 
     /**
@@ -1159,12 +1229,12 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $customer = Db::query("select City from customercompany WHERE CustomerID = ?;",[$cust['cust_details']['CustomerID']]);
         $city_id = $customer[0]['City'];
 
-        $city_en = Db::query("select e.Text from enums as e left join officecity as o on o.Office=e.EnumID where o.City= ? and e.EnumType=8
-;",[$city_id]);
+        /*$city_en = Db::query("select e.Text from enums as e left join officecity as o on o.Office=e.EnumID where o.City= ? and e.EnumType=8
+;",[$city_id]);*/
         $authkey = 'TFJTR1JPVVBfd2FpdDk3Mw==';
         // 使用示例
-        $sec_data = ['data'=>$city_en[0]['Text'],'authkey'=>$authkey];
-        $res = curl_post('https://dms.lbsapps.cn/sv-uat/index.php/pestdict/api',$sec_data);
+        $sec_data = ['data'=>'CN','authkey'=>$authkey];
+        $res = curl_post('https://dms.lbsapps.cn/sv-prod/index.php/pestdict/api',$sec_data);
         $pest_sbj = json_decode($res,true);
         //得到飞虫的相关数据
         //查询本月捕获的飞虫总数 没有老鼠的就是飞虫
@@ -1221,7 +1291,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
             } else {
                 $pest_trend = '平稳';
             }
-//            var_dump($pest_sbj);exit();
+            // var_dump($pest_sbj);exit();
             foreach ($pest_sbj as $k => $v) {
                 if ($v['insect_name'] == $pest_max_data['type_name']) {
                     $pest_result['sub'][] = $v['analysis_result'];
@@ -1262,7 +1332,12 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $option = new Option();
         $option->animation(false);
         $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
-        $option->xAxis(["data" => $this->result['line']['keys']]);
+        $option->xAxis([
+            "data" => $this->result['line']['keys'],
+            "axisLabel" => [
+                "rotate" => 45  // 调整标题的旋转角度
+            ]
+        ]);
         $option->yAxis([]);
         $option->title([
             "text" => $this->result['month']."虫害统计图",
@@ -1289,11 +1364,12 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         return $echarts->render();
     }
 
+
     public function chartLine()
     {
         $echarts = ECharts::init("#chartLine");
         $option = new Option();
-        $option->animation(false);
+        $option->animation(true);
         $option->title([
             "text" => '虫害趋势分析图',
             "left" => 'center',
@@ -1303,6 +1379,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $option->xAxis([
             'name' => '月份',
             "type" => "category",
+            "boundaryGap" => true, // 设置为 true，留有空隙
 //            "boundaryGap" => false,
             "data" => [
                 '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'
@@ -1312,19 +1389,21 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $option->yAxis([
             'name' => '数量',
             'type' => 'value',
-            'min' => 0,
+            'min' => 1,
 //            'max' =>10000 ,
-            'splitNumber' => 5
+            'splitNumber' => 10,
+            'splitLine' => false
         ]);
 
         $option->grid([
+                'top' => '20%',
                 'left' => '3%',
                 'right' => '4%',
                 'bottom' => '3%',
                 'containLabel' => true
             ]
         );
-
+        // print_r($this->result['lion_content']);exit();
         $option->legend([
             "data" => $this->result['lion_title'],
             "backgroundColor" => 'white',
@@ -1338,7 +1417,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
             'normal' => [
                 'label' => [
                     'show' => true,
-                    'position' => 'top',
+                    'position' => 'inside',
                     'textStyle' => [
                         'color' => 'black',
                         'fontSize' => 8
@@ -1527,11 +1606,10 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         @exec($cmd, $output, $return_val);
         if ($return_val === 0) {
             $analyseReportModel =  new AnalyseReport();
-            $file_path = 'analyse/'.$month.'/'.$pdf_name;
-            $url = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
-            $domain = $url.$_SERVER['HTTP_HOST'].'/';
-            $url = $domain.$file_path;
-            $res = $analyseReportModel->where('url_id',$filename)->update(['url'=>$url,'make_flag'=>0]);
+            $file_path = '/analyse/'.$month.'/'.$filename.$ext_pdf;
+            // $url_orain = 'https://xcx.lbsapps.com/';
+            // $url = $url_orain.$file_path;
+            $res = $analyseReportModel->where('url_id',$filename)->update(['url'=>$file_path,'make_flag'=>0]);
             if($res){
                 return 1;
             }

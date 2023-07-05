@@ -30,12 +30,13 @@ class Getjobbyid
 
         //获取用户登录信息
         $redis = new Redis();
-        $token_key = 'token_' . $staffid;
-        $user_token = $redis->get($token_key);
-        if (!$user_token) {
-            $user_token = Db::name('token')->where('StaffID',$staffid)->find();
-            $redis->set($token_key,$user_token,600);
-        }
+//        $token_key = 'token_' . $staffid;
+//        $user_token = $redis->get($token_key);
+//        if (!$user_token) {
+//
+//            $redis->set($token_key,$user_token,600);
+//        }
+        $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
@@ -126,7 +127,7 @@ class Getjobbyid
 
                     }else{
                         //查询上一个设备情况
-                        $last_job = Db::table('joborder')->where('ContractID',$job_datas['ContractID'])->where('ServiceType',$job_datas['ServiceType'])->where('Status',3)->order('JobDate', 'desc')->field('JobID')->cache(true,60)->find();
+                        $last_job = Db::table('joborder')->where('ContractID',$job_datas['ContractID'])->where('ServiceType',$job_datas['ServiceType'])->where('Status',3)->order('JobDate', 'desc')->field('JobID')->cache(true)->find();
                         if ($last_job) {
                             $wherel['e.job_id'] = $last_job['JobID'];
                             $wherel['e.job_type'] = 1;
@@ -224,7 +225,7 @@ class Getjobbyid
             $result['code'] = 0;
             $result['msg'] = '登录失效，请重新登陆';
             $result['data'] = null;
-            $redis->delete($token_key);
+//            $redis->delete($token_key);
         }
         return json($result);
     }

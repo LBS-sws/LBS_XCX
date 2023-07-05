@@ -263,9 +263,11 @@ class Crontab extends BaseController
         $cc_where = [
             'cc.CustomerType' => $this->custType,
             'j.JobDate' => $date,
+            'j.Status' => 3,
         ];
         //查询今天有哪些工厂客户
         $cust = $this->customerCompanyModel->field('j.CustomerID,j.CustomerName,j.City,GROUP_CONCAT(j.JobID) as job_ids,j.JobDate')->alias('cc')->join('joborder j','j.CustomerID = cc.CustomerID')->where($cc_where)->group('cc.CustomerID')->select()->toArray();
+        // dd($cust);
         //已取得所有客户下的 订单信息
         $get_today_statistics = [];
         foreach ($cust as $k => $v){
@@ -273,13 +275,13 @@ class Crontab extends BaseController
             $get_today_statistics[$k] = $this->getCatch($v);
             $condition = [
                 'customer_id'=>$v['CustomerID'],
-                'date'=>$date,
+                'date'=>date('Y-m',strtotime($date)),
             ];
             //存在这个记录了
             $exits_flag = AnalyseReport::where($condition)->count();
             $city_ret = Db::query("select e.Text from enums as e left join officecity as o on o.Office=e.EnumID where o.City= ? and e.EnumType=8
 ;",[$v['City']]);
-            if($exits_flag){
+            if($exits_flag > 0){
                 //有记录 忽略
             }else{
                 try {
@@ -322,7 +324,7 @@ class Crontab extends BaseController
     public function getCatch($info = []){
         //查询捕捉到的设备数据
 
-        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,number,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $info['job_ids'])->select()->toArray();
+        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,number,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('equipment_number','not null')->where('job_id', 'in', $info['job_ids'])->select()->toArray();
         $this->catch_equment = $catch_equment;
         $month_data = [];
         foreach ($this->catch_equment as $k => $v) {
@@ -446,7 +448,7 @@ class Crontab extends BaseController
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
         //查看有哪些订单和日期
-        $job_orders = $this->jobOrderModel->field('MAX(JobID) as JobID,GROUP_CONCAT(JobID) as joborders,GROUP_CONCAT(JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find();
+        $job_orders = $this->jobOrderModel->field('MAX(JobID) as JobID,GROUP_CONCAT(JobID) as joborders,GROUP_CONCAT(DISTINCT JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find();
         //查询有哪些 服务项目
         $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->find()->toArray();
         foreach ($this->serviceItems as $key => $val) {
@@ -730,13 +732,14 @@ ORDER BY t1.job_month, t1.equ_type_id, t1.pest_num DESC;",[$cust['cust_details']
                 return error(0,$e->getMessage());
             }
             return error(0,$equ_ret);
+        }else{
+            $file_path = 'analyse/'.$date.'/'.$res->url_id.'.pdf';
+            $this->analyseReport->update(['id'=>$res->id,'make_flag'=>0]);
         }
 
-        $file_path = 'analyse/'.$date.'/'.$res->url_id.'.pdf';
-        $this->analyseReport->update(['id'=>$res->id,'make_flag'=>0]);
         if (is_file($file_path)) {
-            $domain = $this->request->domain().'/';
-            $url = $domain.$file_path;
+//            $domain = $this->request->domain().'/';
+            $url = '/'.$file_path;
             //有报告就返回，没返回就
             return success(0,'success',$url);
         } else {

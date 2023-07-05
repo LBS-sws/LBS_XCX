@@ -27,9 +27,14 @@ class Customer extends BaseController
     public function index()
     {
         $search = Request::param('q', ''); // 获取搜索关键字
+        $customer = Request::param('cust', ''); // cust
         $city = Request::param('city', ''); // 获取城市
         $daterange = Request::param('daterange', ''); // 获取日期范围
         $where = [];
+
+        if ($customer != '') {
+            $where[] = ['customer_id', '=', $customer];
+        }
 
         if ($city != '') {
             $where[] = ['city', '=', $city]; // 添加城市查询条件
@@ -85,7 +90,7 @@ class Customer extends BaseController
     /**
      * 获取客户报告的PDF文件
      */
-    public function getPdf($month = '202304', $cust = '', $custzh = '', $city = '', $city_id = '', $is_cust = 0, $is_force = 0)
+    public function getPdf($month = '2023-04', $cust = '', $custzh = '', $city = '', $city_id = '', $is_cust = 0, $is_force = 0)
     {
         if ($month == '' || $cust == '') {
             return error(-1, '输入参数有误', []); // 如果输入参数有误，则返回错误信息
@@ -96,7 +101,9 @@ class Customer extends BaseController
             $city = $city_ret[0]['Text']; // 如果城市ID不为空，则查询城市名称
         }
 
-        $file_path = 'analyse/' . $month . '/' . $custzh . '.pdf'; // 构建PDF文件路径
+        $reportId = AnalyseReport::where('date',$month)->where('customer_id',$cust)->findOrEmpty();
+
+        $file_path = 'analyse/' . $month . '/' . $reportId['url_id'] . '.pdf'; // 构建PDF文件路径
         $domain = Request::domain() . '/';
 
         if (is_file($file_path)) { // 如果PDF文件已存在，则返回文件URL
