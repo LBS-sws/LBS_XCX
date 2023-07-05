@@ -43,8 +43,8 @@ class GetequipmentsOFasn
             if (count($service_data['equipments'])==0) {
                 if ($job_type == 1) {
 
-                    $job = Db::table('joborder')->where('JobID',$job_id)->field('ContractID,ServiceType')->find();
-                    $last_w['ContractID'] = $job['ContractID'];
+                    $job = Db::table('joborder')->where('JobID',$job_id)->field('ContractNumber,ServiceType')->find();
+                    $last_w['ContractNumber'] = $job['ContractNumber'];
                     $last_w['ServiceType'] = $job['ServiceType'];
                     if (empty($equipment_inherit)) {
                         $last_w['Status'] = 3 ;
@@ -52,7 +52,7 @@ class GetequipmentsOFasn
                         $last_e['e.job_id'] = $last_job['JobID'];
                         $last_e['e.job_type'] = 1;
                     }
-
+                    
                 }
                 // else if ($job_type == 2) {
                 //     $job = Db::table('followuporder')->where('FollowUpID',$job_id)->field('ContractID,SType')->find();
