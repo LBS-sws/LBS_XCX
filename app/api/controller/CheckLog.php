@@ -100,7 +100,7 @@ class CheckLog extends BaseController
     }
 
 
-    public function index($job_id = '2503988')
+    public function index($job_id = '')
     {
         if (empty($job_id)) {
             return error(-1, '参数错误,请检查！');
@@ -120,13 +120,22 @@ class CheckLog extends BaseController
             // 添加数据和设置样式
             $this->setWorksheetData($worksheet, $workName[1]);
         }
-        // 保存 Excel 文件
+
         $writer = new Xlsx($spreadsheet);
-        $writer->save('excel/' . $this->jobData['JobID'] . '.xlsx');
-        $filePath = 'excel/' . $this->jobData['JobID'] . '.xlsx';
-        if (file_exists($filePath)) {
+        $fileName = $this->jobData['JobID'] . '.xlsx';
+
+        $date = $this->jobData['JobDate'] . '/';
+        $filePath = "excel/" . $date;
+        $directory = app()->getRootPath() . '/public/' . $filePath;
+        if (!is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+        $orginFile = $directory . $fileName;
+        // dd($orginFile);
+        $writer->save($orginFile);
+        if (file_exists($orginFile)) {
             $domain = Request::domain();
-            return success(0, 'ok', $domain . '/' . $filePath);
+            return success(0, 'ok', $domain . '/' . $filePath.$fileName);
         } else {
             return error(-1, '生成错误，请稍后再试！');
         }
@@ -403,8 +412,11 @@ class CheckLog extends BaseController
                     $worksheet->setCellValue($param_col, $moreInfo);
                     $worksheet->getStyle($param_col)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
+
+
                     $worksheet->setCellValue("G{$row}", $item['check_handle'] === 'null' ? '' : $item['check_handle']);
                     $worksheet->getStyle("G{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("G{$row}")->getAlignment()->setWrapText(true);
                     $row++;
                 }
                 break;
@@ -438,8 +450,10 @@ class CheckLog extends BaseController
                     }
                     $worksheet->setCellValue("E{$row}", $item['more_info'] === 'null' ? '' : $item['more_info']);
                     $worksheet->getStyle("E{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("E{$row}")->getAlignment()->setWrapText(true);
                     $worksheet->setCellValue("F{$row}", $item['check_handle'] === 'null' ? '' : $item['check_handle']);
                     $worksheet->getStyle("F{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("F{$row}")->getAlignment()->setWrapText(true);
                     $row++;
                 }
                 break;
@@ -471,9 +485,11 @@ class CheckLog extends BaseController
 
                     $worksheet->setCellValue("H{$row}", $item['more_info'] === 'null' ? '' : $item['more_info']);
                     $worksheet->getStyle("H{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("H{$row}")->getAlignment()->setWrapText(true);
 
                     $worksheet->setCellValue("I{$row}", $item['check_handle'] === 'null' ? '' : $item['check_handle']);
                     $worksheet->getStyle("I{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("I{$row}")->getAlignment()->setWrapText(true);
 
                     $row++;
                 }
@@ -503,9 +519,11 @@ class CheckLog extends BaseController
 
                     $worksheet->setCellValue("D{$row}", $item['more_info'] === 'null' ? '' : $item['more_info']);
                     $worksheet->getStyle("D{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("D{$row}")->getAlignment()->setWrapText(true);
 
                     $worksheet->setCellValue("E{$row}", $item['check_handle'] === 'null' ? '' : $item['check_handle']);
                     $worksheet->getStyle("E{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                    $worksheet->getStyle("E{$row}")->getAlignment()->setWrapText(true);
 
                     $row++;
                 }
@@ -746,7 +764,6 @@ class CheckLog extends BaseController
             $range = $ranges[$title] . ($num + 6);
             $worksheet->getStyle($range)->applyFromArray($styleArray);
         }
-
         // 隐藏边框
         $worksheet->getStyle('A1:I3')->applyFromArray($noneBorderStyle);
 

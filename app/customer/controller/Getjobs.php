@@ -17,10 +17,10 @@ class Getjobs
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['customerid'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['customerid'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -39,10 +39,10 @@ class Getjobs
             //查询当前公司
             $customer = Db::name('customercompany')->where('CustomerID',$customerid)->find();
             if($mainstore==1 && !empty($customer['GroupID'])){
-               
+
                 //查询集团下的所有店
                 $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID,NameZH,City')->select();
-                for ($i=0; $i < count($customer_group); $i++) { 
+                for ($i=0; $i < count($customer_group); $i++) {
                     //获取城市
                     $launch_date = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID')->join('lbs_service_city_launch_date l ','e.Text=l.city')->where('o.City', $customer_group[$i]['City'])->where('e.EnumType', 8)->field('l.launch_date')->find();
                     $job_wheres['j.CustomerID'] = $customer_group[$i]['CustomerID'];
@@ -68,7 +68,7 @@ class Getjobs
                             }
                             array_push($datas,$value);
                         }
-                        
+
                     }
                     if (count($follow_datas)>0) {
                         foreach ($follow_datas as $key => $value) {
@@ -96,18 +96,18 @@ class Getjobs
                     //跟进单
                     $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
                 }
-                
-                
+
+
                 if (count($job_datas)>0) {
-                     foreach ($job_datas as $key => $value) {
-                            $value['type'] = 1;
-                            if($value['FirstJob']==1){
-                                $value['task_type'] = "首次服务";
-                            }else{
-                                $value['task_type'] = "常规服务";
-                            }
-                            array_push($datas,$value);
+                    foreach ($job_datas as $key => $value) {
+                        $value['type'] = 1;
+                        if($value['FirstJob']==1){
+                            $value['task_type'] = "首次服务";
+                        }else{
+                            $value['task_type'] = "常规服务";
                         }
+                        array_push($datas,$value);
+                    }
                 }
                 if (count($follow_datas)>0) {
                     foreach ($follow_datas as $key => $value) {
@@ -116,6 +116,11 @@ class Getjobs
                         array_push($datas,$value);
                     }
                 }
+            }
+            // 发票
+            foreach($datas as $k=>$v){
+                $item = Db::table('lbs_invoice')->where('jobid',$v['JobID'])->find();
+                $datas[$k]['pics'] = $item['pics'];
             }
             //获取时间
             $begin_date = date("Y-m-d",strtotime("now"));
@@ -133,9 +138,9 @@ class Getjobs
                 // $result['data'] = null;
             }
         }else{
-             $result['code'] = 0;
-             $result['msg'] = '登录失效，请重新登陆';
-             $result['data'] = null;
+            $result['code'] = 0;
+            $result['msg'] = '登录失效，请重新登陆';
+            $result['data'] = null;
         }
         return json($result);
     }
