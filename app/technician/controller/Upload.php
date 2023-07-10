@@ -1,140 +1,178 @@
 <?php
-declare (strict_types = 1);
 
 namespace app\technician\controller;
+
 use app\BaseController;
-use think\facade\Request;
-use think\facade\Db;
-use think\facade\Filesystem;
-use think\facade\Log;
-
-use think\exception\ValidateException;
 use image\CompressImg;
-use image\imageTool;
-// use image\Water;
-
+use think\facade\Filesystem;
+use think\facade\Request;
+use think\facade\Validate;
 
 class Upload extends BaseController
 {
     /**
      * 微信小程序上传图片
-     * */
+     */
     public function imgswx()
     {
-        //查看上传的版本
+        // 查看上传的版本
         $version = request()->param('version', 0);
+
         if ($version > 1) {
             try {
-                $file = request()->file();
+                $file = Request::file();
                 if (null === $file) {
-                    return error(-1, '请选择图片', []);
+                    return error(-1, '请选择图片', '请选择图片');
                 }
-                $files = request()->file('file');
-                validate(['file' => 'fileExt:jpg,png,gif,jpeg'])->check(['file' => $file]);
-                // \validate(['image'=>'fileExt:jpg,png,gif,pdf'])->check($file);
-                $savename = \think\facade\Filesystem::disk('public')->putFile('img', $files);
-                $savename = "/storage/" . $savename;
-                $savename = str_replace("\\", '/', $savename);
-                $source = $_SERVER['DOCUMENT_ROOT'] . $savename; // 上传后的路径
-                $percent = 0.70;  #缩放比例
-                (new CompressImg($source, $percent))->compressImg($source);  //压缩
-
-                // 加水印 暂不使用
-                /*if($is_mark){
-                    $newImg = imageTool::getInstance();
-                    $config = array(
-                        # 设置绘制类型'img'图片水印，'txt'文字水印
-                        'draw_type' => 'txt',
-                        # 背景图片，支持jpeg,png
-                        'draw_bg' => $source,
-                        # 水印透明度 0-127
-                        'opacity' => 60,
-                        # 水印是否随机位置
-                        'random_location' => false,
-                        # logo水印
-                        'logo_img' => './resources/ohcodes_logo.png',
-                        # 字体文件
-                        'font_file' => './myfont.TTF',
-                        # 倾斜度，仅文字水印生效
-                        'rotate_angle' => 45,
-                        # 水印文字
-                        'watermark_text'=> date('y/m/d H:i').'@'.$customer,
-                        # 水印文字颜色13同等于RGB 13,13,13
-                        'text_rgb' => 0,
-                        # 文字水印是否开启阴影
-                        'shadow' => true,
-                        # 文字水印阴影颜色
-                        'shadow_rgb' => '255,255,255',
-                        # 阴影偏移量，允许负值如-3
-                        'shadow_offset' => 3
-                    );
-                    $newImg->okIsRun($config);
-                }*/
-                // 先压缩再加水印就会GG[现在不会了，因为图片画布问题，裂开]
-                return success(0, 'ok', ['file_name' => $savename]);
-            } catch (\think\exception\ValidateException $e) {
-                return error(-1, $e->getMessage(), []);
+                $files = Request::file('file');
+                if (!Validate::fileSize($file, 1024 * 1024 * 5)) {
+                    return error(-1, '图片过大', '图片过大');
+                }
+                if (!Validate::fileExt($file, 'jpeg,jpg,png,gif')) {
+                    return error(-1, '图片格式错误', '图片格式错误');
+                }
+                $newFilename = $this->create_trade_no() . '.' . $files->getOriginalExtension();
+                $savePath = 'img' . DIRECTORY_SEPARATOR . date('Ymd');
+                $savenameOrigin = Filesystem::disk('public')->putFileAs($savePath, $files, $newFilename);
+                $savenameTmp = DIRECTORY_SEPARATOR . "storage/". DIRECTORY_SEPARATOR . $savenameOrigin;
+                $saveName = str_replace("\\", '/', $savenameTmp);
+                $source = $_SERVER['DOCUMENT_ROOT'] . $saveName;
+                if (filesize($source) === 0 || $files->getSize() <= 1024) {
+                    return error(-1, '请重新上传。[size]:' . filesize($source), '请重新上传。[size]:' . filesize($source));
+                }
+                $percent = $this->calculateCompressionPercent($files->getSize());
+                if ($percent < 1) {
+                    if (file_exists($source)) {
+                        (new CompressImg($source, $percent))->compressImg($source);
+                    } else {
+                        return error(-1, '无法打开或处理图片', '无法打开或处理图片');
+                    }
+                }
+                return success(0, 'ok', ['file_name' => $saveName]);
+            } catch (\Exception $e) {
+                return error(-1, $e->getMessage(), $e->getMessage());
             }
         } else {
             try {
                 $file = request()->file('file');
-                // var_dump($file);exit;
                 $savename_original = \think\facade\Filesystem::disk('public')->putFile('img', $file);
                 $savename_new = "/storage/" . $savename_original;
                 $savename = str_replace("\\", '/', $savename_new);
-                $source = $_SERVER['DOCUMENT_ROOT'] . $savename; // 上传后的路径
-                // $water = new Water();
-                $percent = 0.75;  #缩放比例
-                (new CompressImg($source, $percent))->compressImg($source);  //压缩
+                $source = $_SERVER['DOCUMENT_ROOT'] . $savename;
+                $percent = 0.75;
+                (new CompressImg($source, $percent))->compressImg($source);
                 return json($savename);
             } catch (\Exception $exception) {
                 $orgin_path = '/storage/upload_exception/err_pic.png';
                 $source = $_SERVER['DOCUMENT_ROOT'] . $orgin_path;
                 $end_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/upload_exception/' . date('Y-m-d') . '/';
                 $fileName = $this->fileCopy($source, $end_path);
-                // 上传错误 使用错误图片标识
-                $data = "/storage/upload_exception/" . date('Y-m-d') . "/" . $fileName;
+                $data = "/storage/upload_exception/" . date('Y-m-d') . DIRECTORY_SEPARATOR . $fileName;
                 return json($exception->getMessage());
             }
         }
-
-
     }
 
 
     /**
-     * @description: 文件复制
+     * 计算压缩百分比
+     * @param int $size 图片大小
+     * @return float 压缩百分比
+     */
+    protected function calculateCompressionPercent($size): float
+    {
+        $thresholds = [
+            100 * 1024 => 0.8,   // 100KB 80%
+            500 * 1024 => 0.7,   // 500KB 70%
+            1024 * 1024 => 0.5,  // 1MB 50%
+            2 * 1024 * 1024 => 0.5,  // 2MB 60%
+            3 * 1024 * 1024 => 0.4,  // 3MB 50%
+        ];
+
+        foreach ($thresholds as $threshold => $percent) {
+            if ($size <= $threshold) {
+                return $percent;
+            }
+        }
+
+        return 1.0;
+    }
+
+    /**
+     * 生成唯一的交易号
+     * @param string $prefix 前缀
+     * @return string 生成的交易号
+     */
+    protected function create_trade_no($prefix = ''): string
+    {
+        return $prefix . date('ymdHis', time()) . substr(microtime(), 2, 6) . sprintf('%03d', rand(0, 999));
+    }
+
+    /**
+     * 文件复制
      * @param string $file 文件
      * @param string $path 文件路径
-     * @return:
+     * @return string 复制后的文件名
      */
     protected function fileCopy(string $file, string $path)
     {
         $dir = dirname($file);
-        $fileName = str_replace($dir . '/', '', $file);  //获取文件名
-        if (!is_dir($path)) {   //判断目录是否存在
-            //不存在则创建
-            //   mkdir($pathcurr,0777))
-            mkdir(iconv("UTF-8", "GBK", $path), 0777, true); //iconv方法是为了防止中文乱码，保证可以创建识别中文目录，不用iconv方法格式的话，将无法创建中文目录,第三参数的开启递归模式，默认是关闭的
+        $fileName = str_replace($dir . '/', '', $file); // 获取文件名
+
+        if (!is_dir($path)) {
+            // 目录不存在则创建
+            mkdir(iconv("UTF-8", "GBK", $path), 0777, true);
         }
+
         $fileNameCopy = uniqid() . '_' . $fileName;
-        copy($file, $path . $fileNameCopy);   //public_path()是laravel的自带方法生成public目录的绝对路径
+        copy($file, $path . $fileNameCopy);
+
         return $fileNameCopy;
     }
 
-    public function newStr($str = "")
+    /**
+     * 字符串长度（考虑中文字符）
+     * @param string $str 字符串
+     * @return int 字符串长度
+     */
+    public function utf8_strlen($str)
     {
-        $length = $this->utf8_strlen($str);
-        $start = 0;
-        $str_length = 10;
-        $arr = [];
-        // var_dump(ceil($length/$str_length));
-        for ($i = 1; $i <= ceil($length / $str_length); $i++) {
-            $arr[] = $this->msubstr($str, $start, $str_length);
-            $start = $start + 10;
+        $count = 0;
+        for ($i = 0; $i < strlen($str); $i++) {
+            if ((ord($str[$i]) & 0xC0) != 0x80) {
+                $count++;
+            }
         }
-        $new_str = implode('|', $arr);
-        return $new_str;
+        return $count;
+    }
 
+    /**
+     * 截取字符串（考虑中文字符）
+     * @param string $str 字符串
+     * @param int $start 起始位置
+     * @param int $length 截取长度
+     * @return string 截取后的字符串
+     */
+    public function msubstr($str, $start, $length)
+    {
+        $len = 0;
+        $tmp = '';
+
+        for ($i = 0; $i < strlen($str); $i++) {
+            if (ord($str[$i]) >= 128) {
+                $tmp .= $str[$i] . $str[$i + 1] . $str[$i + 2];
+                $i += 2;
+                $len += 2;
+            } else {
+                $tmp .= $str[$i];
+                $len++;
+            }
+
+            if ($len >= $length) {
+                break;
+            }
+        }
+
+        return $tmp;
     }
 }

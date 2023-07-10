@@ -63,7 +63,7 @@ class Getjobbyid
                 }
 
                 // 工厂的才放开
-                if($job_datas['CustomerType'] == 203){
+                if(isset($job_datas['CustomerType']) && $job_datas['CustomerType'] == 203){
                     //布防图
                     $arr = array('contractid'=>$job_datas['ContractID'],'staffid'=>$staffid,'token'=>$token);
                     $xinu_data = $this->curl_post(config('app.uapp_url') . '/web/remote/getAttachment.php',$arr);

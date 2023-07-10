@@ -62,7 +62,7 @@ class CheckLog extends BaseController
 
     public function getEquData($job_id, $op)
     {
-        return $this->serviceEquipmentsModel->whereIn('equipment_number', $op)->where('job_id', '=', $job_id)->select()->toArray();
+        return $this->serviceEquipmentsModel->whereIn('equipment_number', $op)->where('job_id', '=', $job_id)->order('equipment_number','DESC')->select()->toArray();
     }
 
     /**
@@ -70,7 +70,7 @@ class CheckLog extends BaseController
      * */
     public function getOrderInfo($job_id)
     {
-        return $this->jobOrderModel->alias('j')->field('j.JobDate,JobID,CustomerName,u.StaffName as staff1,uo.StaffName as staff2,ut.StaffName as staff3')->join('staff u', 'j.Staff01=u.StaffID')->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')->where('JobID', $job_id)->find()->toArray();
+        return $this->jobOrderModel->alias('j')->field('j.JobDate,JobID,CustomerName,u.StaffName as staff1,uo.StaffName as staff2,ut.StaffName as staff3')->join('staff u', 'j.Staff01=u.StaffID')->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')->where('JobID', $job_id)->findOrEmpty()->toArray();
     }
 
     /**
@@ -106,8 +106,12 @@ class CheckLog extends BaseController
             return error(-1, '参数错误,请检查！');
         }
         $this->job_id = $job_id;
-        $this->custSign = $this->getCustSignInfo($job_id);
         $this->jobData = $this->getOrderInfo($job_id);
+        if (empty($this->jobData)) {
+            return error(-1, '未找到相关设备记录表请稍后再试！');
+        }
+        $this->custSign = $this->getCustSignInfo($job_id);
+
         $spreadsheet = new Spreadsheet();
         foreach ($this->workList as $index => $workName) {
 //            $worksheet = $workName[0] ?? '';
@@ -299,8 +303,8 @@ class CheckLog extends BaseController
                 $worksheet->setCellValue('C4', '检查结果 Findings');
                 $this->colAutoWarp($worksheet, 'C4');
 
-                $worksheet->setCellValue('E4', '备注 Remarks');
-                $worksheet->setCellValue('F4', '处理情况 Action Taken');
+                $worksheet->setCellValue('E4', '处理情况 Action Taken');
+                $worksheet->setCellValue('F4', '备注 Remarks');
                 $this->colAutoWarp($worksheet, 'F4');
 
                 $this->setColValue($worksheet, $title);
@@ -387,31 +391,34 @@ class CheckLog extends BaseController
                     $worksheet->getStyle("B{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
                     $array = json_decode($item['check_datas'], true);
-
                     $columnIndex = 3; // 从 C 开始的
-                    if(!empty($array)){
+                    if(!empty($array)) {
                         foreach ($array as $v) {
                             if ($v['value'] == $this->type["鼠饵站"][0]) {
                                 $worksheet->setCellValueByColumnAndRow($columnIndex, $row, "✔");
                                 $worksheet->getStyleByColumnAndRow($columnIndex, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-                            }
-                            if ($v['value'] == $this->type["鼠饵站"][1]) {
+                            }else if ($v['value'] == $this->type["鼠饵站"][1]) {
                                 $worksheet->setCellValueByColumnAndRow($columnIndex + 1, $row, "✔");
                                 $worksheet->getStyleByColumnAndRow($columnIndex + 1, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-                            }
-                            if ($v['value'] == $this->type["鼠饵站"][2]) {
+                            }else if ($v['value'] == $this->type["鼠饵站"][2]) {
+                                $worksheet->setCellValueByColumnAndRow($columnIndex + 2, $row, "✔");
+                                $worksheet->getStyleByColumnAndRow($columnIndex + 2, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                            }else{
                                 $worksheet->setCellValueByColumnAndRow($columnIndex + 2, $row, "✔");
                                 $worksheet->getStyleByColumnAndRow($columnIndex + 2, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                             }
                             $columnIndex++;
                         }
+                    }else{
+                        $worksheet->setCellValueByColumnAndRow($columnIndex + 2, $row, "✔");
+                        $worksheet->getStyleByColumnAndRow($columnIndex + 2, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                     }
 
                     $param_col = "F{$row}";
                     $moreInfo = $item['more_info'] === 'null' ? '' : $item['more_info'];
                     $worksheet->setCellValue($param_col, $moreInfo);
                     $worksheet->getStyle($param_col)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
+                    $worksheet->getStyle($param_col)->getAlignment()->setWrapText(true);
 
 
                     $worksheet->setCellValue("G{$row}", $item['check_handle'] === 'null' ? '' : $item['check_handle']);
@@ -434,7 +441,6 @@ class CheckLog extends BaseController
                     $worksheet->setCellValue("B{$row}", $item['equipment_number'] . '-' . $item['number']);
                     $worksheet->getStyle("B{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                     $array = json_decode($item['check_datas'], true);
-
                     $columnIndex = 3; // 从 D 开始的
                     if(!empty($array)) {
                         foreach ($array as $v) {
@@ -447,6 +453,9 @@ class CheckLog extends BaseController
                                 $columnIndex++;
                             }
                         }
+                    }else{
+                        $worksheet->setCellValueByColumnAndRow($columnIndex+1, $row, "✔");
+                        $worksheet->getStyleByColumnAndRow($columnIndex+1, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                     }
                     $worksheet->setCellValue("E{$row}", $item['more_info'] === 'null' ? '' : $item['more_info']);
                     $worksheet->getStyle("E{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
@@ -477,10 +486,22 @@ class CheckLog extends BaseController
                     $columnIndex = 3; // 从 C 开始的
                     if(!empty($array)) {
                         foreach ($array as $v) {
-                            $worksheet->setCellValueByColumnAndRow($columnIndex, $row, $v['value']);
+                            if (empty($v['value'])) {
+                                // 处理值为空的情况
+                                $worksheet->setCellValueByColumnAndRow($columnIndex, $row, '0');
+                            } else {
+                                // 处理值不为空的情况
+                                $worksheet->setCellValueByColumnAndRow($columnIndex, $row, $v['value']);
+                            }
                             $worksheet->getStyleByColumnAndRow($columnIndex, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                             $columnIndex++;
                         }
+                    }else{
+                        for ($i = 0;$i <= 4;$i++){
+                            $worksheet->setCellValueByColumnAndRow($columnIndex+$i, $row, '0');
+                            $worksheet->getStyleByColumnAndRow($columnIndex+$i, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                        }
+
                     }
 
                     $worksheet->setCellValue("H{$row}", $item['more_info'] === 'null' ? '' : $item['more_info']);
@@ -511,10 +532,19 @@ class CheckLog extends BaseController
                     $columnIndex = 3; // 从 D 开始的
                     if(!empty($array)) {
                         foreach ($array as $v) {
-                            $worksheet->setCellValueByColumnAndRow($columnIndex, $row, $v['value']);
+                            if (empty($v['value'])) {
+                                // 处理值为空的情况
+                                $worksheet->setCellValueByColumnAndRow($columnIndex, $row, '0');
+                            } else {
+                                // 处理值不为空的情况
+                                $worksheet->setCellValueByColumnAndRow($columnIndex, $row, $v['value']);
+                            }
                             $worksheet->getStyleByColumnAndRow($columnIndex, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                             $columnIndex++;
                         }
+                    }else{
+                        $worksheet->setCellValueByColumnAndRow($columnIndex, $row, '0');
+                        $worksheet->getStyleByColumnAndRow($columnIndex, $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
                     }
 
                     $worksheet->setCellValue("D{$row}", $item['more_info'] === 'null' ? '' : $item['more_info']);
@@ -764,6 +794,7 @@ class CheckLog extends BaseController
             $range = $ranges[$title] . ($num + 6);
             $worksheet->getStyle($range)->applyFromArray($styleArray);
         }
+
         // 隐藏边框
         $worksheet->getStyle('A1:I3')->applyFromArray($noneBorderStyle);
 
