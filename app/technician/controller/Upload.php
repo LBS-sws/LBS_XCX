@@ -34,7 +34,7 @@ class Upload extends BaseController
                 $newFilename = $this->create_trade_no() . '.' . $files->getOriginalExtension();
                 $savePath = 'img' . DIRECTORY_SEPARATOR . date('Ymd');
                 $savenameOrigin = Filesystem::disk('public')->putFileAs($savePath, $files, $newFilename);
-                $savenameTmp = DIRECTORY_SEPARATOR . "storage/". DIRECTORY_SEPARATOR . $savenameOrigin;
+                $savenameTmp = DIRECTORY_SEPARATOR . "storage". DIRECTORY_SEPARATOR . $savenameOrigin;
                 $saveName = str_replace("\\", '/', $savenameTmp);
                 $source = $_SERVER['DOCUMENT_ROOT'] . $saveName;
                 if (filesize($source) === 0 || $files->getSize() <= 1024) {
