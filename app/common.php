@@ -50,14 +50,10 @@ if (!function_exists('conversionToImg')) {
             }
             // 生成唯一的id
             $new_file = $path . $file_name . ".{$type}";
-
-            // 使用 ImageMagick 转换图片
-            $img = new \Imagick();
-            $img->readImageBlob(base64_decode(str_replace($result[1], '', $base64_image_content)));
-            $img->writeImage($new_file);
-            $img->clear();
-            $img->destroy();
-
+            // 解码Base64图像数据
+            $image_data = base64_decode(str_replace($result[1], '', $base64_image_content),true);
+            // 保存图像文件
+            @file_put_contents($new_file, $image_data, FILE_BINARY);
             return '/' . $new_file;
         } else {
             return '';
