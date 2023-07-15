@@ -34,31 +34,41 @@ if (!function_exists('error')) {
  * @return String
  * */
 if (!function_exists('conversionToImg')) {
-    function conversionToImg($base64_image_content, $path,$file_name = "")
+    function conversionToImg($base64_image_content, $path, $file_name = "")
     {
-        //匹配出图片的格式
+        // 匹配出图片的格式
         if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $base64_image_content, $result)) {
             $type = $result[2];
             if (!is_dir($path)) {
                 mkdir($path, 0777, true);
             }
             if (!file_exists($path)) {
-                mkdir($path, 0777, true);//0777表示文件夹权限，windows默认已无效，但这里因为用到第三个参数，得填写；true/false表示是否可以递归创建文件夹
+                mkdir($path, 0777, true);
             }
-            if($file_name == ""){
-                $file_name = unique_str();
+            if ($file_name == "") {
+                $file_name = create_trade_no();
             }
-            //害怕重复  生成唯一的id
+            // 生成唯一的id
             $new_file = $path . $file_name . ".{$type}";
-            if (file_put_contents($new_file, base64_decode(str_replace($result[1], '', $base64_image_content)))) {
-                return '/' . $new_file;
-            } else {
-                return '';
-            }
+            // 解码Base64图像数据
+            $image_data = base64_decode(str_replace($result[1], '', $base64_image_content),true);
+            // 保存图像文件
+            @file_put_contents($new_file, $image_data, FILE_BINARY);
+            return '/' . $new_file;
         } else {
             return '';
         }
     }
+}
+
+/**
+ * 生成唯一的交易号
+ * @param string $prefix 前缀
+ * @return string 生成的交易号
+ */
+function create_trade_no($prefix = 'cs'): string
+{
+    return $prefix . substr(microtime(), 2, 6) . sprintf('%03d', rand(0, 999));
 }
 
 /**

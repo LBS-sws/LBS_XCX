@@ -58,7 +58,7 @@ class Login
                     $result['data']['contactname'] = $user['ContactName'];
                     $result['data']['customerid'] = $user['CustomerID'];
                     $result['data']['NameZH'] = $office['NameZH'];
-                    $result['data']['custtype'] = $office['CustomerType'];
+                    $result['data']['custtype'] = $office['CustomerType'] ?? '';
                     $result['data']['City'] = $office['City'];
                     $result['data']['officetel'] = $office['Tel'];
                     $result['data']['mainstore'] = $office['isHQ'];

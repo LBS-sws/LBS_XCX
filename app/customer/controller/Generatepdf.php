@@ -396,24 +396,31 @@ class Generatepdf
                         <tr>
                         <td width="16%">风险图片</td>
                     EOF;
-                    $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
-                     for ($sp=0; $sp < count($site_photos); $sp++) {
-                        $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
-                        $html .= <<<EOF
+                    if(isset($report_datas['risk'][$r]['site_photos']) && $report_datas['risk'][$r]['site_photos'] != '' ){
+                        $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
+
+                        for ($sp=0; $sp < count($site_photos); $sp++) {
+                            $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
+                            $html .= <<<EOF
                         <td width="21%" align="center">
                             <img src="${spa}" width="80" height="100" style="padding:20px 50px;">
                         </td>
-                        EOF;
-                    }
-                    $sy_unm = 4-count($site_photos);
+EOF;
+                        }
+                        $sy_unm = 4-count($site_photos);
                         for($j=0;$j<$sy_unm;$j++){
                             $html .= <<<EOF
-                            <td width="21%" align="center"></td>
-                            EOF;
+                            <td width="21%" align="center" height="100"></td>
+EOF;
                         }
+                    }else{
+                        $html .= <<<EOF
+                            <td width="84%" align="center" height="10"></td>
+EOF;
+                    }
                     $html .= <<<EOF
                         </tr>  
-                        EOF;
+EOF;
                 }
             }
             }

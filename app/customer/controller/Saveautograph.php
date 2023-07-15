@@ -50,9 +50,15 @@ class Saveautograph
                 //如果查出来不是空的那么这里就需要进行update  只需要更新客户的评分以及客户的签名即可
                 $data['pid']=$result['pid']+1;
                 $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir);
-//                $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir);
-//                $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
-//                $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
+                if(isset($_POST['employee01_signature'])) {
+                    $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir);
+                }
+                if(isset($_POST['employee02_signature'])) {
+                    $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
+                }
+                if(isset($_POST['employee03_signature'])) {
+                    $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
+                }
                 $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
                 $cmd = " /usr/bin/convert -resize 50%x50% -rotate -90 $imgPath  $imgPath 2>&1";
                 @exec($cmd,$output,$return_val);
@@ -65,9 +71,15 @@ class Saveautograph
                 $save_datas = $autographV2Model->where('id','=',$result['id'])->update($data);
             }else{
                 $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir);
-                $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir);
-                $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
-                $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
+                if(isset($_POST['employee01_signature'])) {
+                    $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir);
+                }
+                if(isset($_POST['employee02_signature'])) {
+                    $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
+                }
+                if(isset($_POST['employee03_signature'])) {
+                    $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
+                }
                 if($is_grade > 0 ){
                     $data['customer_grade'] = $_POST['customer_grade'];
                 }

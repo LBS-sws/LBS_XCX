@@ -14,7 +14,7 @@ class CompressImg
      * @param $src  //源图
      * @param float $percent 压缩比例
      */
-    public function __construct($src, $percent = 1)
+    public function __construct($src, $percent = 0.5)
     {
         $this->src = $src;
         $this->percent = $percent;
@@ -35,6 +35,7 @@ class CompressImg
      */
     private function _openImage()
     {
+        ini_set('memory_limit', '256M');
         list($width, $height, $type, $attr) = getimagesize($this->src);
         $this->imageinfo = array(
             'width' => $width,
@@ -80,7 +81,7 @@ class CompressImg
         if (empty($dstImgName)) return false;
         $allowImgs = ['.jpg', '.jpeg', '.png', '.bmp', '.wbmp', '.gif'];  //如果目标图片名有后缀就用目标图片扩展名 后缀，如果没有，则用源图的扩展名
         $dstExt = strrchr($dstImgName, ".");
-       // echo $sourseExt = strrchr($this->src, ".");
+        // echo $sourseExt = strrchr($this->src, ".");
         if (!empty($dstExt)) $dstExt = strtolower($dstExt);
         if (!empty($sourseExt)) $sourseExt = strtolower($sourseExt);
         //有指定目标名扩展名
@@ -101,6 +102,9 @@ class CompressImg
      */
     public function __destruct()
     {
-        imagedestroy($this->image);
+        // 添加条件判断，只有当 $this->image 不为 null 且是有效的图像资源时，才调用 imagedestroy 函数
+        if ($this->image !== null && is_resource($this->image)) {
+            imagedestroy($this->image);
+        }
     }
 }
