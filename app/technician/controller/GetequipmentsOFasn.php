@@ -40,10 +40,9 @@ class GetequipmentsOFasn
             //所有设备
             $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('id', 'asc')->field('equipment_name as label,id as value,check_datas')->select();
             $equipment_inherit = Db::table('lbs_service_equipment_inherits')->where($wheres)->find();
+            $job = Db::table('joborder')->where('JobID',$job_id)->field('ContractNumber,ServiceType')->find();
             if (count($service_data['equipments'])==0) {
                 if ($job_type == 1) {
-
-                    $job = Db::table('joborder')->where('JobID',$job_id)->field('ContractNumber,ServiceType')->find();
                     $last_w['ContractNumber'] = $job['ContractNumber'];
                     $last_w['ServiceType'] = $job['ServiceType'];
                     if (empty($equipment_inherit)) {
@@ -88,7 +87,7 @@ class GetequipmentsOFasn
                         Db::table('lbs_service_equipment_inherits')->insert($inherit);
                     }
             }
-            if($_POST['ct']==1){
+            if($_POST['ct']==1 && $job['ServiceType'] == 2){
                 $city = 'CN';
                 $eqs_file = 'equipment_name as label,id as value,check_datas,equipment_number as eq_number,number';
             }else{
