@@ -14,50 +14,29 @@ class Getriskslist
         $result['data'] = null;
 
         $token = request()->header('token');
-        if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type'])){
-            return json($result);
-        }
-        if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type'])){
+        if(empty($_POST['staffid']) || empty($token) || empty($_POST['customerid'])){
             return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
-        $job_id = $_POST['job_id'];
-        $job_type = $_POST['job_type'];
+        $customerid = $_POST['customerid'];
         //获取用户登录信息
         $user_token = Db::name('cuztoken')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
-            $wheres['job_id'] = $job_id;
-            $wheres['job_type'] = $job_type;
+        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
+            $wheres['CustomerID'] = $customerid;
             $last_risk_datas = array();
             //查询当前服务
-            if ($job_type == 1) {
-                $job = Db::table('joborder')->where('JobID',$job_id)->field('ContractID,ServiceType')->find();
-                $last_w['ContractID'] = $job['ContractID'];
-                $last_w['ServiceType'] = $job['ServiceType'];
-                $last_w['Status'] = 3 ;
-                $last_e['job_type'] = 1;
-
-                // 获取所有存在的id
-                $last_job =  Db::table('joborder')->where($last_w)->order('JobDate', 'desc')->field('GROUP_CONCAT(JobID) as id')->find();
-            }else if ($job_type == 2) {
-                // 第二种情况应该是不存在的   暂时不管
-                // $job = Db::table('followuporder')->where('FollowUpID',$job_id)->field('ContractID,SType')->find();
-                // $last_w['ContractID'] = $job['ContractID'];
-                // $last_w['SType'] = $job['SType'];
-                // $last_w['Status'] = 3 ;
-                // $last_e['job_type'] = 2;
-
-                // $last_job =  Db::table('followuporder')->where($last_w)->order('JobDate', 'desc')->field('FollowUpID as id')->find();
-                $result['code'] = 1;
-                $result['msg'] = '成功';
-                $result['data'] = [];
-                return json($result);
-            }
+            $job = Db::table('joborder')->where($wheres)->field('ContractID,ServiceType')->order('JobID DESC')->find();
+            $last_w['ContractID'] = $job['ContractID'];
+            $last_w['ServiceType'] = $job['ServiceType'];
+            $last_w['Status'] = 3 ;
+            $last_e['job_type'] = 1;
+            // 获取所有存在的id
+            $last_job =  Db::table('joborder')->where($last_w)->order('JobDate', 'desc')->field('GROUP_CONCAT(JobID) as id')->find();
             $y = [];$n = [];$f = [];
             if (isset($last_job) && $last_job['id'] != null){
                 //1 status = 1 已解决，status = 2跟进中，status = 0 未解决

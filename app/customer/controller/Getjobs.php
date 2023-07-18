@@ -16,6 +16,7 @@ class Getjobs
         $result['data'] = null;
 
         $token = request()->header('token');
+
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['customerid'])){
             return json($result);
         }
@@ -38,7 +39,7 @@ class Getjobs
             $options = [['label'=>'全部','value'=>'']];
             //查询当前公司
             $customer = Db::name('customercompany')->where('CustomerID',$customerid)->find();
-            if($mainstore==1 && !empty($customer['GroupID'])){
+            if($mainstore == 1 && !empty($customer['GroupID'])){
 
                 //查询集团下的所有店
                 $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID,NameZH,City')->select();
@@ -49,7 +50,8 @@ class Getjobs
                     $job_wheres['j.Status'] = 3;
                     if($launch_date){
                         //服务单
-                        $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')->select()->toArray();
+                        $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-3 month')->order('j.JobDate','desc')->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')->select()->toArray();
+
                         //跟进单
                         $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
                     }else{
@@ -66,7 +68,7 @@ class Getjobs
                             }else{
                                 $value['task_type'] = "常规服务";
                             }
-                            array_push($datas,$value);
+                            $datas[] = $value;
                         }
 
                     }
@@ -74,11 +76,13 @@ class Getjobs
                         foreach ($follow_datas as $key => $value) {
                             $value['type'] = 2;
                             $value['task_type'] = "跟进服务";
-                            array_push($datas,$value);
+                            $datas[] = $value;
                         }
                     }
                     //分店
-                    array_push($options,array('label'=>$customer_group[$i]['NameZH'],'value'=>$customer_group[$i]['CustomerID']));
+                    $options[] = array('label' => $customer_group[$i]['NameZH'], 'value' => $customer_group[$i]['CustomerID']);
+
+//                    dd($options);
                 }
             }else{
                 //获取城市
@@ -96,8 +100,6 @@ class Getjobs
                     //跟进单
                     $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
                 }
-
-
                 if (count($job_datas)>0) {
                     foreach ($job_datas as $key => $value) {
                         $value['type'] = 1;
@@ -106,14 +108,14 @@ class Getjobs
                         }else{
                             $value['task_type'] = "常规服务";
                         }
-                        array_push($datas,$value);
+                        $datas[] = $value;
                     }
                 }
                 if (count($follow_datas)>0) {
                     foreach ($follow_datas as $key => $value) {
                         $value['type'] = 2;
                         $value['task_type'] = "跟进服务";
-                        array_push($datas,$value);
+                        $datas[] = $value;
                     }
                 }
             }
@@ -124,7 +126,7 @@ class Getjobs
             }
             //获取时间
             $begin_date = date("Y-m-d",strtotime("now"));
-            $end_date = date("Y-m-d",strtotime("-1 month"));
+            $end_date = date("Y-m-d",strtotime("-4 month"));
             $result['data']['daterange'] = [$end_date,$begin_date];
             if ($datas) {
                 //返回数据
