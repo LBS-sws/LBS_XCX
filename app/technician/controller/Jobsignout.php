@@ -80,6 +80,11 @@ class Jobsignout
                 $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
 
+
+
+
+
+
                 $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
                 $job_start = $redis->get($job_datas_key);
                 if($job_start){

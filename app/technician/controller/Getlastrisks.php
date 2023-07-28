@@ -61,68 +61,22 @@ class Getlastrisks
                 return json($result);
             }
             // dd($last_job);
-            $y = [];$n = [];$f = [];   
+            $y = [];$n = [];$f = [];
             if (isset($last_job) && $last_job['id'] != null){
 
                 //1 status = 1 已解决，status = 2跟进中，status = 0 未解决
                 //status = 1
-//                $y = Db::table('lbs_service_risks')->where($last_e)->where('status',1)->where('follow_id',0)->order('id', 'asc')->select()->toArray();
 
                 $y = Db::table('lbs_service_risks')->where($last_e)->where('status', 1)->where('follow_id', 0)->whereIn('job_id', $last_job['id'])->order('id', 'asc')->select();
                 $n = Db::table('lbs_service_risks')->where($last_e)->where('status', 0)->where('follow_id', 0)->whereIn('job_id', $last_job['id'])->order('id', 'asc')->select();
                 $f = Db::table('lbs_service_risks')->where($last_e)->where('status', 2)->whereIn('job_id', $last_job['id'])->where('follow_id', '>', 0)->order('id', 'asc')->select();
-                
-
-
-//
-//
-//
-//                $y_array = [] ;
-//                $n_array = [] ;
-//                $f_array = [] ;
-//                for($i=0;$i<count($last_job);$i++){
-//                    $last_e['job_id'] = $last_job[$i]['id'];
-//                    $last_e['job_type'] = $job_type;
-//                    $y = Db::table('lbs_service_risks')->where($last_e)->where('status',1)->where('follow_id',0)->order('id', 'asc')->select()->toArray();
-//                    $n = Db::table('lbs_service_risks')->where($last_e)->where('status',0)->where('follow_id',0)->order('id', 'asc')->select()->toArray();
-//                    $risk_id_datas = Db::table('lbs_service_risks')->where('job_id',$job_id)->where('job_type',$job_type)->order('id', 'asc')->field('id')->select()->toArray();
-//                    $risk_ids = [] ;
-//                    if (count($risk_id_datas)>0) {
-//                        for($r=0; $r < count($risk_id_datas); $r++){
-//                            array_push($risk_ids,$risk_id_datas[$r]['id']);
-//                        }
-//                    }
-//                    $f = Db::table('lbs_service_risks')->where($last_e)->where('status',2)->whereIn('follow_id',$risk_ids)->order('id', 'asc')->select()->toArray();
-//                    if (count($y)>0) {
-//                        for ($m=0; $m < count($y); $m++) {
-//                            array_push($y_array,$y[$m]);
-//                        }
-//                    }
-//                    if (count($n)>0) {
-//                        for ($j=0; $j < count($n); $j++) {
-//                            array_push($n_array,$n[$j]);
-//                        }
-//                    }
-//                    if (count($f)>0) {
-//                        for ($k=0; $k < count($f); $k++) {
-//                            array_push($f_array,$f[$k]);
-//                        }
-//                    }
-//                }
-//            }
-//            if (count($n_array)>0) {
-//                $last_risk_datas['n'] = $n_array;
-//            }
-//            if (count($y_array)>0) {
-//                $last_risk_datas['y'] = $y_array;
-//            }
-//            if (count($f_array)>0) {
-//                $last_risk_datas['f'] = $f_array;
-//            }
+                //$g 是客户点了已整个 需要技术员确认是否已经处理
+                $g = Db::table('lbs_service_risks')->where($last_e)->where('confirm_status','=',1)->whereIn('job_id', $last_job['id'])->order('id', 'asc')->select();
             }
             $last_risk_datas['y'] = [];
             $last_risk_datas['n'] = [];
             $last_risk_datas['f'] = [];
+            $last_risk_datas['g'] = [];
             if (count($y) > 0) {
                 $last_risk_datas['y'] = $y??0;
             }
@@ -131,6 +85,9 @@ class Getlastrisks
             }
             if (count($f) > 0) {
                 $last_risk_datas['f'] = $f??0;
+            }
+            if (count($g) > 0) {
+                $last_risk_datas['g'] = $g??0;
             }
             // var_dump($last_risk_datas);exit;
             //返回数据

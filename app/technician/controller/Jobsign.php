@@ -18,17 +18,17 @@ class Jobsign
         $token = request()->header('token');
 
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['jobid']) || !isset($_POST['jobtype']) || !isset($_POST['signdate']) || !isset($_POST['starttime'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['jobid']) || empty($_POST['jobtype']) || empty($_POST['signdate']) || empty($_POST['starttime'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
         $jobid = $_POST['jobid'];
         $jobtype = $_POST['jobtype'];
-        $signdate = $_POST['signdate'];
-        $starttime = date('H:i:s',time());//$_POST['starttime'];
+        $signdate = date('Y-m-d');
+        $starttime = date('H:i:s');//$_POST['starttime'];
 
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();

@@ -759,7 +759,7 @@ EOF;
 
     public function checkCustInfo(string $customer_id)
     {
-        $where = ['CustomerID' => $customer_id];
+        $where = ['CustomerID' => $customer_id,'j.ServiceType' => 2];
         $cust = $this->jobOrderModel->alias('j')
             ->join('service s', 'j.ServiceType=s.ServiceType')->join('staff u', 'j.Staff01=u.StaffID')
             ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')
@@ -814,6 +814,7 @@ EOF;
         $where = [
             'j.CustomerID' => $cust['cust_details']['CustomerID'],
             'j.Status' => 3,
+            'j.ServiceType' => 2,
             'c.CustomerType' => $this->custType
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
@@ -821,6 +822,7 @@ EOF;
         $where_sub = [
             'CustomerID' => $cust['cust_details']['CustomerID'],
             'Status' => 3,
+            'ServiceType' => 2,
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
         //查看有哪些订单和日期

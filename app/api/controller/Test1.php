@@ -10,7 +10,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
-class Test extends BaseController
+class Test1 extends BaseController
 {
     public $workList = [
         ['鼠饵站','鼠类防制检查记录表'],
@@ -24,8 +24,17 @@ class Test extends BaseController
         ['苍蝇','蚊子','卫生性飞虫','绿化飞虫','仓储害虫'],
         ['"捕获蟑螂数量 \n Number of captured'],
     ];
+    public function index(){
+        $res =  curl_post("https://xcx.lbsapps.cn/api/CheckLog?job_id=25173033");
+        $res_de = json_decode($res, true);
+        if (isset($res_de) && $res_de['code'] == 0) {
+            echo '<script>window.open("' . $res_de['data'] . '", "_blank");</script>';
+        }else{
+            echo $res_de['msg'];
+        }
+    }
 
-    public function index()
+    public function index1()
     {
         // 创建一个新的 Spreadsheet 对象
         $spreadsheet = new Spreadsheet();

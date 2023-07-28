@@ -2,7 +2,10 @@
 declare (strict_types = 1);
 
 namespace app\customer\controller;
+use app\common\model\ImCustomer;
 use think\facade\Db;
+use think\facade\Request;
+use think\Validate;
 
 
 class Custinfo
@@ -44,5 +47,51 @@ class Custinfo
             $result['data'] = null;
         }
         return json($result);
+    }
+
+    public function getList(){
+        $data = [
+            'customer_id' => Request::get('customer_id', ''),
+            'city' => Request::get('city', ''),
+            'page' => Request::get('page', 1),
+            'list_rows' => Request::get('list_rows', 15),
+            'query' => Request::get('query', ''),
+        ];
+
+        $validate = new Validate();
+        $validate->rule([
+            'city' => 'require',
+        ]);
+
+        if (!$validate->check($data)) {
+            return error(1, $validate->getError());
+        }
+
+
+        $where = [];
+
+        if ($data['customer_id'] != '') {
+            $where[] = ['customer_id', '=', $data['customer_id']];
+        }
+
+        if ($data['city'] != '') {
+            $where[] = ['city_id', '=', "{$data['city']}"];
+        }
+        if ($data['query'] != '') {
+            $where[] = ['customer_id', 'like', "%{$data['query']}%"];
+        }
+
+        if ($data['city'] == 'CN') {
+            $where = [];
+        }
+        // 设置分页大小为10，显示第3页的数据
+        $cust = ImCustomer::where($where)
+            ->paginate([
+                'list_rows'=>$data['list_rows'],  // 分页大小为10
+                'page'=>$data['page']  // 显示第3页的数据
+            ]);
+
+
+        return success(0, 'success', $cust);
     }
 }

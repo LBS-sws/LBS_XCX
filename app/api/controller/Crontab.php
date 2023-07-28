@@ -76,7 +76,7 @@ class Crontab extends BaseController
     }
 
     public function getStatistics($info = []){
-        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('check_datas','<>','')->where('job_id', 'in', $info['job_ids'])->select()->toArray();
+        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('check_datas','<>','')->where('j.ServiceType','=',2)->where('job_id', 'in', $info['job_ids'])->select()->toArray();
         $this->catch_equment = $catch_equment;
         $original_array = [];
         foreach ($catch_equment as $k => $v) {
@@ -264,6 +264,7 @@ class Crontab extends BaseController
             'cc.CustomerType' => $this->custType,
             'j.JobDate' => $date,
             'j.Status' => 3,
+            'j.ServiceType' => 2,
         ];
         //查询今天有哪些工厂客户
         $cust = $this->customerCompanyModel->field('j.CustomerID,j.CustomerName,j.City,GROUP_CONCAT(j.JobID) as job_ids,j.JobDate')->alias('cc')->join('joborder j','j.CustomerID = cc.CustomerID')->where($cc_where)->group('cc.CustomerID')->select()->toArray();
@@ -324,7 +325,7 @@ class Crontab extends BaseController
     public function getCatch($info = []){
         //查询捕捉到的设备数据
 
-        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,number,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('equipment_number','not null')->where('job_id', 'in', $info['job_ids'])->select()->toArray();
+        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,number,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('j.ServiceType','=',2)->where('equipment_type_id', '<>', '113')->where('equipment_number','not null')->where('job_id', 'in', $info['job_ids'])->select()->toArray();
         $this->catch_equment = $catch_equment;
         $month_data = [];
         foreach ($this->catch_equment as $k => $v) {
@@ -390,7 +391,8 @@ class Crontab extends BaseController
     public function checkCustInfo(int $job_id)
     {
         if (!empty($job_id)) {
-            $where = ['JobID' => $job_id];
+            //->where('j.ServiceType','=',2)
+            $where = ['JobID' => $job_id,'j.ServiceType' => 2];
             $cust = $this->jobOrderModel->alias('j')
                 ->join('service s', 'j.ServiceType=s.ServiceType')->join('staff u', 'j.Staff01=u.StaffID')
                 ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')
@@ -445,6 +447,7 @@ class Crontab extends BaseController
         $cust = $this->checkCustInfo($job_id);
         $where = [
             'CustomerID' => $cust['cust_details']['CustomerID'],
+            'ServiceType' => 2,
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
         //查看有哪些订单和日期
@@ -480,7 +483,7 @@ class Crontab extends BaseController
 
         /** 虫害情况  只查询捕捉到的数据 113是【驱虫喷机】 */
         //->where('equipment_type_id', '<>', '113') 暂时不管
-        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->select()->toArray();
+        $catch_equment = $this->serviceEquipments->alias('e')->field('j.JobDate,job_id,check_datas,equipment_type_id,equipment_number,equipment_name,equipment_area')->join('joborder j', 'j.JobID=e.job_id')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->where('j.ServiceType','=',2)->select()->toArray();
         $this->catch_equment = $catch_equment;
 
         $original_array = [];

@@ -32,21 +32,8 @@ class Savelastriskstatus
         	$data['status'] = $status;
         	$data['update_time'] = $time;
         	$data['update_by'] = $staffid;
-            if($status==2){
-                $last_risk = Db::table('lbs_service_risks')->where('id', $id)->find();
-                $add_data = $last_risk;
-                $add_data['id'] = '';
-                $add_data['job_id'] = $_POST['job_id'] ;
-                $add_data['job_type'] = $_POST['job_type'] ;
-                $add_data['creat_time'] = $time;
-                $add_data['create_by'] = $staffid;
-                $add_data['follow_times'] = $add_data['follow_times']+1;
-                $add_risk_id = Db::table('lbs_service_risks')->insertGetId($add_data);
-                $data['follow_id'] = $add_risk_id;
-                $save_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
-            }else{
-                $save_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
-            }
+            $data['confirm_status'] = 1; //这个状态是用来判断 是用户点击了 已解决的 但是需要技术员确认
+            $save_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
             if ($save_datas) {
                 //返回数据
                 $result['code'] = 1;
