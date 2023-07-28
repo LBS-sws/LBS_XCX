@@ -187,13 +187,16 @@ EOF;
 
     public function onOpen(Server $server, Request $request)
     {
-        echo "服务器: 握手成功，fd{$request->fd}\n";
-        $this->writeLog( "服务器: 握手成功，fd{$request->fd}");
+        $query = urldecode($request->server['query_string']);
+        $params = json_decode($query, true);
 
-        $city_id = $request->get['city_id'] ?? null;
-        $customer_id = $request->get['customer_id'] ?? null;
-        $isStaff = $request->get['is_staff'] ?? 0;
-        $customer_name = $request->get['customer_name'] ?? 0;
+        $city_id = $params['city_id'] ?? null;
+        $customer_id = $params['customer_id'] ?? null;
+        $isStaff = $params['is_staff'] ?? 0;
+        $customer_name = $params['customer_name'] ?? '';
+
+        var_dump("customer_name:");
+        var_dump($customer_name);
 
         echo  "当前城市：";
         echo  $city_id;
@@ -269,7 +272,7 @@ EOF;
             if (!isset($this->clients[$request->fd]['sentWelcome'])) {
 
                 $arr = [
-                    "content" => "{$customer_id}您好，欢迎使用史伟莎售后客服！，你已成功连接。城市 ID：{$city_id}",
+                    "content" => "{$customer_name}您好，欢迎使用史伟莎售后客服！，你已成功连接。城市 ID：{$city_id}",
                     "recordId" => 0,
                     "titleId" => 0,
                     "is_staff" => 1,

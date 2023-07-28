@@ -32,14 +32,14 @@ class Custinfo
             $customer = Db::name('customercompany')->where('CustomerID',$customerid)->find();
             if($customer['isHQ'] == 1 && !empty($customer['GroupID'])){
                 //查询集团下的所有店
-                $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID as value,NameZH as label,City as city')->select();
+                $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID as value,NameZH as label,City as city')->select()->toArray();
                 if(!empty($customer_group)){
                     return success(1,'ok',$customer_group);
                 }
             }else{
                 $data['value'] = $customer['CustomerID'];
                 $data['label'] = $customer['NameZH'];
-                return success(1,'ok',$data);
+                return success(1,'ok',[$data]);
             }
         }else{
             $result['code'] = 0;
