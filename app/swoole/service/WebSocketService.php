@@ -11,7 +11,7 @@ class WebSocketService
 {
     protected $server; // WebSocket 服务器实例
     protected $clients = []; // 客户端数组
-    protected $masterPidFile = '/data/web/lbs_xcx/public/swoole_master.pid'; // 主进程ID文件路径
+    protected $masterPidFile = '/data/web/lbs_xcx/runtime/swoole_master.pid'; // 主进程ID文件路径
     protected $redis; // Redis 实例
 
     public function __construct()
@@ -25,7 +25,8 @@ class WebSocketService
 
         // 创建WebSocket服务器实例
         $this->server = new Server("0.0.0.0", 9501);
-        $ln = <<<EOF
+        $ln = "\n".<<<EOF
+
 	                   _ooOoo_
 	                  o8888888o
 	                  88" . "88
@@ -43,9 +44,10 @@ class WebSocketService
 	     | | :  `- \`.;`\ _ /`;.`/ - ` : | |
 	     \  \ `-.   \_ __\ /__ _/   .-` /  /
 	======`-.____`-.___\_____/___.-`____.-'======
-	              佛祖保佑服务运行顺畅
+	              
 EOF;
         echo $ln."\n";
+        $this->writeLog($ln);
 
 
         // 创建 Redis 实例
@@ -132,7 +134,7 @@ EOF;
     protected function getChildPid()
     {
         // 假设子进程的PID保存在子进程ID文件中
-        $childPidFile = '/data/web/lbs_xcx/public/swoole_child.pid';
+        $childPidFile = '/data/web/lbs_xcx/runtime/swoole_child.pid';
         if (file_exists($childPidFile)) {
             return intval(file_get_contents($childPidFile));
         }
@@ -194,22 +196,22 @@ EOF;
         $customer_id = $params['customer_id'] ?? null;
         $isStaff = $params['is_staff'] ?? 0;
         $customer_name = $params['customer_name'] ?? '';
-
-        var_dump("customer_name:");
-        var_dump($customer_name);
-
-        echo  "当前城市：";
-        echo  $city_id;
-        // 调用onCustomerConnected处理新客户连接
-        var_dump($city_id);
-        var_dump($customer_id);
-        var_dump($isStaff);
-        var_dump($customer_name);
+//
+//        var_dump("customer_name:");
+//        var_dump($customer_name);
+//
+//        echo  "当前城市：";
+//        echo  $city_id;
+//        // 调用onCustomerConnected处理新客户连接
+//        var_dump($city_id);
+//        var_dump($customer_id);
+//        var_dump($isStaff);
+//        var_dump($customer_name);
         if($isStaff == 0 && $customer_id != NULL){
             $this->onCustomerConnected($city_id, $customer_id, $customer_name);
         }
 
-        echo "isStaff:" . $isStaff;
+//        echo "isStaff:" . $isStaff;
 
         $this->clients[$request->fd] = [
             'fd' => $request->fd,
@@ -256,29 +258,29 @@ EOF;
 
             // 将消息转发给相同城市ID的客服
             foreach ($this->clients as $fd => $client) {
-                if ($this->clients[$fd]['is_staff'] == 1 && $this->clients[$fd]['city_id'] === $city_id) {
-                    $arr = [
-                        "recordId" => 0,
-                        "titleId" => 0,
-                        "content" => "访客已连接（城市 ID: {$city_id}，客户 ID: {$customer_id}）",
-                        "userId" => 0,
-                        "is_staff" => 1,
-                    ];
-                    $server->push($fd, json_encode($arr, 256));
-                }
+//                if ($this->clients[$fd]['is_staff'] == 1 && $this->clients[$fd]['city_id'] === $city_id) {
+//                    $arr = [
+//                        "recordId" => 0,
+//                        "titleId" => 0,
+//                        "content" => "访客已连接（城市 ID: {$city_id}，客户 ID: {$customer_id}）",
+//                        "userId" => 0,
+//                        "is_staff" => 1,
+//                    ];
+//                    $server->push($request->fd, json_encode($arr, 256));
+//                }
             }
 
             // 只向新连接的访客客户端发送欢迎消息
             if (!isset($this->clients[$request->fd]['sentWelcome'])) {
 
-                $arr = [
-                    "content" => "{$customer_name}您好，欢迎使用史伟莎售后客服！，你已成功连接。城市 ID：{$city_id}",
-                    "recordId" => 0,
-                    "titleId" => 0,
-                    "is_staff" => 1,
-                    "userId" => 0
-                ];
-                $server->push($request->fd, json_encode($arr, 256));
+//                $arr = [
+//                    "content" => "{$customer_name}您好，欢迎使用史伟莎售后客服！，你已成功连接。城市 ID：{$city_id}",
+//                    "recordId" => 0,
+//                    "titleId" => 0,
+//                    "is_staff" => 1,
+//                    "userId" => 0
+//                ];
+//                $server->push($request->fd, json_encode($arr, 256));
                 $this->clients[$request->fd]['sentWelcome'] = true;
             }
         }
@@ -300,7 +302,7 @@ EOF;
         }
     }
 
-    public function recordMessage( $content, $city_id, $customer_id, $is_staff, $customer_name)
+    public function recordMessage( $content, $city_id, $customer_id, $is_staff, $customer_name, $staff_id)
     {
         try {
             $db = new SwooleDb('127.0.0.1', 'lbs_xcx', 'lbs_xcx', 'A3hWiMeDtEwBcFKY');
@@ -311,6 +313,7 @@ EOF;
                 'content' => $content,
                 'city_id' => $city_id,
                 'customer_id' => $customer_id,
+                'staff_id' => $staff_id,
                 'is_staff' => $is_staff,
                 'customer_name' => $customer_name,
                 'date' => date('Y-m-d'),
@@ -368,8 +371,8 @@ EOF;
         $senderDataS = $this->redis->hGet('1:' . $senderCityId, '1:' . $senderCityId);
         // 这个是获取访客的信息
         $senderDataV = $this->redis->hGet('0:' . $senderCustomerId . ':' . $senderCityId, '0:' . $senderCustomerId . ':' . $senderCityId);
-
-        $this->recordMessage($data['content'],$data['city_id'],$data['customer_id'],$data['is_staff'],$data['customer_name']);
+        $staff_id = $data['staff_id'] ?? '';
+        $this->recordMessage($data['content'],$data['city_id'],$data['customer_id'],$data['is_staff'],$data['customer_name'],$staff_id);
 
         // 判断如果发送消息的是客服人员，则查询Redis中是否存在isStaff = 0的访客信息，并将消息转发给他们
         if ($senderIsStaff === 1 && $senderDataV !== false) {
@@ -430,7 +433,7 @@ EOF;
 
     public function writeLog($message, $filename = 'swoole')
     {
-        $logDir = '/data/web/lbs_xcx/public/swoole/';
+        $logDir = '/data/web/lbs_xcx/runtime/swoole/';
         $logFile = $logDir . date('Y-m-d') . '_' . $filename . '.log';
 
         if (!is_dir($logDir)) {

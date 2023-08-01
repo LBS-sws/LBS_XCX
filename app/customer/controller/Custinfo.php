@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\customer\controller;
 use app\common\model\ImCustomer;
+use app\common\model\ImRecords;
 use think\facade\Db;
 use think\facade\Request;
 use think\Validate;
@@ -32,9 +33,11 @@ class Custinfo
             $customer = Db::name('customercompany')->where('CustomerID',$customerid)->find();
             if($customer['isHQ'] == 1 && !empty($customer['GroupID'])){
                 //查询集团下的所有店
-                $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID as value,NameZH as label,City as city')->select()->toArray();
-                if(!empty($customer_group)){
-                    return success(1,'ok',$customer_group);
+                $customer_group = Db::name('customercompany')->where('GroupID', $customer['GroupID'])->field('CustomerID as value,NameZH as label,City as city')->select()->toArray();
+                if (!empty($customer_group)) {
+                    $all_stores = implode(',', array_column($customer_group, 'value'));
+                    $customer_group[] = ['value' => $all_stores, 'label' => '全部门店', 'city' => ''];
+                    return success(1, 'ok', $customer_group);
                 }
             }else{
                 $data['value'] = $customer['CustomerID'];
@@ -71,27 +74,66 @@ class Custinfo
         $where = [];
 
         if ($data['customer_id'] != '') {
-            $where[] = ['customer_id', '=', $data['customer_id']];
+            $where[] = ['c.customer_id', '=', $data['customer_id']];
         }
 
         if ($data['city'] != '') {
-            $where[] = ['city_id', '=', "{$data['city']}"];
+            $where[] = ['c.city_id', '=', "{$data['city']}"];
         }
         if ($data['query'] != '') {
-            $where[] = ['customer_id', 'like', "%{$data['query']}%"];
+            $where[] = ['c.customer_id', 'like', "%{$data['query']}%"];
         }
 
         if ($data['city'] == 'CN') {
             $where = [];
         }
-        // 设置分页大小为10，显示第3页的数据
-        $cust = ImCustomer::where($where)
+
+        // 在这里查询访客发送的未读消息的条数
+
+        $cust = ImCustomer::alias('c')
+            ->join('im_records r', 'c.customer_id = r.customer_id', 'LEFT')
+            ->where($where)
+            ->where('r.is_staff', 0)
+            ->field('c.*, (SELECT COUNT(id) FROM im_records WHERE customer_id = c.customer_id AND is_read = 0) AS unread_count')
+            ->group('c.customer_id')
             ->paginate([
-                'list_rows'=>$data['list_rows'],  // 分页大小为10
-                'page'=>$data['page']  // 显示第3页的数据
+                'list_rows' => $data['list_rows'],
+                'page' => $data['page']
             ]);
-
-
         return success(0, 'success', $cust);
+    }
+
+    public function changeStatus(){
+
+        $data = [
+            'customer_id' => Request::get('customer_id', ''),
+            'staff_id' => Request::get('staff_id', 'admin'),
+        ];
+
+        $validate = new Validate();
+        $validate->rule([
+            'customer_id' => 'require',
+        ]);
+
+        if (!$validate->check($data)) {
+            return error(1, $validate->getError());
+        }
+        $where = [];
+
+        if ($data['customer_id'] != '') {
+            $where[] = ['customer_id', '=', $data['customer_id']];
+            $where[] = ['is_read', '=', 0];
+        }
+
+        // 在这里查询访客发送的未读消息的条数
+        $data = [
+            'is_read' => 1,
+            'staff_id' => $data['staff_id'],
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        $cust = ImRecords::where($where)->save($data);
+        if ($cust) {
+            return success(0, 'success', $cust);
+        }
     }
 }
