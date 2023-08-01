@@ -13,9 +13,20 @@ class WebSocketService
     protected $clients = []; // 客户端数组
     protected $masterPidFile = '/data/web/lbs_xcx/runtime/swoole_master.pid'; // 主进程ID文件路径
     protected $redis; // Redis 实例
-
+    protected $db; // SwooleDb 实例
     public function __construct()
     {
+
+        // 加载配置文件
+        $config = require '/data/web/lbs_xcx/config/swoole.php';
+
+        $this->db = new SwooleDb(
+            $config['db_host'],
+            $config['db_name'],
+            $config['db_username'],
+            $config['db_password']
+        );
+
         // 创建主进程
         $this->createMasterProcess();
         // 设置跨域请求头
@@ -151,12 +162,11 @@ EOF;
     public function onCustomerConnected($city_id, $customer_id, $customer_name)
     {
         try {
-            $db = new SwooleDb('127.0.0.1', 'lbs_xcx', 'lbs_xcx', 'A3hWiMeDtEwBcFKY');
-            $db->connect();
-            $db->beginTransaction();
+            $this->db->connect();
+            $this->db->beginTransaction();
 
             $conditions = ['city_id' => $city_id, 'customer_id' => $customer_id];
-            $result = $db->table('im_customers')->where($conditions)->get();
+            $result = $this->db->table('im_customers')->where($conditions)->get();
             if($result == NULL || $result == ''){
                 $data = [
                     'city_id' => $city_id,
@@ -166,18 +176,18 @@ EOF;
                     'online_flag' => 1,
                     'created_at' => date('Y-m-d H:i:s')
                 ];
-                $db->table('im_customers')->create($data);
+                $this->db->table('im_customers')->create($data);
             }else{
                 $customer_id = $result['customer_id'];
                 $data = [
                     'online_at' => date('Y-m-d H:i:s'),
                     'online_flag' => 1
                 ];
-                $db->table('im_customers')->where($conditions)->update($data);
+                $this->db->table('im_customers')->where($conditions)->update($data);
             }
 
-            $db->commit();
-            $db->disconnect();
+            $this->db->commit();
+            $this->db->disconnect();
         } catch (\Exception $e) {
             echo "操作失败：" . $e->getMessage();
         }
@@ -305,9 +315,9 @@ EOF;
     public function recordMessage( $content, $city_id, $customer_id, $is_staff, $customer_name, $staff_id)
     {
         try {
-            $db = new SwooleDb('127.0.0.1', 'lbs_xcx', 'lbs_xcx', 'A3hWiMeDtEwBcFKY');
-            $db->connect();
-            $db->beginTransaction();
+
+            $this->db->connect();
+            $this->db->beginTransaction();
 
             $data = [
                 'content' => $content,
@@ -320,11 +330,11 @@ EOF;
                 'created_at' => date('Y-m-d H:i:s'),
             ];
 
-            $db->table('im_records')->create($data);
-            $db->commit();
-            $db->disconnect();
+            $this->db->table('im_records')->create($data);
+            $this->db->commit();
+            $this->db->disconnect();
         } catch (\Exception $e) {
-            $db->rollback();
+            $this->db->rollback();
             echo "操作失败：" . $e->getMessage();
         }
     }
