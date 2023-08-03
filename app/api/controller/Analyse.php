@@ -896,6 +896,8 @@ EOF;
         $res = $this->statisticsReport->field('sum(type_value) as type_value,type_name')->where('type_code','not in','SE')->where($where_statistic)->group('year,month,type_name')->orderRaw('field(type_name,"蟑螂","苍蝇","蚊子","卫生性飞虫","绿化飞虫","仓储害虫","老鼠","其他") ASC')->select()->toArray();
         $type_values = array_column($res, 'type_value');
         $type_names = array_column($res, 'type_name');
+        // var_dump($type_values);
+        // var_dump($type_names);
         //条形统计图的内容填充
         $line['keys'] = $type_names;
         $line['values'] = $type_values;
@@ -1260,9 +1262,10 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
             ];
         }
         //总数
-        $pest_month_total = $this->statisticsReport->where($pest_where)->sum('type_value');
+        $custWhere[] = ['customer_id','=',$cust['cust_details']['CustomerID']];
+        $pest_month_total = $this->statisticsReport->where($custWhere)->where($pest_where)->sum('type_value');
         //某种类型的飞虫
-        $pest_max_data = $this->statisticsReport->field('SUM(type_value) AS type_value, type_name')->where($pest_where)->group('type_name')->order('type_value DESC')->findOrEmpty()->toArray();
+        $pest_max_data = $this->statisticsReport->field('SUM(type_value) AS type_value, type_name')->where($custWhere)->where($pest_where)->group('type_name')->order('type_value DESC')->findOrEmpty()->toArray();
         $pest_result = [];
         // $pest_month_total = 0;
         // $pest_max_data = 0;
@@ -1285,7 +1288,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
                     ['type_name', '=', '老鼠']
                 ];
             }
-            $pest_month_total_last = $this->statisticsReport->where($pest_where_last)->sum('type_value');
+            $pest_month_total_last = $this->statisticsReport->where($custWhere)->where($pest_where_last)->sum('type_value');
             if ($pest_month_total > $pest_month_total_last) {
                 $pest_trend = '上升';
             } elseif ($pest_month_total < $pest_month_total_last) {
@@ -1371,7 +1374,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
     {
         $echarts = ECharts::init("#chartLine");
         $option = new Option();
-        $option->animation(true);
+        $option->animation(false);
         $option->title([
             "text" => '虫害趋势分析图',
             "left" => 'center',

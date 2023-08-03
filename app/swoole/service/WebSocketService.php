@@ -495,33 +495,33 @@ EOF;
     public function onClose(Server $server, $fd)
     {
         echo "客户端 {$fd} 已关闭\n";
-        foreach ($this->clients as $clientData) {
-            if ($clientData['fd'] === $fd) {
-                $this->redis->hDel($clientData['is_staff'] . ':' . $clientData['customer_id'] . ':' . $clientData['city_id'], $clientData['is_staff'] . ':' . $clientData['customer_id'] . ':' . $clientData['city_id']);
+        /* foreach ($this->clients as $clientData) {
+             if ($clientData['fd'] === $fd) {
+                 $this->redis->hDel($clientData['is_staff'] . ':' . $clientData['customer_id'] . ':' . $clientData['city_id'], $clientData['is_staff'] . ':' . $clientData['customer_id'] . ':' . $clientData['city_id']);
 
-                try {
-                    $this->db->connect();
-                    $this->db->beginTransaction();
-                    $conditions = ['city_id' => $clientData['city_id'], 'customer_id' => $clientData['customer_id']];
-                    $data = [
-//                'online_at' => date('Y-m-d H:i:s'),
-                        'online_flag' => 0
-                    ];
-                    $res = $this->db->table('im_customers')->where($conditions)->update($data);
-                    echo "更新后：";
-                    echo $res;
-                    $this->writeLog(json_encode($conditions,256).'离线时间：'.date('Y-m-d H:i:s'));
+                 try {
+                     $this->db->connect();
+                     $this->db->beginTransaction();
+                     $conditions = ['city_id' => $clientData['city_id'], 'customer_id' => $clientData['customer_id']];
+                     $data = [
+ //                'online_at' => date('Y-m-d H:i:s'),
+                         'online_flag' => 0
+                     ];
+                     $res = $this->db->table('im_customers')->where($conditions)->update($data);
+                     echo "更新后：";
+                     echo $res;
+                     $this->writeLog(json_encode($conditions,256).'离线时间：'.date('Y-m-d H:i:s'));
 
-                    $this->db->commit();
-                    $this->db->disconnect();
-                } catch (\Exception $e) {
-                    echo "操作失败：" . $e->getMessage();
-                }
+                     $this->db->commit();
+                     $this->db->disconnect();
+                 } catch (\Exception $e) {
+                     echo "操作失败：" . $e->getMessage();
+                 }
 
 
-                break;
-            }
-        }
+                 break;
+             }
+         }*/
 
         $this->writeLog("客户端 {$fd} 已关闭");
 

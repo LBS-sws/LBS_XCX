@@ -53,7 +53,7 @@ class Customer extends BaseController
         if ($city == 'CN') {
             $where = []; // 如果城市为CN，则清空查询条件
         }
-
+        $where[] = ['make_flag', '=', 0];
         $cust = $this->analyseReport->field("customer_id,customer_name,date,city,url_id,url")
             ->where($where)
             ->paginate(); // 查询客户信息列表
@@ -70,14 +70,14 @@ class Customer extends BaseController
         $city = Request::param('city', ''); // 获取城市
         $where = [];
 
-        if ($city != '') {
+        if ($city != '' && $city != 'CN') {
             $where[] = ['city', '=', $city]; // 添加城市查询条件
         }
 
         if ($search != '') {
             $where[] = ['customer_name', 'like', '%' . $search . '%']; // 添加搜索关键字查询条件
         }
-
+        // dd($where);
         $cust = $this->analyseReport->field("customer_id as label,customer_name as value,date,city,url_id,url")
             ->where($where)
             ->limit(10)
@@ -101,7 +101,8 @@ class Customer extends BaseController
             $city = $city_ret[0]['Text']; // 如果城市ID不为空，则查询城市名称
         }
 
-        $reportId = AnalyseReport::where('date',$month)->where('customer_id',$cust)->findOrEmpty();
+        $reportId = AnalyseReport::where('date',$month)->where('customer_id',$cust)->findOrEmpty()->toArray();
+        // dd($reportId);
 
         $file_path = 'analyse/' . $month . '/' . $reportId['url_id'] . '.pdf'; // 构建PDF文件路径
         $domain = Request::domain() . '/';
@@ -111,7 +112,7 @@ class Customer extends BaseController
             return success(0, 'success', $url);
         } else {
             $res = new Analyse();
-            $report = $res->index($month, $cust, $city); // 如果PDF文件不存在，则生成PDF文件
+            $report = $res->index($month, $cust, $city,$reportId['url_id']); // 如果PDF文件不存在，则生成PDF文件
 
             if ($report) {
                 $url = $domain . $file_path;
