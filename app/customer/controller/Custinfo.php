@@ -89,12 +89,10 @@ class Custinfo
         }
 
         // 在这里查询访客发送的未读消息的条数
-
         $cust = ImCustomer::alias('c')
-            ->join('im_records r', 'c.customer_id = r.customer_id', 'LEFT')
+            ->leftJoin('im_records r', 'c.customer_id = r.customer_id and r.is_staff = 0')
             ->where($where)
-            ->where('r.is_staff', 0)
-            ->field('c.*, (SELECT COUNT(id) FROM im_records WHERE customer_id = c.customer_id AND is_read = 0) AS unread_count')
+            ->field('c.*, IFNULL((SELECT COUNT(id) FROM im_records WHERE customer_id = c.customer_id AND is_read = 0), 0) AS unread_count')
             ->group('c.customer_id')
             ->paginate([
                 'list_rows' => $data['list_rows'],

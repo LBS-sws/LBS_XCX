@@ -50,11 +50,17 @@ class SwooleDb
 
     public function rollback()
     {
-        return $this->connection->rollBack();
+
+        if ($this->connection->inTransaction()) {
+            return $this->connection->rollBack();
+        }
     }
 
     public function table($table)
     {
+        if ($this->connection->inTransaction()) {
+            $this->connection->rollBack();
+        }
         $this->table = $table;
         return $this;
     }
@@ -79,12 +85,12 @@ class SwooleDb
         return $this;
     }
 
-
     public function executeQuery($sql, $params = [])
     {
+        $this->connect(); // 建立数据库连接
         $stmt = $this->connection->prepare($sql);
-        foreach ($params as $param => &$value) {
-            $stmt->bindParam(":" . $param, $value);
+        foreach ($params as $param => $value) {
+            $stmt->bindValue(":" . $param, $value);
         }
         try {
             $stmt->execute();
@@ -97,8 +103,8 @@ class SwooleDb
     public function executeNonQuery($sql, $params = [])
     {
         $stmt = $this->connection->prepare($sql);
-        foreach ($params as $param => &$value) {
-            $stmt->bindParam(":" . $param, $value);
+        foreach ($params as $param => $value) {
+            $stmt->bindValue(":" . $param, $value);
         }
         try {
             $stmt->execute();
@@ -127,7 +133,6 @@ class SwooleDb
 
         return count($result) > 0 ? $result[0] : null; // 返回单条记录或 null
     }
-
 
     public function create($data)
     {
@@ -186,7 +191,6 @@ class SwooleDb
         if (!empty($where)) {
             $sql .= " WHERE $where";
         }
-
         return $this->executeQuery($sql, $conditions);
     }
 }

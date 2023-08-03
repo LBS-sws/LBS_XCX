@@ -2,7 +2,6 @@
 
 namespace app\swoole\service;
 
-use app\swoole\service\SwooleDb;
 use Swoole\Http\Request;
 use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server;
@@ -11,14 +10,15 @@ class WebSocketService
 {
     protected $server; // WebSocket 服务器实例
     protected $clients = []; // 客户端数组
-    protected $masterPidFile = '/data/web/lbs_xcx/runtime/swoole_master.pid'; // 主进程ID文件路径
+    protected $masterPidFile = '/data/lbs_xcx/runtime/swoole_master.pid'; // 主进程ID文件路径
     protected $redis; // Redis 实例
     protected $db; // SwooleDb 实例
+
     public function __construct()
     {
 
         // 加载配置文件
-        $config = require '/data/web/lbs_xcx/config/swoole.php';
+        $config = require '/data/lbs_xcx/config/swoole.php';
 
         $this->db = new SwooleDb(
             $config['db_host'],
@@ -35,8 +35,8 @@ class WebSocketService
         header("Access-Control-Allow-Headers: Content-Type");
 
         // 创建WebSocket服务器实例
-        $this->server = new Server("0.0.0.0", 9501);
-        $ln = "\n".<<<EOF
+        $this->server = new Server("0.0.0.0", 9201);
+        $ln = "\n" . <<<EOF
 
 	                   _ooOoo_
 	                  o8888888o
@@ -57,7 +57,7 @@ class WebSocketService
 	======`-.____`-.___\_____/___.-`____.-'======
 	              
 EOF;
-        echo $ln."\n";
+        echo $ln . "\n";
         $this->writeLog($ln);
 
 
@@ -87,6 +87,7 @@ EOF;
         });
 
     }
+
     // 添加析构函数，在服务器结束时关闭Redis连接
     public function __destruct()
     {
@@ -145,7 +146,7 @@ EOF;
     protected function getChildPid()
     {
         // 假设子进程的PID保存在子进程ID文件中
-        $childPidFile = '/data/web/lbs_xcx/runtime/swoole_child.pid';
+        $childPidFile = '/data/lbs_xcx/runtime/swoole_child.pid';
         if (file_exists($childPidFile)) {
             return intval(file_get_contents($childPidFile));
         }
@@ -159,31 +160,48 @@ EOF;
         $this->server->start();
     }
 
-    public function onCustomerConnected($city_id, $customer_id, $customer_name)
+    public function getCustomerName($customer_id = 'ceshizhangdan-ZY')
     {
         try {
             $this->db->connect();
-            $this->db->beginTransaction();
+            $sql = "SELECT NameZH FROM customercompany WHERE CustomerID = :customer_id LIMIT 1";
+            $params = ['customer_id' => $customer_id];
+            $result = $this->db->executeQuery($sql, $params);
+            $this->db->disconnect();
+            return $result;
+        } catch (\Exception $e) {
+            echo "操作失败：" . $e->getMessage();
+        }
+    }
 
+
+    public function onCustomerConnected($city_id, $customer_id, $customer_name = '')
+    {
+        try {
+            $this->db->connect();
+            $cust = $this->getCustomerName($customer_id);
             $conditions = ['city_id' => $city_id, 'customer_id' => $customer_id];
             $result = $this->db->table('im_customers')->where($conditions)->get();
-            if($result == NULL || $result == ''){
+            $this->db->beginTransaction();
+
+            if ($result == NULL || $result == '') {
                 $data = [
                     'city_id' => $city_id,
                     'customer_id' => $customer_id,
-                    'customer_name' => $customer_name,
+                    'customer_name' => $cust[0]['NameZH'] ?? $customer_name,
                     'online_at' => date('Y-m-d H:i:s'),
                     'online_flag' => 1,
                     'created_at' => date('Y-m-d H:i:s')
                 ];
                 $this->db->table('im_customers')->create($data);
-            }else{
-                $customer_id = $result['customer_id'];
+            } else {
+//                $customer_id = $result['customer_id'];
                 $data = [
                     'online_at' => date('Y-m-d H:i:s'),
                     'online_flag' => 1
                 ];
-                $this->db->table('im_customers')->where($conditions)->update($data);
+//                $this->db->table('im_customers')->where($conditions)->update($data);
+                $this->changeCustomerStatus($conditions,$data);
             }
 
             $this->db->commit();
@@ -193,8 +211,25 @@ EOF;
         }
     }
 
-
-
+    public function changeCustomerStatus($conditions, $data)
+    {
+//        try {
+//            $this->db->connect();
+//            $this->db->beginTransaction();
+//            $data = [
+//                'online_at' => date('Y-m-d H:i:s'),
+//                'online_flag' => 1
+//            ];
+        $res = $this->db->table('im_customers')->where($conditions)->update($data);
+        echo "更新后：";
+        echo $res;
+//            return $res;$res
+//            $this->db->commit();
+//            $this->db->disconnect();
+//        } catch (\Exception $e) {
+//            echo "操作失败：" . $e->getMessage();
+//        }
+    }
 
 
     public function onOpen(Server $server, Request $request)
@@ -205,36 +240,31 @@ EOF;
         $city_id = $params['city_id'] ?? null;
         $customer_id = $params['customer_id'] ?? null;
         $isStaff = $params['is_staff'] ?? 0;
-        $customer_name = $params['customer_name'] ?? '';
-//
-//        var_dump("customer_name:");
-//        var_dump($customer_name);
-//
-//        echo  "当前城市：";
-//        echo  $city_id;
-//        // 调用onCustomerConnected处理新客户连接
-//        var_dump($city_id);
-//        var_dump($customer_id);
-//        var_dump($isStaff);
-//        var_dump($customer_name);
-        if($isStaff == 0 && $customer_id != NULL){
+        $staff_id = $params['staff_id'] ?? null;
+
+
+        if ($isStaff == 0 && $customer_id != NULL) {
+            $cust = $this->getCustomerName($customer_id);
+            $customer_name = $cust[0]['NameZH'];
+            echo "公司：";
+            var_dump($customer_name);
             $this->onCustomerConnected($city_id, $customer_id, $customer_name);
+        } else {
+            // 这里是客服账号的逻辑
+            $this->onStaffConnected($city_id, $staff_id);
         }
 
-//        echo "isStaff:" . $isStaff;
-
-        $this->clients[$request->fd] = [
+        $this->clients[$staff_id][$request->fd] = [
             'fd' => $request->fd,
             'city_id' => $city_id,
             'customer_id' => $customer_id,
             'is_staff' => $isStaff,
-            'customer_name' => $customer_name,
+            'customer_name' => $customer_name??'',
             'lastHeartbeat' => time(), // 初始化最后心跳时间戳
         ];
 
-
         // Store the client information in Redis
-        if($isStaff == 0) {
+        if ($isStaff == 0) {
             $this->redis->hSet($isStaff . ':' . $customer_id . ':' . $city_id, $isStaff . ':' . $customer_id . ':' . $city_id, json_encode([
                 'fd' => $request->fd,
                 'customer_id' => $customer_id,
@@ -242,23 +272,21 @@ EOF;
                 'is_staff' => $isStaff,
             ]));
         }
-        if($isStaff == 1){
-            $this->redis->hSet($isStaff . ':'  . $city_id, $isStaff . ':' . $city_id, json_encode([
+        if ($isStaff == 1) {
+            $key = $isStaff . ':' . $city_id;
+            $value = json_encode([
                 'fd' => $request->fd,
-//                'customer_id' => $customer_id,
                 'city_id' => $city_id,
                 'is_staff' => $isStaff,
-            ]));
+                'staff_id' => $staff_id,
+            ]);
+            // 将客服信息添加到 Redis 列表中
+            $this->redis->rPush($key, $value);
         }
 
         // 在连接成功时向客户端发送服务是否正常的状态信息
         $this->checkMasterAndChildProcess(); // 检查主进程和子进程是否存在
 
-//        $status = [
-//            'masterProcessExists' => $this->getMasterPid() > 0,
-//            'childProcessExists' => $this->getChildPid() > 0,
-//        ];
-//        $server->push($request->fd, json_encode($status));
         $this->writeLog("连接信息：城市ID：{$city_id}，客户ID：{$customer_id}，是否客服：{$isStaff}");
 
         if ($isStaff) {
@@ -267,32 +295,51 @@ EOF;
             echo "访客已连接（城市 ID: {$city_id}，客户 ID: {$customer_id}，fd: {$request->fd})\n";
 
             // 将消息转发给相同城市ID的客服
-            foreach ($this->clients as $fd => $client) {
-//                if ($this->clients[$fd]['is_staff'] == 1 && $this->clients[$fd]['city_id'] === $city_id) {
-//                    $arr = [
-//                        "recordId" => 0,
-//                        "titleId" => 0,
-//                        "content" => "访客已连接（城市 ID: {$city_id}，客户 ID: {$customer_id}）",
-//                        "userId" => 0,
-//                        "is_staff" => 1,
-//                    ];
-//                    $server->push($request->fd, json_encode($arr, 256));
-//                }
+            foreach ($this->clients[$staff_id] as $fd => $client) {
+                // 根据需求进行处理
             }
 
             // 只向新连接的访客客户端发送欢迎消息
-            if (!isset($this->clients[$request->fd]['sentWelcome'])) {
-
-//                $arr = [
-//                    "content" => "{$customer_name}您好，欢迎使用史伟莎售后客服！，你已成功连接。城市 ID：{$city_id}",
-//                    "recordId" => 0,
-//                    "titleId" => 0,
-//                    "is_staff" => 1,
-//                    "userId" => 0
-//                ];
-//                $server->push($request->fd, json_encode($arr, 256));
-                $this->clients[$request->fd]['sentWelcome'] = true;
+            if (!isset($this->clients[$staff_id][$request->fd]['sentWelcome'])) {
+                // 根据需求进行处理
+                $this->clients[$staff_id][$request->fd]['sentWelcome'] = true;
             }
+        }
+    }
+
+
+    public function onStaffConnected($city_id, $staff_id)
+    {
+        try {
+            $this->db->connect();
+            $conditions = ['city_id' => $city_id, 'staff_id' => $staff_id];
+            $result = $this->db->table('im_lbs_staff')->where($conditions)->get();
+            $this->db->beginTransaction();
+
+            if ($result == NULL || $result == '') {
+                // 如果该客服账号不存在，则创建新的客服账号记录
+                $data = [
+                    'city_id' => $city_id,
+                    'staff_id' => $staff_id,
+                    'online_at' => date('Y-m-d H:i:s'),
+                    'online_flag' => 1,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                $this->db->table('im_lbs_staff')->create($data);
+            } else {
+                // 如果该客服账号已存在，则更新在线状态
+                $data = [
+                    'online_at' => date('Y-m-d H:i:s'),
+                    'online_flag' => 1
+                ];
+                $this->db->table('im_lbs_staff')->where($conditions)->update($data);
+            }
+
+            $this->db->commit();
+            $this->db->disconnect();
+        } catch (\Exception $e) {
+            $this->db->rollback();
+            echo "操作失败：" . $e->getMessage();
         }
     }
 
@@ -312,7 +359,7 @@ EOF;
         }
     }
 
-    public function recordMessage( $content, $city_id, $customer_id, $is_staff, $customer_name, $staff_id)
+    public function recordMessage($content, $city_id, $customer_id, $is_staff, $customer_name, $staff_id)
     {
         try {
 
@@ -372,59 +419,77 @@ EOF;
         }
 
         // 获取发送消息的客户端信息
-        $senderCityId = $data['city_id'];
-        $senderCustomerId = $data['customer_id'];
-        $senderIsStaff = $data['is_staff'];
+        $senderCityId = $data['city_id'] ?? null;
+        $senderCustomerId = $data['customer_id'] ?? null;
+        $senderIsStaff = $data['is_staff'] ?? null;
         $time = date('Y-m-d H:i:s');
+        $cust = $this->getCustomerName($senderCustomerId);
 
         // 这个是获取客服人员的信息
         $senderDataS = $this->redis->hGet('1:' . $senderCityId, '1:' . $senderCityId);
         // 这个是获取访客的信息
         $senderDataV = $this->redis->hGet('0:' . $senderCustomerId . ':' . $senderCityId, '0:' . $senderCustomerId . ':' . $senderCityId);
         $staff_id = $data['staff_id'] ?? '';
-        $this->recordMessage($data['content'],$data['city_id'],$data['customer_id'],$data['is_staff'],$data['customer_name'],$staff_id);
+        $customer_name = $cust[0]['NameZH'] ?? $data['customer_id'];
+        $this->recordMessage($data['content'], $data['city_id'], $data['customer_id'], $data['is_staff'], $customer_name, $staff_id);
 
         // 判断如果发送消息的是客服人员，则查询Redis中是否存在isStaff = 0的访客信息，并将消息转发给他们
         if ($senderIsStaff === 1 && $senderDataV !== false) {
             $senderInfo = json_decode($senderDataV, true);
 
-            // Now you can access the sender's data
-            $senderFd = $senderInfo['fd'];
+            // 获取发送者的数据
+            $senderFd = $senderInfo['fd'] ?? null;
 
-            $arr = [
-                "content" => $data['content'],
-                "recordId" => 0,
-                "titleId" => 0,
-                "userId" => 0,
-                "is_staff" => 1
-            ];
-            $this->writeLog("is_staff=1===》消息转发给：{$senderFd}");
+            // 在推送消息之前检查连接是否存在
+            if ($senderFd !== null && $server->exist($senderFd)) {
+                $arr = [
+                    "content" => $data['content'],
+                    "recordId" => 0,
+                    "titleId" => 0,
+                    "userId" => 0,
+                    "is_staff" => 1
+                ];
+                $this->writeLog("is_staff=1===》消息转发给：{$senderFd}");
 
-            $server->push($senderFd, json_encode($arr, 256));
+                $server->push($senderFd, json_encode($arr));
+            } else {
+                // 处理连接不存在的情况
+                $this->writeLog("is_staff=1===》连接不存在：{$senderFd}");
+            }
         }
 
-        // 判断如果发送消息的是访客，则查询Redis中是否存在城市ID和访客ID匹配的客服信息，并将消息转发给他们
-        if ($senderIsStaff === 0 && $senderDataS !== false) {
-            $senderInfo = json_decode($senderDataS, true);
-            $senderFd = $senderInfo['fd'];
+// 判断如果发送消息的是访客，则查询Redis中是否存在城市ID和访客ID匹配的客服信息，并将消息转发给他们
+        if ($senderIsStaff === 0) {
+            // 获取所有在线的客服
+            $onlineStaffs = $this->redis->lRange('1:' . $senderCityId, 0, -1);
 
-            $arr_vis = [
-                "recordId" => 0,
-                "titleId" => 0,
-                "cityId" => $data['city_id'],
-                "customer_id" => $data['customer_id'],
-                "content" => $data['content'],
-                "userId" => 0,
-                "is_staff" => 0,
-                "fromCustomer" => 1
-            ];
-            $this->writeLog("is_staff=0===》消息转发给：{$senderFd}");
+            if (!empty($onlineStaffs)) {
+                foreach ($onlineStaffs as $staff) {
+                    $selectedStaff = json_decode($staff, true);
+                    $senderFd = $selectedStaff['fd'] ?? null;
 
-            $server->push($senderFd, json_encode($arr_vis, 256));
+                    $arr_vis = [
+                        "recordId" => 0,
+                        "titleId" => 0,
+                        "cityId" => $data['city_id'],
+                        "customer_id" => $data['customer_id'],
+                        "content" => $data['content'],
+                        "userId" => 0,
+                        "is_staff" => 0,
+                        "fromCustomer" => 1
+                    ];
+                    $this->writeLog("is_staff=0===》消息转发给：{$senderFd}");
+
+                    if ($senderFd !== null && $server->exist($senderFd)) {
+                        $server->push($senderFd, json_encode($arr_vis));
+                    } else {
+                        // 处理连接不存在的情况
+                        $this->writeLog("is_staff=0===》连接不存在：{$senderFd}");
+                    }
+                }
+            }
         }
-
     }
-
 
 
     public function onClose(Server $server, $fd)
@@ -432,10 +497,32 @@ EOF;
         echo "客户端 {$fd} 已关闭\n";
         foreach ($this->clients as $clientData) {
             if ($clientData['fd'] === $fd) {
-                $this->redis->hDel($clientData['is_staff'] . ':' .$clientData['customer_id'] . ':' . $clientData['city_id'], $clientData['is_staff'] . ':' .$clientData['customer_id'] . ':' . $clientData['city_id']);
+                $this->redis->hDel($clientData['is_staff'] . ':' . $clientData['customer_id'] . ':' . $clientData['city_id'], $clientData['is_staff'] . ':' . $clientData['customer_id'] . ':' . $clientData['city_id']);
+
+                try {
+                    $this->db->connect();
+                    $this->db->beginTransaction();
+                    $conditions = ['city_id' => $clientData['city_id'], 'customer_id' => $clientData['customer_id']];
+                    $data = [
+//                'online_at' => date('Y-m-d H:i:s'),
+                        'online_flag' => 0
+                    ];
+                    $res = $this->db->table('im_customers')->where($conditions)->update($data);
+                    echo "更新后：";
+                    echo $res;
+                    $this->writeLog(json_encode($conditions,256).'离线时间：'.date('Y-m-d H:i:s'));
+
+                    $this->db->commit();
+                    $this->db->disconnect();
+                } catch (\Exception $e) {
+                    echo "操作失败：" . $e->getMessage();
+                }
+
+
                 break;
             }
         }
+
         $this->writeLog("客户端 {$fd} 已关闭");
 
         unset($this->clients[$fd]);
@@ -443,7 +530,7 @@ EOF;
 
     public function writeLog($message, $filename = 'swoole')
     {
-        $logDir = '/data/web/lbs_xcx/runtime/swoole/';
+        $logDir = '/data/lbs_xcx/runtime/swoole/';
         $logFile = $logDir . date('Y-m-d') . '_' . $filename . '.log';
 
         if (!is_dir($logDir)) {
