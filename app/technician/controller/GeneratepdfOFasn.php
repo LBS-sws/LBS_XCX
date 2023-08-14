@@ -33,7 +33,7 @@ class GeneratepdfOFasn
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
-        if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
+        if ($token==$user_token['token'] &&  ($c_time <= 24)) {
             if ($job_type==1) {
                 $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('j.JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate')->find();
                 $job_datas = Db::table('joborder')->where('JobID',$job_id)->find();
@@ -198,7 +198,9 @@ class GeneratepdfOFasn
             }
             $baseUrl_imgs = "../public";
 
-
+            // if($job_id==2560591){
+            //     var_dump($report_datas);die();
+            // }
             $company_img = "../public/pdf/company/".$city.".jpg";
             //pdf生成
             $html = <<<EOF
@@ -293,11 +295,11 @@ EOF;
                     </tr>
                     <tr>
                         <td width="15%">服务内容</td>
-                        <td width="85%" align="left">{$bc}</td>
+                        <td width="85%" align="left">{$report_datas['briefing']['content']}</td>
                     </tr>
                     <tr v-if="report_datas.briefing.proposal!=''">
                         <td width="15%">跟进与建议</td>
-                        <td width="85%" align="left">{$bp}</td>
+                        <td width="85%" align="left">{$report_datas['briefing']['proposal']}</td>
                     </tr>
 EOF;
                 }
@@ -402,9 +404,10 @@ EOF;
                         <tr>
                         <td width="16%">风险图片</td>
 EOF;
+// var_dump($report_datas['risk'][$r]['site_photos']);exit;
                         if(isset($report_datas['risk'][$r]['site_photos']) && $report_datas['risk'][$r]['site_photos'] != '' ){
                         $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
-
+                         
                         for ($sp=0; $sp < count($site_photos); $sp++) {
                             $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
                             $html .= <<<EOF
@@ -422,7 +425,7 @@ EOF;
                         }else{
                              $html .= <<<EOF
                             <td width="84%" align="center" height="10"></td>
-EOF;
+EOF;                            
                         }
                         $html .= <<<EOF
                         </tr>  
