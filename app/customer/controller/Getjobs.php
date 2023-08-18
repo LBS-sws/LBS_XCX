@@ -123,6 +123,8 @@ class Getjobs
             foreach($datas as $k=>$v){
                 $item = Db::table('lbs_invoice')->where('jobid',$v['JobID'])->find();
                 $datas[$k]['pics'] = $item['pics'];
+
+
             }
             //获取时间
             $begin_date = date("Y-m-d",strtotime("now"));

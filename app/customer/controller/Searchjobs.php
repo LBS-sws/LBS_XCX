@@ -118,7 +118,16 @@ class Searchjobs
                     }
                 }
             }
-            
+            foreach($datas as $k=>$v){
+                // 发票
+                $item = Db::table('lbs_invoice')->where('jobid',$v['JobID'])->find();
+                $datas[$k]['pics'] = $item['pics'];
+
+                // 证件
+                $key = $v['Staff01'];
+                $itemx = Db::table('lbs_papersstaff')->where('name|code','=',$key)->find();
+                $datas[$k]['papers'] = $itemx['code'];
+            }
             if ($datas) {
                 //返回数据
                 $result['code'] = 1;

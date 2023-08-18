@@ -47,7 +47,7 @@ class Login
 
 
                     //办公室电话
-                    $office = Db::name('customercompany')->alias('cc')->join('officecity oc ','cc.City=oc.City')->join('officesettings os ','oc.Office=os.Office')->join('enums ee','ee.EnumID=os.Office','left')->where('cc.CustomerID', $user['CustomerID'])->where('ee.EnumType','=',8)->field('ee.Text as city_code,cc.CustomerType,os.Tel,cc.isHQ,cc.NameZH,cc.City')->find();
+                    $office = Db::name('customercompany')->alias('cc')->join('officecity oc ','cc.City=oc.City')->join('officesettings os ','oc.Office=os.Office')->join('enums ee','ee.EnumID=os.Office','left')->where('cc.CustomerID', $user['CustomerID'])->where('ee.EnumType','=',8)->field('ee.Text as city_code,cc.CustomerType,os.Tel,os.BranchName,cc.isHQ,cc.NameZH,cc.City')->find();
 //                    dd(Db::name('customercompany')->getLastSql());
                     //查询(1)总店还是(0)分店
                     // $main_store = 0;
@@ -63,6 +63,7 @@ class Login
                     $result['data']['City'] = $office['City'];
                     $result['data']['city_code'] = $office['city_code'];
                     $result['data']['officetel'] = $office['Tel'];
+                    $result['data']['officename'] = $office['BranchName'];
                     $result['data']['mainstore'] = $office['isHQ'];
                     $result['data']['token'] = $token;
 
