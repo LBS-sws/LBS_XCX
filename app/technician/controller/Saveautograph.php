@@ -60,7 +60,7 @@ class Saveautograph
                             //不存在
                             $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
                             $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
-                            $cmd = " /usr/bin/convert -resize 50%x50% -rotate -90 $imgPath  $imgPath 2>&1";
+                            $cmd = " /usr/bin/convert -rotate -90 $imgPath  $imgPath 2>&1";
                             @exec($cmd,$output,$return_val);
                             if($return_val === 0){
                                 $data['conversion_flag'] = 0;
@@ -86,7 +86,7 @@ class Saveautograph
                 }
                 $data['creat_time'] = date('Y-m-d H:i:s');
                 $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
-                $cmd = " /usr/bin/convert -resize 50%x50% -rotate -90 $imgPath  $imgPath 2>&1";
+                $cmd = " /usr/bin/convert -rotate -90 $imgPath  $imgPath 2>&1";
                 @exec($cmd,$output,$return_val);
                 if($return_val === 0){
                     $data['conversion_flag'] = 0;

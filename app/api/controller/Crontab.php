@@ -28,7 +28,7 @@ class Crontab extends BaseController
     /**
      * 定义客户类型
      * */
-    protected $custType = '203';
+    protected $custType = ['203','249'];
 
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
@@ -261,7 +261,7 @@ class Crontab extends BaseController
         }
         // $date = '2023-03-24';//date('Y-m-d')    ;
         $cc_where = [
-            'cc.CustomerType' => $this->custType,
+            'cc.CustomerType' =>  ['in', $this->custType],
             'j.JobDate' => $date,
             'j.Status' => 3,
             'j.ServiceType' => 2,
@@ -416,7 +416,7 @@ class Crontab extends BaseController
             if (!empty($data['custInfo'])) {
                 $where_c = [
                     'CustomerID' => $cust['CustomerID'],
-//                    'CustomerType' => $this->custType,
+//                    'CustomerType' =>  ['in', $this->custType],
                 ];
                 //查询是工厂客户才会继续走接下来的流程
                 $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();

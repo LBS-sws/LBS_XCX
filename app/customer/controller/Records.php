@@ -56,13 +56,18 @@ class Records extends BaseController
             $where[] = ['city_id', '=', "{$data['city']}"];
         }
 
-        if ($data['date'] != '') {
+        // Query records with is_read = 0
+        $unreadRecords = ImRecords::where($where)
+            ->where('is_read', '=', 0)
+            ->field("*, created_at as timestamp")
+            ->order('id DESC')
+            ->count();
+        if ($data['date'] != '' && $unreadRecords > 0) {
             $where[] = ['date', '=', $data['date']];
         }
-
-        if ($data['city'] == 'CN') {
-            $where = [];
-        }
+        // if ($data['city'] == 'CN') {
+        //     $where = [];
+        // }
         // 设置分页大小为10，显示第3页的数据
         $result = ImRecords::where($where)->field("*, created_at as timestamp")->order('id DESC')
             ->paginate([

@@ -10,6 +10,7 @@ use think\facade\Db;
 
 class Getjobbyid
 {
+    protected $custType = ['203','249'];
     public function index()
     {
         $result['code'] = 0;
@@ -63,7 +64,7 @@ class Getjobbyid
                 }
 
                 // 工厂的才放开
-                if(isset($job_datas['CustomerType']) && $job_datas['CustomerType'] == 203){
+                if(isset($job_datas['CustomerType']) && in_array($job_datas['CustomerType'], $this->custType)){
                     //布防图
                     $arr = array('contractid'=>$job_datas['ContractID'],'staffid'=>$staffid,'token'=>$token);
                     $xinu_data = $this->curl_post(config('app.uapp_url') . '/web/remote/getAttachment.php',$arr);

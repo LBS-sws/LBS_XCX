@@ -150,7 +150,7 @@ class Generatepdf
                         $equipmenthz_datas[$i]['table_title'][0] = '序号';
                         $equipmenthz_datas[$i]['content'][$j][0] = sprintf('%02s', $j+1);
                         $equipmenthz_datas[$i]['table_title'][1] = '编号';
-	            		$equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_number'];
+                        $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_number'];
                         $equipmenthz_datas[$i]['table_title'][1] = '区域';
                         $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_area'];
                         for ($m=0; $m < count($check_data); $m++) {
@@ -561,6 +561,7 @@ EOF;
                     $this->pic_rotating($degrees,$url);
                 }else{
                     $cimageSrc='';
+                    $cimageSrc_add = '';
                 }
                 //签名
                 $customer_grade = $report_datas['autograph']['customer_grade'];
@@ -602,8 +603,11 @@ EOF;
                         <img src="{$eimageSrc03}" width="130" height="80" style="magin:20px 50px;">
 EOF;
             }
+
             $html .= <<<EOF
                 </td>
+EOF;
+            $html .= <<<EOF
                 <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"><img src="{$cimageSrc_add}" width="130" height="80" style="magin:20px 50px;"></td>
                 </tr>
 EOF;

@@ -29,7 +29,7 @@ class Analyse extends BaseController
     /**
      * 定义客户类型
      * */
-    protected $custType = '203';
+    protected $custType = ['203','249'];
 
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
@@ -783,7 +783,7 @@ EOF;
         if (!empty($data['custInfo'])) {
             $where_c = [
                 'CustomerID' => $cust['CustomerID'],
-                'CustomerType' => $this->custType,
+                'CustomerType' => ['in', $this->custType],
             ];
             //查询是工厂客户才会继续走接下来的流程
             $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();
@@ -815,7 +815,7 @@ EOF;
             'j.CustomerID' => $cust['cust_details']['CustomerID'],
             'j.Status' => 3,
             'j.ServiceType' => 2,
-            'c.CustomerType' => $this->custType
+            'c.CustomerType' => ['in', $this->custType],
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
 

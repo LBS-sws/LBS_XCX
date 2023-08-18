@@ -181,7 +181,18 @@ EOF;
             $this->db->connect();
             $cust = $this->getCustomerName($customer_id);
             $conditions = ['city_id' => $city_id, 'customer_id' => $customer_id];
-            $result = $this->db->table('im_customers')->where($conditions)->get();
+            // $result = $this->db->table('im_customers')->where($conditions)->get();
+            $result = '';
+            $sql = "SELECT * FROM im_customers WHERE `city_id` = :city_id AND `customer_id` = :customer_id LIMIT 1";
+            $params = ['city_id' => $city_id, 'customer_id' => $customer_id];
+            echo "SQL语句：" . $sql . "\n";
+            echo "参数：" . print_r($params, true) . "\n";
+            $fetchAll = $this->db->executeQuery($sql, $params);
+            if($fetchAll){
+                $result = $fetchAll[0];
+            }
+
+
             $this->db->beginTransaction();
 
             if ($result == NULL || $result == '') {
@@ -236,18 +247,20 @@ EOF;
     {
         $query = urldecode($request->server['query_string']);
         $params = json_decode($query, true);
+        $this->writeLog("参数：" . $query);
 
         $city_id = $params['city_id'] ?? null;
         $customer_id = $params['customer_id'] ?? null;
         $isStaff = $params['is_staff'] ?? 0;
-        $staff_id = $params['staff_id'] ?? null;
+        $staff_id = isset($params['staff_id'])?$params['staff_id']:0;
 
 
-        if ($isStaff == 0 && $customer_id != NULL) {
+        if ($isStaff == 0) {
             $cust = $this->getCustomerName($customer_id);
             $customer_name = $cust[0]['NameZH'];
             echo "公司：";
             var_dump($customer_name);
+            $this->writeLog("公司ZH:" . $customer_name);
             $this->onCustomerConnected($city_id, $customer_id, $customer_name);
         } else {
             // 这里是客服账号的逻辑
@@ -273,15 +286,20 @@ EOF;
             ]));
         }
         if ($isStaff == 1) {
-            $key = $isStaff . ':' . $city_id;
-            $value = json_encode([
-                'fd' => $request->fd,
-                'city_id' => $city_id,
-                'is_staff' => $isStaff,
-                'staff_id' => $staff_id,
-            ]);
-            // 将客服信息添加到 Redis 列表中
-            $this->redis->rPush($key, $value);
+            try{
+                $key = $isStaff . ':' . $city_id;
+                $value = json_encode([
+                    'fd' => $request->fd,
+                    'city_id' => $city_id,
+                    'is_staff' => $isStaff,
+                    'staff_id' => $staff_id,
+                ]);
+                // 将客服信息添加到 Redis 列表中
+                $this->redis->rPush($key, $value);
+            }catch(\Exception $e){
+                $this->writeLog($e->getMessage());
+            }
+
         }
 
         // 在连接成功时向客户端发送服务是否正常的状态信息
@@ -295,9 +313,9 @@ EOF;
             echo "访客已连接（城市 ID: {$city_id}，客户 ID: {$customer_id}，fd: {$request->fd})\n";
 
             // 将消息转发给相同城市ID的客服
-            foreach ($this->clients[$staff_id] as $fd => $client) {
-                // 根据需求进行处理
-            }
+//            foreach ($this->clients[$staff_id] as $fd => $client) {
+//                // 根据需求进行处理
+//            }
 
             // 只向新连接的访客客户端发送欢迎消息
             if (!isset($this->clients[$staff_id][$request->fd]['sentWelcome'])) {
@@ -312,8 +330,19 @@ EOF;
     {
         try {
             $this->db->connect();
-            $conditions = ['city_id' => $city_id, 'staff_id' => $staff_id];
-            $result = $this->db->table('im_lbs_staff')->where($conditions)->get();
+//            $result = $this->db->table('im_lbs_staff')->where($conditions)->get();
+
+            $sql = "SELECT * FROM im_lbs_staff WHERE `city_id` = :city_id AND `staff_id` = :staff_id LIMIT 1";
+            $params = ['city_id' => $city_id, 'staff_id' => $staff_id];
+            echo "SQL语句：" . $sql . "\n";
+            echo "参数：" . print_r($params, true) . "\n";
+            $fetchAll = $this->db->executeQuery($sql, $params);
+            var_dump($city_id);
+            var_dump($staff_id);
+            var_dump($fetchAll);
+            if($fetchAll){
+                $result = $fetchAll[0];
+            }
             $this->db->beginTransaction();
 
             if ($result == NULL || $result == '') {
@@ -332,7 +361,7 @@ EOF;
                     'online_at' => date('Y-m-d H:i:s'),
                     'online_flag' => 1
                 ];
-                $this->db->table('im_lbs_staff')->where($conditions)->update($data);
+                $this->db->table('im_lbs_staff')->where($params)->update($data);
             }
 
             $this->db->commit();
