@@ -58,8 +58,10 @@ class PlanTotals
                 $customer_group = Db::name('customercompany')->where('GroupID', $customer['GroupID'])->field('CustomerID,NameZH,City')->select();
 
                 foreach ($customer_group as $key=>$val){
-                    $list = Db::table('joborder')->alias('j')->leftJoin('customercontact c','j.CustomerID = c.CustomerID')->where([['j.CustomerID','=',$val['CustomerID']]])->field('j.JobDate  as date ')->select()->toArray();
-                    //echo Db::table('joborder')->getLastSql();
+                    $list = Db::table('joborder')->alias('j')->leftJoin('customercontact c','j.CustomerID = c.CustomerID')->where([['j.CustomerID','=',$val['CustomerID']]])
+                        ->where([['j.Status','<>',9]])
+                        ->field('j.JobDate  as date ')->select()->toArray();
+                    // echo Db::table('joborder')->getLastSql();
                     $res[] = $list;
                 }
                 // print_r($res);exit;
@@ -96,6 +98,7 @@ class PlanTotals
                     ->join('service s','j.ServiceType=s.ServiceType')
                     ->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
                     ->where([['j.CustomerID','=',$customerid]])
+                    ->where([['j.Status','<>',9]])
                     ->field('j.JobDate  as date ')->select()->toArray();
 
                 // echo Db::table('joborder')->getLastSql();
