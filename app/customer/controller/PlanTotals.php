@@ -32,9 +32,9 @@ class PlanTotals
             return json($result);
         }
         //获取信息
-        $staffid = $_POST['staffid'];
+        $staffid = $_POST['staffid'];           // 联络人ID
         $jobdate = isset($_POST['jobdate'])?$_POST['jobdate']:date('Y-m-d');
-        $customerid = $_POST['customerid'];
+        $customerid = $_POST['customerid'];     // 客户ID
         //获取用户登录信息
 
         $user_token = Db::name('cuztoken')->where('StaffID', $staffid)->find();
@@ -58,14 +58,24 @@ class PlanTotals
                 $customer_group = Db::name('customercompany')->where('GroupID', $customer['GroupID'])->field('CustomerID,NameZH,City')->select();
 
                 foreach ($customer_group as $key=>$val){
-                    $list = Db::table('joborder')->alias('j')->leftJoin('customercontact c','j.CustomerID = c.CustomerID')->where([['j.CustomerID','=',$val['CustomerID']]])
+                    $list = Db::table('joborder')->alias('j')->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
+                        ->where([['j.CustomerID','=',$val['CustomerID']]])
                         ->where([['j.Status','<>',9]])
                         ->field('j.JobDate  as date ')->select()->toArray();
                     // echo Db::table('joborder')->getLastSql();
                     $res[] = $list;
+
+                    // 跟进单
+                    $list1 = Db::table('followuporder')->alias('j')
+                        ->join('service s','j.SType=s.ServiceType')
+                        ->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
+                        ->where([['j.CustomerID','=',$customerid]])
+                        ->where([['j.Status','<>',9]])
+                        ->field('j.JobDate as date')->select()->toArray();
+                    $res1[] = $list1;
                 }
-                // print_r($res);exit;
-                // 二维数组
+                $res = array_merge($res,$res1);
+
                 $twoDimensionalArray = array();
                 foreach ($res as $firstLevel) {
                     foreach ($firstLevel as $secondLevel) {
@@ -73,8 +83,6 @@ class PlanTotals
                     }
                 }
 
-                // 输出二维数组
-                //print_r($twoDimensionalArray);
                 $arr = $twoDimensionalArray;
                 $count = count($arr);
                 $data = array();
@@ -87,12 +95,6 @@ class PlanTotals
                     }
                 }
                 $res = $data;
-                // print_r($data);
-                // $res = $this->arraySort($data,"date","asc");
-                // print_r($a);exit;
-                // // exit;
-                // $res = [$a];
-
             }else{
                 $arr = Db::table('joborder')->alias('j')
                     ->join('service s','j.ServiceType=s.ServiceType')
@@ -101,8 +103,17 @@ class PlanTotals
                     ->where([['j.Status','<>',9]])
                     ->field('j.JobDate  as date ')->select()->toArray();
 
-                // echo Db::table('joborder')->getLastSql();
+                $arr_followup = Db::table('followuporder')->alias('j')
+                    ->join('service s','j.SType=s.ServiceType')
+                    ->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
+                    ->where([['j.CustomerID','=',$customerid]])
+                    ->where([['j.Status','<>',9]])
+                    ->field('j.JobDate as date')->select()->toArray();
 
+                /* 合并 */
+                $arr = array_merge($arr,$arr_followup);
+
+                /* 去重复 */
                 $count = count($arr);
                 for($i=0;$i<$count;$i++){
                     $a = $arr[$i];

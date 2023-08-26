@@ -116,7 +116,8 @@ class Planjobs
                     ->where([['j.CustomerID','=',$customerid],['j.JobDate','=',$job_data]])
                     ->where([['j.Status','<>',9]])
                     ->field('j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
-//                echo Db::table('followuporder')->getLastSql();
+
+                //                echo Db::table('followuporder')->getLastSql();
 //exit;
                 foreach ($datas as $key=>$val){
                     if($val['FirstJob']==1){
