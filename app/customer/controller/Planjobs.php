@@ -32,6 +32,8 @@ class Planjobs
         $job_data = $_POST['jobdate'];
         //获取用户登录信息
         $user_token = Db::name('cuztoken')->where('StaffID',$staffid)->find();
+        $user_item = Db::name('customercontact')->where('ContactID',$staffid)->find();
+        //print_r($user_item);exit;
         // echo Db::name('cuztoken')->getLastSql();
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
@@ -41,12 +43,16 @@ class Planjobs
             //判断分店还是总店
             $mainstore = $_POST['mainstore']?$_POST['mainstore']:0;
             $datas = [] ;
+            $datas_followup = [];
             $options = [['label'=>'全部','value'=>'']];
             //查询当前公司
             $customer = Db::name('customercompany')->where('CustomerID',$customerid)->find();
             if($mainstore == 1 && !empty($customer['GroupID'])){
+
                 //查询集团下的所有店
                 $customer_group = Db::name('customercompany')->where('GroupID', $customer['GroupID'])->field('CustomerID,NameZH,City')->select();
+                // print_r($customer_group);exit;
+                // echo Db::name('customercompany')->getLastSql();exit;
                 foreach ($customer_group as $key=>$val){
                     $list = Db::table('joborder')->alias('j')
                         ->leftJoin('service s','j.ServiceType=s.ServiceType')
@@ -57,24 +63,35 @@ class Planjobs
                         ->where([['j.CustomerID','=',$val['CustomerID']],['j.JobDate','=',$job_data]])
                         ->where([['j.Status','<>',9]])
                         ->field('j.JobID,j.ContractID,j.ContractNumber,j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,j.FirstJob,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
-                    //   echo Db::table('joborder')->getLastSql();
+                    //   echo Db::table('joborder')->getLastSql();exit;
+                    // print_r($list);exit;
                     if($list){
                         $datas[] = $list;
                     }
                     // 服务单
-                    $list1 = $datas_followup = Db::table('followuporder')->alias('j')
+                    $list_follow = Db::table('followuporder')->alias('j')
                         ->join('service s','j.SType=s.ServiceType')
                         ->join('staff u','j.Staff01=u.StaffID')
                         ->join('staff uo','j.Staff02=uo.StaffID','left')
                         ->join('staff ut','j.Staff03=ut.StaffID','left')
                         ->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
-                        ->where([['j.CustomerID','=',$customerid],['j.JobDate','=',$job_data]])
+                        ->where([['j.CustomerID','=',$val['CustomerID']],['j.JobDate','=',$job_data]])
                         ->where([['j.Status','<>',9]])
+                        ->where([['c.Mobile','=',$user_item['Mobile']]])
                         ->field('j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
-                    if($list1){
-                        
+                    //echo Db::table('followuporder')->getLastSql();exit;
+
+
+                    // print_r($list1);
+                    if($list_follow){
+                        $datas_followup[] = $list_follow;
                     }
                 }
+                // print_r($datas);
+                // print_r($datas_followup);
+                // exit;
+
+                // 常规服务
                 $twoDimensionalArray = array();
                 foreach ($datas as $firstLevel) {
                     foreach ($firstLevel as $secondLevel) {
@@ -83,6 +100,17 @@ class Planjobs
                 }
                 $datas = $twoDimensionalArray;
 
+                // 跟进
+                $twoDimensionalArrayx = array();
+                foreach ($datas_followup as $firstLevelx) {
+                    foreach ($firstLevelx as $secondLevelx) {
+                        $twoDimensionalArrayx[] = $secondLevelx;
+                    }
+                }
+                $datas_followup = $twoDimensionalArrayx;
+
+                // print_r($datas);
+                // print_r($datas_followup);
                 foreach ($datas as $key=>$val){
                     if($val['FirstJob']==1){
                         $data[$key]['task_type'] = "首次服务";
@@ -90,7 +118,9 @@ class Planjobs
                         $data[$key]['task_type'] = "常规服务";
                     }
                 }
-
+                foreach ($datas_followup as $key=>$val){
+                    $datas_followup[$key]['FirstJob'] = 2;
+                }
 
 
             }else{
@@ -108,7 +138,7 @@ class Planjobs
 
                 // 跟进单
                 $datas_followup = Db::table('followuporder')->alias('j')
-                     ->join('service s','j.SType=s.ServiceType')
+                    ->join('service s','j.SType=s.ServiceType')
                     ->join('staff u','j.Staff01=u.StaffID')
                     ->join('staff uo','j.Staff02=uo.StaffID','left')
                     ->join('staff ut','j.Staff03=ut.StaffID','left')
@@ -119,13 +149,13 @@ class Planjobs
 
                 //                echo Db::table('followuporder')->getLastSql();
 //exit;
-                foreach ($datas as $key=>$val){
-                    if($val['FirstJob']==1){
-                        $data[$key]['task_type'] = "首次服务";
-                    }else{
-                        $data[$key]['task_type'] = "常规服务";
-                    }
-                }
+                // foreach ($datas as $key=>$val){
+                //     if($val['FirstJob']==1){
+                //         $data[$key]['task_type'] = "首次服务";
+                //     }else{
+                //         $data[$key]['task_type'] = "常规服务";
+                //     }
+                // }
             }
 //            print_r($datas_followup);
             //获取时间
