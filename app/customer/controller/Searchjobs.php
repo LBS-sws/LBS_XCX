@@ -40,8 +40,9 @@ class Searchjobs
 
             if (($mainstore == 1 && $store == '' ) && !empty($customer['GroupID'])) {
                 //查询集团下的所有店
-                $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID,NameZH,City')->select();
+                $customer_group = Db::name('customercompany')->where('GroupID',$customer['GroupID'])->field('CustomerID,NameZH,City')->select()->toArray();;
                 // var_dump(Db::name('customercompany')->getLastSql());exit();
+
                 // 获取客户组中所有城市的启动日期
                 $customerCities = array_column($customer_group, 'City');
                 $launchDates = Db::name('enums')
