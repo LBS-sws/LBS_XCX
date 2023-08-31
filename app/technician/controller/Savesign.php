@@ -58,7 +58,7 @@ class Savesign
 
                         }else{
                             //不存在
-                            $data['customer_signature_url'] = $this->conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
+                            $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
                             $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
                             $cmd = " /usr/bin/convert -rotate -90 $imgPath  $imgPath 2>&1";
                             @exec($cmd,$output,$return_val);
@@ -75,11 +75,11 @@ class Savesign
                 $save_datas = $autographV2Model->where('id','=',$result['id'])->update($data);
             }else{
                 if(isset($_POST['customer_signature']) && $_POST['customer_signature'] != ''){
-                    $data['customer_signature_url'] = $this->conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
+                    $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
                 }
-                $data['staff_id01_url'] = $this->conversionToImg($_POST['employee01_signature'], $staff_dir,$staff_file_name);
-                $data['staff_id02_url'] = $this->conversionToImg($_POST['employee02_signature'], $staff_dir);
-                $data['staff_id03_url'] = $this->conversionToImg($_POST['employee03_signature'], $staff_dir);
+                $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir,$staff_file_name);
+                $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
+                $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
 //                $data['customer_grade'] = $_POST['customer_grade'];
                 if($is_grade != 0){
                     $data['customer_grade'] = $_POST['customer_grade'];
@@ -150,6 +150,7 @@ class Savesign
             // 使用 ImageMagick 转换图片
             $img = new \Imagick();
             $img->readImageBlob(base64_decode(str_replace($result[1], '', $base64_image_content)));
+            $img->setImageCompressionQuality(100); // 设置压缩质量为80%
             $img->writeImage($new_file);
             $img->clear();
             $img->destroy();
