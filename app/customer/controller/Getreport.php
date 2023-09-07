@@ -116,7 +116,26 @@ class Getreport
             $report_datas['briefing'] = $briefing;
 
             //material
-            $report_datas['material'] = Db::table('lbs_service_materials')->where($w)->select();
+//            $report_datas['material'] = Db::table('lbs_service_materials')->where($w)->select();
+            $materialList = Db::table('lbs_service_materials')->where($w)->select()->toArray();
+
+
+            // 获取lbs物料对应附件
+            foreach ($materialList as $key=>$val){
+
+                $name = $val['material_name'];
+                $url = "https://dms.lbsapps.cn/sv-uat/index.php/JsonMateriallist/index?user=admin&ac=xcx_list&text=".$name."&city=".$city;
+                $output = $this->http_curl_get($url);
+                $json = utf8_encode($output);
+                $res = json_decode($json,true);
+                // print_r($res);
+                if($output && $res['item']['img_arr']){
+                    $materialList[$key]['img_arr'] = 1;
+                }
+            }
+            // print_r($materialList);
+            // exit;
+            $report_datas['material'] = $materialList;
 
             //risk
             $report_datas['risk'] = Db::table('lbs_service_risks')->where($w)->select();
@@ -202,4 +221,16 @@ class Getreport
         }
         return json($result);
     }
+    // curl
+    public function http_curl_get($url) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL,$url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+        $output = curl_exec($ch);
+        curl_close($ch);
+        return $output;
+    }
+    //...
 }
