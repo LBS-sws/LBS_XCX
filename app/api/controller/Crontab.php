@@ -474,7 +474,7 @@ class Crontab extends BaseController
         $service_subject = rtrim($service_subject, '、');
         //获取所有的设备情况
         $equpments = '';
-        $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', 'in', $job_orders['joborders'])->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
+        $equpment_nums = $this->serviceEquipments->alias('e')->join('lbs_service_equipment_type t', 'e.equipment_type_id=t.id', 'left')->field('t.name,e.equipment_type_id,COUNT(1) as num')->where('e.job_id', 'in', $job_orders['joborders'])->where('t.city', 'CN')->where('e.job_type', 1)->group('equipment_type_id')->select()->toArray();
 
         foreach ($equpment_nums as $k => $v) {
             $equpments .= $v['name'] . '-' . $v['num'] . '、';
