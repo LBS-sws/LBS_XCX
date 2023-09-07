@@ -92,18 +92,15 @@ class Savesign
                     $data['conversion_flag'] = 0;
                 }
                 $save_datas = $autographV2Model->insert($data);
-                if ($data['job_type'] == 1) {
-                    $more_sign = $this->checkOrders($data['job_id'], $_POST['staffid']);
-                    if (!empty($more_sign)) {
-                        unset($_POST['job_id']);
-                        $more_sign_data = [];
-                        foreach ($more_sign as $k => $v) {
-                            $more_sign_data[] = $data;
-                            $more_sign_data[$k]['job_id'] = $v['JobID'];
-                        }
-                        $save_datas = $autographV2Model->insertAll($more_sign_data);
+                $more_sign = $this->checkOrders($data['job_id'], $_POST['staffid'],$data['job_type']);
+                if (!empty($more_sign)) {
+                    unset($_POST['job_id']);
+                    $more_sign_data = [];
+                    foreach ($more_sign as $k => $v) {
+                        $more_sign_data[] = $data;
+                        $more_sign_data[$k]['job_id'] = $data['job_type'] == 1 ? $v['JobID'] : $v['FollowUpID'];
                     }
-
+                    $save_datas = $autographV2Model->insertAll($more_sign_data);
                 }
             }
             if ($save_datas) {
@@ -161,17 +158,31 @@ class Savesign
         }
     }
 
-    public function checkOrders($job_id = '0',$staffid = '0'){
-        //根据工作id查询出客户编号是多少
-        $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
-        $where = [
-            'j.JobDate' =>$result['JobDate'],
-            'j.CustomerID' =>$result['CustomerID'],
-            'j.Staff01' =>$staffid,
-            //   [],
-        ];
-        $more_sign =  Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '00:00:00')->field('j.JobID')->select()->toArray();
-        return $more_sign;
+    public function checkOrders($job_id = '0',$staffid = '0',$job_type = 1){
+        if($job_type == 1){
+            //根据工作id查询出客户编号是多少
+            $result = Db::table('joborder')->alias('j')->where('j.JobID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
+            $where = [
+                'j.JobDate' =>$result['JobDate'],
+                'j.CustomerID' =>$result['CustomerID'],
+                'j.Staff01' =>$staffid,
+                //   [],
+            ];
+            $more_sign =  Db::table('joborder')->alias('j')->where($where)->where('j.JobID','<>', $job_id)->where('j.StartTime','<>', '00:00:00')->field('j.JobID')->select()->toArray();
+            return $more_sign;
+        }else{
+            //根据跟进单id查询出客户编号是多少
+            $result = Db::table('followuporder')->alias('j')->where('j.FollowUpID',$job_id)->where('j.Staff01',$staffid)->field('j.CustomerID,j.JobDate')->find();
+            $where = [
+                'j.JobDate' =>$result['JobDate'],
+                'j.CustomerID' =>$result['CustomerID'],
+                'j.Staff01' =>$staffid,
+                //   [],
+            ];
+            $more_sign =  Db::table('followuporder')->alias('j')->where($where)->where('j.FollowUpID','<>', $job_id)->where('j.StartTime','<>', '00:00:00')->field('j.FollowUpID')->select()->toArray();
+            return $more_sign;
+        }
+
     }
 
     public function getStaffAutograph(){
