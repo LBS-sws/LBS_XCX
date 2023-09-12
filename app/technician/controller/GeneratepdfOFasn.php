@@ -4,6 +4,7 @@ declare (strict_types = 1);
 namespace app\technician\controller;
 use app\BaseController;
 use app\technician\model\AutographV2;
+use app\technician\model\CustomerCompany;
 use think\facade\Db;
 use think\facade\Request;
 use TCPDF;
@@ -11,6 +12,7 @@ header('Content-Type: text/html; charset=utf-8');
 
 class GeneratepdfOFasn
 {
+    public $custType = 250;
     public function index(){
         $result['code'] = 0;
         $result['msg'] = '请输入用户名、令牌和日期';
@@ -35,11 +37,11 @@ class GeneratepdfOFasn
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24)) {
             if ($job_type==1) {
-                $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('j.JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate')->find();
+                $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('j.JobID,j.CustomerID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate')->find();
                 $job_datas = Db::table('joborder')->where('JobID',$job_id)->find();
 
             }elseif($job_type==2){
-                $report_datas['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$job_id)->field('j.FollowUpID as JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,s.ServiceType')->find();
+                $report_datas['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$job_id)->field('j.FollowUpID as JobID,j.CustomerID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,s.ServiceType')->find();
                 $job_datas = Db::table('followuporder')->where('FollowUpID',$job_id)->find();
                 $report_datas['basic']['FinishDate'] = $report_datas['basic']['JobDate'];
             }
@@ -166,8 +168,18 @@ class GeneratepdfOFasn
                 }
             }
             $report_datas['equipment'] = $equipmenthz_datas;
+
             //photo
-            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit(4)->select();
+            //TODO 将类型为250的图片取10组
+            $photo_num = 4;
+            $customerCompanyModel = new CustomerCompany();
+            if(isset($report_datas['basic']['CustomerID'])) {
+                $cust_type = $customerCompanyModel->field('CustomerType')->where('CustomerID','=',$report_datas['basic']['CustomerID'])->findOrEmpty();
+                if(isset($cust_type) && $cust_type['CustomerType'] == $this->custType){
+                    $photo_num = 50;
+                }
+            }
+            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit($photo_num)->select();
 
             //先查询lbs_report_autograph中是否有相关数据。
             $autographModel =new AutographV2();
@@ -407,7 +419,7 @@ EOF;
 // var_dump($report_datas['risk'][$r]['site_photos']);exit;
                         if(isset($report_datas['risk'][$r]['site_photos']) && $report_datas['risk'][$r]['site_photos'] != '' ){
                         $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
-                         
+
                         for ($sp=0; $sp < count($site_photos); $sp++) {
                             $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
                             $html .= <<<EOF
@@ -425,7 +437,7 @@ EOF;
                         }else{
                              $html .= <<<EOF
                             <td width="84%" align="center" height="10"></td>
-EOF;                            
+EOF;
                         }
                         $html .= <<<EOF
                         </tr>  

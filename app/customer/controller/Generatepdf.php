@@ -4,6 +4,7 @@ declare (strict_types = 1);
 namespace app\customer\controller;
 use app\BaseController;
 use app\technician\model\AutographV2;
+use app\technician\model\CustomerCompany;
 use think\facade\Db;
 use think\facade\Request;
 use TCPDF;
@@ -11,6 +12,7 @@ use TCPDF;
 
 class Generatepdf
 {
+    public $custType = 250;
     public function index(){
         $result['code'] = 0;
         $result['msg'] = '请输入用户名、令牌和日期';
@@ -23,24 +25,24 @@ class Generatepdf
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type'])){
             return json($result);
         }
-         //获取信息
+        //获取信息
         $staffid = $_POST['staffid'];
         $job_id = $_POST['job_id'];
         $job_type = $_POST['job_type'];
-       //获取用户登录信息
+        //获取用户登录信息
         $user_token = Db::name('cuztoken')->where('StaffID',$staffid)->find();
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
         //Percy - Bypass time checking if staffid = 'lbs_xcx' (for email API call)
-        if ($token==$user_token['token'] &&  ($staffid==='lbs_xcx' || $c_time <= 24)) {
+        if ($token==$user_token['token'] &&  ($staffid==='lbs_xcx' || $c_time <= 24 * 366)) {
             if ($job_type==1) {
-                $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('j.JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate')->find();
+                $report_datas['basic'] = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.JobID',$job_id)->field('j.JobID,j.CustomerID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,j.ServiceType,j.FirstJob,j.FinishDate')->find();
                 $job_datas = Db::table('joborder')->where('JobID',$job_id)->find();
 
             }elseif($job_type==2){
-                $report_datas['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$job_id)->field('j.FollowUpID as JobID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,s.ServiceType')->find();
+                $report_datas['basic'] = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where('j.FollowUpID',$job_id)->field('j.FollowUpID as JobID,j.CustomerID,j.CustomerName,j.Addr,j.ContactName,j.Mobile,j.JobDate,j.StartTime,j.FinishTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,s.ServiceName,j.Status,j.City,s.ServiceType')->find();
                 $job_datas = Db::table('followuporder')->where('FollowUpID',$job_id)->find();
                 $report_datas['basic']['FinishDate'] = $report_datas['basic']['JobDate'];
             }
@@ -66,7 +68,7 @@ class Generatepdf
             }
             $report_datas['basic']['Staffall'] = $report_datas['basic']['Staff01'].($report_datas['basic']['Staff02']?','.$report_datas['basic']['Staff02']:'').($report_datas['basic']['Staff03']?','.$report_datas['basic']['Staff03']:'');
             if ($job_type==1) {
-               if($report_datas['basic']['FirstJob']==1){
+                if($report_datas['basic']['FirstJob']==1){
                     $report_datas['basic']['task_type'] = "首次服务";
                 }else{
                     $report_datas['basic']['task_type'] = "常规服务";
@@ -75,7 +77,7 @@ class Generatepdf
                 $report_datas['basic']['task_type'] = "跟进服务";
             }
 
-             //服务项目
+            //服务项目
             $service_projects = '';
             if($job_type==1 && $service_type==1){//洁净
                 if ($job_datas["Item01"] > 0) $service_projects .= "坐厕：".$job_datas["Item01"].",";
@@ -143,7 +145,7 @@ class Generatepdf
                 $equipmenthz_count = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->count();
                 $equipment_type = Db::table('lbs_service_equipment_type')->where('id',$equipment_type_ids[$i]['equipment_type_id'])->field('name')->find();
                 $equipmenthz_datas[$i]['title'] = $equipment_type['name']."(".$equipmenthz_count."/".$equipmenthz_allcount.")";
-                 $check_datas = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->order('id', 'asc')->select();
+                $check_datas = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->order('id', 'asc')->select();
                 if ($check_datas) {
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
@@ -166,7 +168,18 @@ class Generatepdf
             }
             $report_datas['equipment'] = $equipmenthz_datas;
             //photo
-            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit(4)->select();
+            //TODO 将类型为250的图片取10组
+            $photo_num = 4;
+            $customerCompanyModel = new CustomerCompany();
+            if(isset($report_datas['basic']['CustomerID'])) {
+                $cust_type = $customerCompanyModel->field('CustomerType')->where('CustomerID','=',$report_datas['basic']['CustomerID'])->findOrEmpty();
+                if(isset($cust_type) && $cust_type['CustomerType'] == $this->custType){
+                    $photo_num = 50;
+                }
+            }
+            $report_datas['photo'] = Db::table('lbs_service_photos')->where($w)->limit($photo_num)->select();
+
+
 
             //autograph
 //            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
@@ -282,8 +295,8 @@ class Generatepdf
                 </tr>
             EOD;
             if($report_datas['briefing']!=''){
-            if(($report_datas['service_sections']!='' && in_array('1',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
-                $html .= <<<EOF
+                if(($report_datas['service_sections']!='' && in_array('1',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
+                    $html .= <<<EOF
                     <tr class="myTitle">
                         <th width="100%" align="left">服务简报</th>
                     </tr>
@@ -296,18 +309,18 @@ class Generatepdf
                         <td width="85%" align="left">{$report_datas['briefing']['proposal']}</td>
                     </tr>
                     EOF;
-            }
+                }
             }
             if(count($report_datas['photo'])>0){
-            if(($report_datas['service_sections']!='' && in_array('5',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
-                $html .= <<<EOF
+                if(($report_datas['service_sections']!='' && in_array('5',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
+                    $html .= <<<EOF
                         <tr class="myTitle">
                             <th width="100%" align="left">现场工作照</th>
                         </tr>
                         EOF;
-                for ($p=0; $p < count($report_datas['photo']); $p++) {
+                    for ($p=0; $p < count($report_datas['photo']); $p++) {
 
-                    $html .= <<<EOF
+                        $html .= <<<EOF
                         <tr>
                         <td width="20%" align="left">{$report_datas['photo'][$p]['remarks']}</td>
                         EOF;
@@ -326,15 +339,15 @@ class Generatepdf
                             <td width="20%" align="center"></td>
                             EOF;
                         }
-                    $html .= <<<EOF
+                        $html .= <<<EOF
                                 </tr>  
                             EOF;
+                    }
                 }
             }
-            }
             if(count($report_datas['material'])>0){
-            if(($report_datas['service_sections']!='' && in_array('2',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
-                $html .= <<<EOF
+                if(($report_datas['service_sections']!='' && in_array('2',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
+                    $html .= <<<EOF
                             <tr class="myTitle">
                                 <th width="100%" align="left">物料使用</th>
                             </tr>  
@@ -349,8 +362,8 @@ class Generatepdf
                             <td width="22%">备注</td>
                             </tr>
                         EOF;
-                for ($m=0; $m < count($report_datas['material']); $m++) {
-                    $html .= <<<EOF
+                    for ($m=0; $m < count($report_datas['material']); $m++) {
+                        $html .= <<<EOF
                         <tr>
                         <td width="15%">{$report_datas['material'][$m]['material_name']}</td>
                         <td width="12%">{$report_datas['material'][$m]['processing_space']}</td>
@@ -362,12 +375,12 @@ class Generatepdf
                         <td width="22%" align="left">{$report_datas['material'][$m]['matters_needing_attention']}</td>
                         </tr>  
                         EOF;
+                    }
                 }
             }
-            }
             if(count($report_datas['risk'])>0){
-            if(($report_datas['service_sections']!='' && in_array('4',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
-                $html .= <<<EOF
+                if(($report_datas['service_sections']!='' && in_array('4',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
+                    $html .= <<<EOF
                             <tr class="myTitle">
                                 <th width="100%" align="left">现场风险评估与建议</th>
                             </tr>  
@@ -381,9 +394,9 @@ class Generatepdf
                             <td width="15%">跟进日期</td>
                             </tr>
                         EOF;
-                for ($r=0; $r < count($report_datas['risk']); $r++) {
-                    $c_t =  date('Y-m-d',strtotime($report_datas['risk'][$r]['creat_time']));
-                    $html .= <<<EOF
+                    for ($r=0; $r < count($report_datas['risk']); $r++) {
+                        $c_t =  date('Y-m-d',strtotime($report_datas['risk'][$r]['creat_time']));
+                        $html .= <<<EOF
                         <tr>
                         <td width="16%">{$report_datas['risk'][$r]['risk_types']}</td>
                         <td width="19%">{$report_datas['risk'][$r]['risk_description']}</td>
@@ -396,96 +409,96 @@ class Generatepdf
                         <tr>
                         <td width="16%">风险图片</td>
                     EOF;
-                    if(isset($report_datas['risk'][$r]['site_photos']) && $report_datas['risk'][$r]['site_photos'] != '' ){
-                        $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
+                        if(isset($report_datas['risk'][$r]['site_photos']) && $report_datas['risk'][$r]['site_photos'] != '' ){
+                            $site_photos = explode(',',$report_datas['risk'][$r]['site_photos']);
 
-                        for ($sp=0; $sp < count($site_photos); $sp++) {
-                            $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
-                            $html .= <<<EOF
+                            for ($sp=0; $sp < count($site_photos); $sp++) {
+                                $spa = $baseUrl_imgs.str_replace("\/",'/',trim($site_photos[$sp],'"'));
+                                $html .= <<<EOF
                         <td width="21%" align="center">
                             <img src="${spa}" width="80" height="100" style="padding:20px 50px;">
                         </td>
 EOF;
-                        }
-                        $sy_unm = 4-count($site_photos);
-                        for($j=0;$j<$sy_unm;$j++){
-                            $html .= <<<EOF
+                            }
+                            $sy_unm = 4-count($site_photos);
+                            for($j=0;$j<$sy_unm;$j++){
+                                $html .= <<<EOF
                             <td width="21%" align="center" height="100"></td>
 EOF;
-                        }
-                    }else{
-                        $html .= <<<EOF
+                            }
+                        }else{
+                            $html .= <<<EOF
                             <td width="84%" align="center" height="10"></td>
 EOF;
-                    }
-                    $html .= <<<EOF
+                        }
+                        $html .= <<<EOF
                         </tr>  
 EOF;
+                    }
                 }
             }
-            }
             if(count($report_datas['equipment'])>0){
-            if(($report_datas['service_sections']!='' && in_array('3',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
-                //设备巡查
-                $total = count($report_datas['equipment']);
-                $html .= <<<EOF
+                if(($report_datas['service_sections']!='' && in_array('3',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
+                    //设备巡查
+                    $total = count($report_datas['equipment']);
+                    $html .= <<<EOF
                             <tr class="myTitle">
                                 <th  width="100%" align="left">设备巡查</th>
                             </tr>
                         EOF;
-                for ($e=0; $e < count($report_datas['equipment']); $e++) {
-                    if(count($report_datas['equipment'][$e])>1){
-                        $total01 = count($report_datas['equipment'][$e]['table_title']);
-                        $html .= <<<EOF
+                    for ($e=0; $e < count($report_datas['equipment']); $e++) {
+                        if(count($report_datas['equipment'][$e])>1){
+                            $total01 = count($report_datas['equipment'][$e]['table_title']);
+                            $html .= <<<EOF
                             <tr>
                                 <th width="100%" align="left">{$report_datas['equipment'][$e]['title']}</th>
                             </tr>
                             <tr>
                             EOF;
-                        $targs = (31/($total01-4))."%";
-                        for ($t=0; $t < count($report_datas['equipment'][$e]['table_title']); $t++) {
-                            if ($t==0) {
-                                $wi01 = '8%';
-                            }else if ($t==1) {
-                               $wi01 = "11%";
-                            }else if($t>1 && $t<count($report_datas['equipment'][$e]['table_title'])-2){
-                                $wi01 = $targs;
-                            }else if ((($t+1)==count($report_datas['equipment'][$e]['table_title'])) || (($t+2)==count($report_datas['equipment'][$e]['table_title']))) {
-                               $wi01 = "25%";
-                            }
-                            $html .= <<<EOF
+                            $targs = (31/($total01-4))."%";
+                            for ($t=0; $t < count($report_datas['equipment'][$e]['table_title']); $t++) {
+                                if ($t==0) {
+                                    $wi01 = '8%';
+                                }else if ($t==1) {
+                                    $wi01 = "11%";
+                                }else if($t>1 && $t<count($report_datas['equipment'][$e]['table_title'])-2){
+                                    $wi01 = $targs;
+                                }else if ((($t+1)==count($report_datas['equipment'][$e]['table_title'])) || (($t+2)==count($report_datas['equipment'][$e]['table_title']))) {
+                                    $wi01 = "25%";
+                                }
+                                $html .= <<<EOF
                                         <td width="{$wi01}">{$report_datas['equipment'][$e]['table_title'][$t]}</td>
                                     EOF;
-                        }
-                        $html .= <<<EOF
-                                    </tr>
-                                EOF;
-                        for ($c=0; $c < count($report_datas['equipment'][$e]['content']); $c++) {
-                            $html .= <<<EOF
-                                    <tr>
-                                EOF;
-                            for ($cd=0; $cd < count($report_datas['equipment'][$e]['content'][$c]); $cd++) {
-                                if ($cd==0) {
-                                    $wi02 = '8%';
-                                }else if ($cd==1) {
-                                   $wi02 = "11%";
-                                }else if($cd>1 && $cd<count($report_datas['equipment'][$e]['content'][$c])-2){
-                                    $wi02 = $targs;
-                                }else if ((($cd+1)==count($report_datas['equipment'][$e]['content'][$c])) || (($cd+2)==count($report_datas['equipment'][$e]['content'][$c]))) {
-                                   $wi02 = "25%";
-                                }
-
-                                $html .= <<<EOF
-                                            <td width="{$wi02}">{$report_datas['equipment'][$e]['content'][$c][$cd]}</td>
-                                        EOF;
                             }
                             $html .= <<<EOF
                                     </tr>
+                                EOF;
+                            for ($c=0; $c < count($report_datas['equipment'][$e]['content']); $c++) {
+                                $html .= <<<EOF
+                                    <tr>
+                                EOF;
+                                for ($cd=0; $cd < count($report_datas['equipment'][$e]['content'][$c]); $cd++) {
+                                    if ($cd==0) {
+                                        $wi02 = '8%';
+                                    }else if ($cd==1) {
+                                        $wi02 = "11%";
+                                    }else if($cd>1 && $cd<count($report_datas['equipment'][$e]['content'][$c])-2){
+                                        $wi02 = $targs;
+                                    }else if ((($cd+1)==count($report_datas['equipment'][$e]['content'][$c])) || (($cd+2)==count($report_datas['equipment'][$e]['content'][$c]))) {
+                                        $wi02 = "25%";
+                                    }
+
+                                    $html .= <<<EOF
+                                            <td width="{$wi02}">{$report_datas['equipment'][$e]['content'][$c][$cd]}</td>
+                                        EOF;
+                                }
+                                $html .= <<<EOF
+                                    </tr>
                                     EOF;
 
-                        }
-                    }else{
-                        $html .= <<<EOF
+                            }
+                        }else{
+                            $html .= <<<EOF
                                     <tr>
                                         <th width="100%" align="left">{$report_datas['equipment'][$e]['title']}</th>
                                     </tr>
@@ -493,9 +506,9 @@ EOF;
                                     <td width="100%">设备正常，无处理数据！</td>
                                     </tr>
                                 EOF;
+                        }
                     }
                 }
-            }
             }
 
             /**
@@ -604,7 +617,7 @@ EOF;
                         <img src="{$eimageSrc03}" width="130" height="80" style="magin:20px 50px;">
                     EOF;
             }
-           $cimageSrc_add =  $cimageSrc_add??'';
+            $cimageSrc_add =  $cimageSrc_add??'';
             $html .= <<<EOF
                 </td>
                 <td width="50%" align="left"><img src="{$cimageSrc}" width="130" height="80" style="magin:20px 50px;"><img src="{$cimageSrc_add}" width="130" height="80" style="magin:20px 50px;"></td>
