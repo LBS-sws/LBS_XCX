@@ -173,7 +173,7 @@ class Generatepdf
             $customerCompanyModel = new CustomerCompany();
             if(isset($report_datas['basic']['CustomerID'])) {
                 $cust_type = $customerCompanyModel->field('CustomerType')->where('CustomerID','=',$report_datas['basic']['CustomerID'])->findOrEmpty();
-                if(isset($cust_type) && $cust_type['CustomerType'] == $this->custType){
+                if(isset($cust_type) && $cust_type->CustomerType == $this->custType){
                     $photo_num = 50;
                 }
             }
