@@ -28,7 +28,7 @@ class Crontab extends BaseController
     /**
      * 定义客户类型
      * */
-    protected $custType = ['203','249'];
+    protected $custType = [203,249];
 
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
@@ -261,14 +261,13 @@ class Crontab extends BaseController
         }
         // $date = '2023-03-24';//date('Y-m-d')    ;
         $cc_where = [
-            'cc.CustomerType' =>  ['in', $this->custType],
+
             'j.JobDate' => $date,
             'j.Status' => 3,
             'j.ServiceType' => 2,
         ];
         //查询今天有哪些工厂客户
-        $cust = $this->customerCompanyModel->field('j.CustomerID,j.CustomerName,j.City,GROUP_CONCAT(j.JobID) as job_ids,j.JobDate')->alias('cc')->join('joborder j','j.CustomerID = cc.CustomerID')->where($cc_where)->group('cc.CustomerID')->select()->toArray();
-        // dd($cust);
+        $cust = $this->customerCompanyModel->field('j.CustomerID,j.CustomerName,j.City,GROUP_CONCAT(j.JobID) as job_ids,j.JobDate')->alias('cc')->join('joborder j','j.CustomerID = cc.CustomerID')->whereIn('cc.CustomerType',$this->custType)->where($cc_where)->group('cc.CustomerID')->select()->toArray();
         //已取得所有客户下的 订单信息
         $get_today_statistics = [];
         foreach ($cust as $k => $v){
@@ -419,7 +418,7 @@ class Crontab extends BaseController
 //                    'CustomerType' =>  ['in', $this->custType],
                 ];
                 //查询是工厂客户才会继续走接下来的流程
-                $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();
+                $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->whereIn('CustomerType',$this->custType)->where($where_c)->find()->toArray();
                 if ($cust_c) {
                     $data['cust_details'] = $cust_c;
                     return $data;

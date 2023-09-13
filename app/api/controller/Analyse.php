@@ -21,7 +21,6 @@ use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use think\facade\Db;
 use think\Model;
-use think\Request;
 
 
 class Analyse extends BaseController
@@ -29,7 +28,7 @@ class Analyse extends BaseController
     /**
      * 定义客户类型
      * */
-    protected $custType = ['203','249'];
+    protected $custType = [203, 249];
 
     protected $jobOrderModel = null;
     protected $customerCompanyModel = null;
@@ -40,6 +39,8 @@ class Analyse extends BaseController
     protected $result = [];
     protected $type_data_zh = [];
     protected $catch_equment = [];
+    protected $isPest = 0;
+    protected $isInsect = 0; //飞虫
 
     /**
      * 检查是不是工厂客户
@@ -63,19 +64,20 @@ class Analyse extends BaseController
         $this->serviceItems = $serviceItemsModel->items;
     }
 
-    public function getNameByZh(){
+    public function getNameByZh()
+    {
         $equipment_type = Db::query("SELECT * FROM `lbs_service_equipment_type` WHERE `city` = 'CN' AND number_code <> 'MY'");
         $type_data = [];
-        foreach ($equipment_type as $type_k => $type_v){
+        foreach ($equipment_type as $type_k => $type_v) {
             $type_data[$type_v['number_code']] = $type_v['name'];
         }
         return $type_data;
     }
 
-    public function index(string $month = '2023-05', string $cust = 'HYLSPJGC-ZY',$city = 'ZY',$url_id = '')
+    public function index(string $month = '2023-05', string $cust = 'HYLSPJGC-ZY', $city = 'ZY', $url_id = '')
     {
-        $this->result = $this->getBaseInfo($month,$cust);
-        $sign_pic = "https://xcx.lbsapps.cn/pdf/company/".$city.".jpg";
+        $this->result = $this->getBaseInfo($month, $cust);
+        $sign_pic = "https://xcx.lbsapps.cn/pdf/company/" . $city . ".jpg";
         $html = <<<EOF
 <!DOCTYPE html>
     <meta charset="utf-8">
@@ -387,6 +389,11 @@ class Analyse extends BaseController
             <td class="first-td" colspan="12">{$this->result['joborder']['jobdate']}</td>
         </tr>
     </table>
+    
+EOF;
+        if ($this->isPest) {
+            $html .= <<<EOF
+    
     <table class="echart-table-1">
         <thead>
         <tr>
@@ -423,7 +430,7 @@ class Analyse extends BaseController
     <table class="style-table">
 
 EOF;
-        $html .= <<<EOF
+            $html .= <<<EOF
         <tr class="secend-th">
             <td class="secend-td">类型</td>
             <td class="secend-td">1月</td>
@@ -440,16 +447,16 @@ EOF;
             <td class="secend-td">12月</td>
         </tr>
 EOF;
-        $month_data = $this->result['lion_origin'];
-        foreach ($month_data as $k => $v) {
-            if($k == '老鼠'){
-                $k = "老鼠(捕获)";
-            }
-            if($k == '盗食占比'){
-                $k = "老鼠(盗食)";
-            }
-            $data_ret = explode(",", $v[0]['k1']);
-            $html .= <<<EOF
+            $month_data = $this->result['lion_origin'];
+            foreach ($month_data as $k => $v) {
+                if ($k == '老鼠') {
+                    $k = "老鼠(捕获)";
+                }
+                if ($k == '盗食占比') {
+                    $k = "老鼠(盗食)";
+                }
+                $data_ret = explode(",", $v[0]['k1']);
+                $html .= <<<EOF
         <tr class="secend-th">
             <td class="secend-td">{$k}</td>
             <td class="secend-td">{$data_ret[0]}</td>
@@ -466,10 +473,14 @@ EOF;
             <td class="secend-td">{$data_ret[11]}</td>
         </tr>
 EOF;
-        }
-        $html .= <<<EOF
+            }
+            $html .= <<<EOF
 
     </table>
+EOF;
+        }
+        if ($this->isInsect == 1) {
+            $html .= <<<EOF
         <div style="padding-top: 100px;"></div>
     <table class="echart-table-1">
        <thead>
@@ -490,14 +501,14 @@ EOF;
             </th>
         </tr>
     </table>
-    
+
     <table class="echart-table-2">
         <tr>
             <th colspan="13">
                 <div style="width: 800px;height: 100%;border: none">
 EOF
-            . implode('', $this->moreInsectCharsBar());
-        $html .= <<<EOF
+                . implode('', $this->moreInsectCharsBar());
+            $html .= <<<EOF
                 </div>
             </th>
         </tr>
@@ -540,18 +551,22 @@ b）本月以（{$this->result['pest'][0]['pest_max_data']['type_name']}）捕�
             </td>
         </tr>
     </table>
+EOF;
+        }
+        $html .= <<<EOF
      <table class="echart-table-2">
         <tr>
             <th colspan="13">
                 <div style="width: 800px;height: 100%;border: none">
 EOF
-            .  $this->seSite();
+            . $this->seSite();
         $html .= <<<EOF
                 </div>
             </th>
         </tr>
     </table>
-    
+
+      
     <table class="echart-table-2">
         <tr>
             <th colspan="13">
@@ -571,7 +586,7 @@ EOF
             </th>
         </tr>
 EOF;
-        if(!empty($this->result['se_max'])){
+        if (!empty($this->result['se_max'])) {
             $html .= <<<EOF
         <tr>
             <td colspan="13">
@@ -616,14 +631,14 @@ EOF;
         </tr>
     </table>
 EOF;
-        foreach ($this->result['pest_grouped_data'] as $k =>$v){
+        foreach ($this->result['pest_grouped_data'] as $k => $v) {
             // var_dump($v);
             $html .= <<<EOF
     <p style="width: 800px;margin: 50px auto;">{$k}(前三指标性数据)</p>
     <div class="pest">
 EOF;
-            foreach ($v as $k1 => $v1){
-                if($k1 == 'MY'){
+            foreach ($v as $k1 => $v1) {
+                if ($k1 == 'MY') {
 
                     $html .= <<<EOF
         <table class="inline-table" >
@@ -634,8 +649,8 @@ EOF;
                 <td class="third-td">区域</td>
             </tr>
 EOF;
-                    if(count($v1)>=1){
-                        foreach ($v1 as $k2 => $v2){
+                    if (count($v1) >= 1) {
+                        foreach ($v1 as $k2 => $v2) {
                             $html .= <<<EOF
           <tr class="third-th">
                 <td class="third-td td-title" >{$v2['job_date']}</td>
@@ -645,7 +660,7 @@ EOF;
             </tr>
 EOF;
                         }
-                        for ($x = 3;$x>count($v1);$x--){
+                        for ($x = 3; $x > count($v1); $x--) {
                             $html .= <<<EOF
           <tr class="third-th">
                 <td class="third-td td-title"></td>
@@ -655,8 +670,8 @@ EOF;
             </tr>
 EOF;
                         }
-                    }else{
-                        for ($x = 0;$x<3;$x++){
+                    } else {
+                        for ($x = 0; $x < 3; $x++) {
                             $html .= <<<EOF
           <tr class="third-th">
                 <td class="third-td td-title"></td>
@@ -670,7 +685,7 @@ EOF;
                     $html .= <<<EOF
                 </table>   
 EOF;
-                }elseif($k1 == 'SE'){
+                } elseif ($k1 == 'SE') {
                     $html .= <<<EOF
         <table class="inline-table" >
             <tr class="third-th">
@@ -680,8 +695,8 @@ EOF;
                 <td class="third-td">区域</td>
             </tr>
 EOF;
-                    if(count($v1)>=1){
-                        foreach ($v1 as $k2 => $v2){
+                    if (count($v1) >= 1) {
+                        foreach ($v1 as $k2 => $v2) {
                             $html .= <<<EOF
           <tr class="third-th">
                  <td class="third-td td-title">{$v2['job_date']}</td>
@@ -691,7 +706,7 @@ EOF;
             </tr>
 EOF;
                         }
-                        for ($x = 3;$x>count($v1);$x--){
+                        for ($x = 3; $x > count($v1); $x--) {
                             $html .= <<<EOF
           <tr class="third-th">
                 <td class="third-td td-title"></td>
@@ -701,8 +716,8 @@ EOF;
             </tr>
 EOF;
                         }
-                    }else{
-                        for ($x = 0;$x<3;$x++){
+                    } else {
+                        for ($x = 0; $x < 3; $x++) {
 
                             $html .= <<<EOF
           <tr class="third-th">
@@ -744,22 +759,22 @@ EOF;
 </html>
 EOF;
 //        echo $html;exit();
-        $res = $this->outputHtml($month,$html,$url_id);
-        if($month == '' || $cust == '' || $city = ''){
-            return error(-1,'输入参数有误',[]);
+        $res = $this->outputHtml($month, $html, $url_id);
+        if ($month == '' || $cust == '' || $city = '') {
+            return error(-1, '输入参数有误', []);
         }
-        $file_path = 'analyse/'.$month.'/'.$url_id.'.pdf';
+        $file_path = 'analyse/' . $month . '/' . $url_id . '.pdf';
 //        if (is_file($file_path)) {
         $domain = 'http://xcx.com/';
-        $url = $domain.$file_path;
+        $url = $domain . $file_path;
         //有报告就返回，没返回就
-        return success(0,'success',$url);
+        return success(0, 'success', $url);
     }
 
 
     public function checkCustInfo(string $customer_id)
     {
-        $where = ['CustomerID' => $customer_id,'j.ServiceType' => 2];
+        $where = ['CustomerID' => $customer_id, 'j.ServiceType' => 2];
         $cust = $this->jobOrderModel->alias('j')
             ->join('service s', 'j.ServiceType=s.ServiceType')->join('staff u', 'j.Staff01=u.StaffID')
             ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')->join('staff ut', 'j.Staff03=ut.StaffID', 'left')
@@ -783,10 +798,9 @@ EOF;
         if (!empty($data['custInfo'])) {
             $where_c = [
                 'CustomerID' => $cust['CustomerID'],
-                'CustomerType' => ['in', $this->custType],
             ];
             //查询是工厂客户才会继续走接下来的流程
-            $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->where($where_c)->find()->toArray();
+            $cust_c = $this->customerCompanyModel->field('NameZH,CustomerID,Addr')->whereIn('CustomerType', $this->custType)->where($where_c)->find()->toArray();
             if ($cust_c) {
                 $data['cust_details'] = $cust_c;
                 return $data;
@@ -815,7 +829,6 @@ EOF;
             'j.CustomerID' => $cust['cust_details']['CustomerID'],
             'j.Status' => 3,
             'j.ServiceType' => 2,
-            'c.CustomerType' => ['in', $this->custType],
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
 
@@ -826,11 +839,11 @@ EOF;
 //            'DATE_FORMAT(jobDate,"%Y-%m")' => $cust['cust_details']['CustomerID'],
         ];
         //查看有哪些订单和日期
-        $job_orders = $this->jobOrderModel->alias('j')->join('customercompany c',"c.CustomerID=j.CustomerID")->field('MAX(jobDate) as jobDate,MAX(JobID) as JobID,GROUP_CONCAT( distinct JobDate) as jobdate')->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->order('jobDate','DESC')->find();
+        $job_orders = $this->jobOrderModel->alias('j')->join('customercompany c', "c.CustomerID=j.CustomerID")->field('MAX(jobDate) as jobDate,MAX(JobID) as JobID,GROUP_CONCAT( distinct JobDate) as jobdate')->whereIn('c.CustomerType', $this->custType)->where($where)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->order('jobDate', 'DESC')->find();
         //查询有哪些 服务项目
         $job_items = $this->jobOrderModel->field('Item01, Item01Rmk, Item02, Item02Rmk, Item03, Item03Rmk, Item04, Item04Rmk, Item05, Item05Rmk, Item06, Item06Rmk, Item07, Item07Rmk, Item08, Item08Rmk, Item09, Item09Rmk, Item10, Item10Rmk, Item11, Item11Rmk, Item12, Item12Rmk, Item13, Item13Rmk, Remarks')->where($where_sub)->where('DATE_FORMAT(jobDate,"%Y-%m")="' . $month . '"')->findOrEmpty()->toArray();
         $service_subject = '';
-        if(!empty($job_items)) {
+        if (!empty($job_items)) {
             foreach ($this->serviceItems as $key => $val) {
                 if ($key == $cust['custInfo']['ServiceType']) {
                     $result = $val;
@@ -889,11 +902,11 @@ EOF;
         $year = intval($statistics_str[0]);
         $singal_month = intval($statistics_str[1]);
         $where_statistic = [
-            'year'=>$year,
-            'month'=>$singal_month,
-            'customer_id'=>$customer_id
+            'year' => $year,
+            'month' => $singal_month,
+            'customer_id' => $customer_id
         ];
-        $res = $this->statisticsReport->field('sum(type_value) as type_value,type_name')->where('type_code','not in','SE')->where($where_statistic)->group('year,month,type_name')->orderRaw('field(type_name,"蟑螂","苍蝇","蚊子","卫生性飞虫","绿化飞虫","仓储害虫","老鼠","其他") ASC')->select()->toArray();
+        $res = $this->statisticsReport->field('sum(type_value) as type_value,type_name')->where('type_code', 'not in', 'SE')->where($where_statistic)->group('year,month,type_name')->orderRaw('field(type_name,"蟑螂","苍蝇","蚊子","卫生性飞虫","绿化飞虫","仓储害虫","老鼠","其他") ASC')->select()->toArray();
         $type_values = array_column($res, 'type_value');
         $type_names = array_column($res, 'type_name');
         // var_dump($type_values);
@@ -912,6 +925,13 @@ EOF;
                 $line['keys'][$key] = '老鼠(盗食)';
             }
         }
+        if (!empty($line['keys']) && !empty($line['values'])) {
+            // $line['key'] 和 $line['value'] 都不为空
+            $this->isPest = 1;
+        } else {
+            // $line['key'] 或 $line['value'] 其中之一为空
+            $this->isPest = 0;
+        }
 
         $mian_info['line'] = $line;
         //处理线条统计图
@@ -926,8 +946,7 @@ EOF;
         //查询到本月此客户有数据了 就不去更新表了 除非去强制更新
 
         //接下来的数据就直接查询该表中的数据就行
-        $has_data = $this->statisticsReport->where($statistics_where)->where('type_code','not in','SE')->field('distinct type_name, type_code')->order('type_code')->orderRaw('field(type_name,"其他") DESC')->select()->toArray();
-//
+        $has_data = $this->statisticsReport->where($statistics_where)->where('type_code', 'not in', 'SE')->field('distinct type_name, type_code')->order('type_code')->orderRaw('field(type_name,"其他") DESC')->select()->toArray();
 //        $has_data = [];
 //        foreach ($has_data1 as $k =>$v){
 //            $has_data[][$v['type_code']] = $v['type_name'];
@@ -953,7 +972,8 @@ EOF;
             $resultArray[$index] = $type_name1[$index];
         }
         $type_name = array_values($resultArray);
-        $data_line1 = [];$data_line2 = [];
+        $data_line1 = [];
+        $data_line2 = [];
         foreach ($has_data as $k1 => $v1) {
             $data_line1[][$v1['type_code']][$v1['type_name']] = Db::query("SELECT GROUP_CONCAT(total_data_list) as k1 from(
 SELECT COALESCE(SUM(type_value), 0) AS total_data_list
@@ -972,7 +992,7 @@ FROM (
   UNION SELECT 12 AS month
 ) AS months
 LEFT JOIN lbs_statistics_report lsr ON months.month = lsr.month AND lsr.year = ? AND lsr.type_name = ? AND lsr.type_code = ? AND lsr.customer_id = ? AND lsr.delete_flag = 0  AND lsr.year <= '{$year}' AND lsr.month <= '{$singal_month}'
-GROUP BY months.month) as k", [$year, $v1['type_name'], $v1['type_code'],$customer_id]);
+GROUP BY months.month) as k", [$year, $v1['type_name'], $v1['type_code'], $customer_id]);
 
             $data_line2[][$v1['type_code']][$v1['type_name']] = Db::query("SELECT GROUP_CONCAT(total_data_list) as k1 from(
 SELECT COALESCE(SUM(type_value), 0) AS total_data_list
@@ -991,15 +1011,15 @@ FROM (
   UNION SELECT 12 AS month
 ) AS months
 LEFT JOIN lbs_statistics_report lsr ON months.month = lsr.month AND lsr.year = ? AND lsr.type_name = ? AND lsr.customer_id = ? AND lsr.delete_flag = 0 AND lsr.year <= '{$year}' AND lsr.month <= '{$singal_month}'
-GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
+GROUP BY months.month) as k", [$year, $v1['type_name'], $customer_id]);
         }
 
-
-        $arr = [];$data_line = [];
+        $arr = [];
+        $data_line = [];
         foreach ($data_line1 as $k => $v) {
-            foreach ($v as $k1 =>$v1){
-                foreach ($v1 as $k2 =>$v2){
-                    if($k2 == "老鼠"){
+            foreach ($v as $k1 => $v1) {
+                foreach ($v1 as $k2 => $v2) {
+                    if ($k2 == "老鼠") {
                         $k2 = "老鼠(捕获)";
                     }
                     $data_ret = explode(",", $v2[0]['k1']);
@@ -1011,7 +1031,7 @@ GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
 
                     $arr[] = [
                         //线条的title
-                        'name' => $k1.'-'.$k2,
+                        'name' => $k1 . '-' . $k2,
                         'type' => 'line',
 //                        'stack' => 'Total',
                         'data' => $data_ret,
@@ -1032,12 +1052,13 @@ GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
                 }
             }
         }
-        $arr_sb = [];$data_line_sb = [];
+        $arr_sb = [];
+        $data_line_sb = [];
 //        dd($data_line2);
         foreach ($data_line2 as $k => $v) {
-            foreach ($v as $k1 =>$v1){
-                foreach ($v1 as $k2 =>$v2){
-                    if($k2 == "老鼠"){
+            foreach ($v as $k1 => $v1) {
+                foreach ($v1 as $k2 => $v2) {
+                    if ($k2 == "老鼠") {
                         $k2 = "老鼠(捕获)";
                     }
                     $data_ret = explode(",", $v2[0]['k1']);
@@ -1077,17 +1098,20 @@ GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
 // 使用 array_filter() 函数过滤掉空键名元素
 
         //查询飞虫的数据
-        $data_insect_bar = [];$data_rodent_bar = [];
+        $data_insect_bar = [];
+        $data_rodent_bar = [];
         foreach ($data_line1 as $k => $v) {
-            foreach ($v as $k1 =>$v1){
-                if(!empty($k1)){
-                    foreach ($v1 as $k2 =>$v2){
+            foreach ($v as $k1 => $v1) {
+                if (!empty($k1)) {
+                    foreach ($v1 as $k2 => $v2) {
                         if ($k1 == 'MY') {
                             $data_insect_bar['灭蝇灯' . '-' . $k2] = explode(',', $v2[0]['k1']);
-                        }elseif($k1 == 'SE'){
-                            //不处理
+                        } elseif ($k1 == 'XW') {
+                            $data_insect_bar['吸蚊灯' . '-' . $k2] = explode(',', $v2[0]['k1']);
+                        } elseif ($k1 == 'BY') {
+                            $data_insect_bar['捕蝇笼' . '-' . $k2] = explode(',', $v2[0]['k1']);
                         } else {
-                            $data_rodent_bar[$this->type_data_zh[$k1].'-'.$k2] = explode(',', $v2[0]['k1']);
+                            $data_rodent_bar[$this->type_data_zh[$k1] . '-' . $k2] = explode(',', $v2[0]['k1']);
                         }
                     }
                 }
@@ -1107,8 +1131,15 @@ GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
 //                }
 //            }
 //        }
-
-        $equment_type = $this->statisticsReport->field('type_name as name,type_code,type_value as value')->where('type_code','=','MY')->where('customer_id','=',$cust['cust_details']['CustomerID'])->where($where_statistic)->select()->toArray();
+        //、当有以下任一设备灭蝇灯、吸蚊灯、室外点击式灭蝇灯、捕蝇笼时，则需要显示该板块
+        $equment_type = $this->statisticsReport->field('type_name as name,type_code,type_value as value')->where('type_code', 'in', 'MY,XW,BY,DJ')->where('customer_id', '=', $cust['cust_details']['CustomerID'])->where($where_statistic)->select()->toArray();
+        if (!empty($equment_type)) {
+            // $line['key'] 和 $line['value'] 都不为空
+            $this->isInsect = 1;
+        } else {
+            // $line['key'] 或 $line['value'] 其中之一为空
+            $this->isInsect = 0;
+        }
         //查询飞虫的数据
         // $data_insect_bar = [];
         // $data_rodent_bar = [];
@@ -1116,7 +1147,6 @@ GROUP BY months.month) as k", [$year, $v1['type_name'],$customer_id]);
 
         //查询某个设备捕捉到的虫害数量最多的统计
 //        $equment_type1 = $this->serviceEquipments->field('equipment_area,equipment_type_id,equipment_name as name,count(1) as value')->where('equipment_type_id', '<>', '113')->where('job_id', 'in', $job_orders['joborders'])->group('equipment_type_id')->select()->toArray();
-
 
 
         // 查询每个月设备捕捉数量最多的设备（只展示每个种类的前3条数据）
@@ -1161,9 +1191,9 @@ ORDER BY
 	t1.job_month,
 	t1.pest_num DESC,
 	t1.equ_type_num,
-	t1.equ_type_name DESC;",[$cust['cust_details']['CustomerID']]);
+	t1.equ_type_name DESC;", [$cust['cust_details']['CustomerID']]);
 
-        $pest_grouped_data = array_reduce($pest_res, function($result, $item) {
+        $pest_grouped_data = array_reduce($pest_res, function ($result, $item) {
             $result[$item['job_month']][$item['equ_type_num']][] = $item;
             return $result;
         }, []);
@@ -1171,31 +1201,30 @@ ORDER BY
         $pest_se = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count
 FROM lbs_service_equipment_analyse
 WHERE equ_type_num = 'SE' AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ?
-GROUP BY number;",[$cust['cust_details']['CustomerID']]);
+GROUP BY number;", [$cust['cust_details']['CustomerID']]);
 
-
-
-        $se_arr = [];$se_ret = [];
-        if(!empty($pest_se)){
-            foreach($pest_se as $k => $v){
-                $se_arr[] = $v['equ_type_num'].'0'.$v['number'];
+        $se_arr = [];
+        $se_ret = [];
+        if (!empty($pest_se)) {
+            foreach ($pest_se as $k => $v) {
+                $se_arr[] = $v['equ_type_num'] . '0' . $v['number'];
                 $se_ret[] = $v['count'];
             }
         }
 
         // 单独统计当月鼠饵站鼠捕捉量最多的设备
-        $pest_se_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num = 'SE' AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;",[$cust['cust_details']['CustomerID']]);
+        $pest_se_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num = 'SE' AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;", [$cust['cust_details']['CustomerID']]);
 //        $pest_se_max = $pest_se_data[0]['equ_type_num'].'0'.$pest_se_data[0]['number'];
         $pest_se_max = '';
         if (isset($pest_se_data[0]['equ_type_num']) && isset($pest_se_data[0]['number'])) {
-            $pest_se_max = $pest_se_data[0]['equ_type_num'].'0'.$pest_se_data[0]['number'];
+            $pest_se_max = $pest_se_data[0]['equ_type_num'] . '0' . $pest_se_data[0]['number'];
         }
         $pest_ret = [];
         // 1、飞虫 2、老鼠、3、鼠饵站
-        $pest_ret[] =  $this->getPestData($cust,$year,$singal_month,$month,$type = 1);
-        $pest_ret[] = $this->getPestData($cust,$year,$singal_month,$month,$type = 2);
-        $pest_ret[] = $this->getPestData($cust,$year,$singal_month,$month,$type = 3);
-        $mian_info['pest'] = $pest_ret??'无数据';
+        $pest_ret[] = $this->getPestData($cust, $year, $singal_month, $month, $type = 1);
+        $pest_ret[] = $this->getPestData($cust, $year, $singal_month, $month, $type = 2);
+        $pest_ret[] = $this->getPestData($cust, $year, $singal_month, $month, $type = 3);
+        $mian_info['pest'] = $pest_ret ?? '无数据';
         $mian_info['pest_grouped_data'] = $pest_grouped_data;
         $mian_info['data_insect_bar'] = $data_insect_bar;
         $mian_info['data_rodent_bar'] = $data_rodent_bar;
@@ -1215,11 +1244,12 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         return $this->result = $mian_info;
     }
 
-    public function seSite(){
+    public function seSite()
+    {
         $se_site_data = $this->result['se_site_data'];
-        if($se_site_data){
+        if ($se_site_data) {
             $se_site_title = $this->result['se_site_title'];
-            $se_reult = $this->createEcharsBar( '鼠饵站_' . 1,'鼠饵站-老鼠', ["#e81010"], $se_site_data,$se_site_title,$x = "设备编号",$y="盗食次数");
+            $se_reult = $this->createEcharsBar('鼠饵站_' . 1, '鼠饵站-老鼠', ["#e81010"], $se_site_data, $se_site_title, $x = "设备编号", $y = "盗食次数");
             return $se_reult;
         }
     }
@@ -1227,42 +1257,43 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
     /**
      * type = 1为老鼠，type = 2为苍蝇
      * */
-    public function getPestData($cust,$year,$singal_month,$month,$type = 1){
+    public function getPestData($cust, $year, $singal_month, $month, $type = 1)
+    {
         //查询
         $city_id = 0;
-        $customer = Db::query("select City from customercompany WHERE CustomerID = ?;",[$cust['cust_details']['CustomerID']]);
+        $customer = Db::query("select City from customercompany WHERE CustomerID = ?;", [$cust['cust_details']['CustomerID']]);
         $city_id = $customer[0]['City'];
 
         /*$city_en = Db::query("select e.Text from enums as e left join officecity as o on o.Office=e.EnumID where o.City= ? and e.EnumType=8
 ;",[$city_id]);*/
         $authkey = 'TFJTR1JPVVBfd2FpdDk3Mw==';
         // 使用示例
-        $sec_data = ['data'=>'CN','authkey'=>$authkey];
-        $res = curl_post('https://dms.lbsapps.cn/sv-prod/index.php/pestdict/api',$sec_data);
-        $pest_sbj = json_decode($res,true);
+        $sec_data = ['data' => 'CN', 'authkey' => $authkey];
+        $res = curl_post('https://dms.lbsapps.cn/sv-prod/index.php/pestdict/api', $sec_data);
+        $pest_sbj = json_decode($res, true);
         //得到飞虫的相关数据
         //查询本月捕获的飞虫总数 没有老鼠的就是飞虫
-        if($type == 1){
+        if ($type == 1) {
             $pest_where = [
-                ['year','=',$year],
-                ['month','=',$singal_month],
-                ['type_code','=','MY']
+                ['year', '=', $year],
+                ['month', '=', $singal_month],
+                ['type_code', '=', 'MY']
             ];
-        }elseif($type == 2){
+        } elseif ($type == 2) {
             $pest_where = [
-                ['year','=',$year],
-                ['month','=',$singal_month],
-                ['type_name','=','老鼠']
+                ['year', '=', $year],
+                ['month', '=', $singal_month],
+                ['type_name', '=', '老鼠']
             ];
-        }elseif($type == 3){
+        } elseif ($type == 3) {
             $pest_where = [
-                ['year','=',$year],
-                ['month','=',$singal_month],
-                ['type_code','=','SE']
+                ['year', '=', $year],
+                ['month', '=', $singal_month],
+                ['type_code', '=', 'SE']
             ];
         }
         //总数
-        $custWhere[] = ['customer_id','=',$cust['cust_details']['CustomerID']];
+        $custWhere[] = ['customer_id', '=', $cust['cust_details']['CustomerID']];
         $pest_month_total = $this->statisticsReport->where($custWhere)->where($pest_where)->sum('type_value');
         //某种类型的飞虫
         $pest_max_data = $this->statisticsReport->field('SUM(type_value) AS type_value, type_name')->where($custWhere)->where($pest_where)->group('type_name')->order('type_value DESC')->findOrEmpty()->toArray();
@@ -1270,7 +1301,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         // $pest_month_total = 0;
         // $pest_max_data = 0;
         // $pest_trend = 0;
-        if(!empty($pest_max_data)) {
+        if (!empty($pest_max_data)) {
             //获取上一个月的数据
             $last_month = date('m', strtotime($month . " -1 month"));
             //查询本月捕获的飞虫总数 没有老鼠的就是飞虫
@@ -1317,14 +1348,14 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
 
         $pest_result['pest_month_total'] = $pest_month_total ?? 0;
         $pest_result['pest_max_data'] = $pest_max_data ?? null;
-        if(empty($pest_result['pest_max_data']) || !is_array($pest_result['pest_max_data'])){
+        if (empty($pest_result['pest_max_data']) || !is_array($pest_result['pest_max_data'])) {
             $pest_result['pest_max_data'] = ['type_name' => '',];
         }
 
         if (!isset($pest_result['sub'])) {
-            $pest_result['sub'][0] ='暂无数据';
-            $pest_result['sub'][1] ='暂无数据';
-            $pest_result['sub'][2] ='暂无数据';
+            $pest_result['sub'][0] = '暂无数据';
+            $pest_result['sub'][1] = '暂无数据';
+            $pest_result['sub'][2] = '暂无数据';
         }
         $pest_result['trend'] = $pest_trend ?? '';
         return $pest_result;
@@ -1345,13 +1376,13 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         ]);
         $option->yAxis([]);
         $option->title([
-            "text" => $this->result['month']."虫害统计图",
+            "text" => $this->result['month'] . "虫害统计图",
             "left" => 'center'
         ]);
         $chart = new Bar();
         $chart->data = $this->result['line']['values'];
 
-        $chart->name = $this->result['month']."害虫统计";
+        $chart->name = $this->result['month'] . "害虫统计";
         $chart->itemStyle = [
             'normal' => [
                 'label' => [
@@ -1380,7 +1411,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
             "left" => 'center',
             "borderWidth" => 0
         ]);
-        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83','#35AB33','#F5AD1D','#ff7f50','#da70d6','#32cd32','#6495ed']);
+        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83', '#35AB33', '#F5AD1D', '#ff7f50', '#da70d6', '#32cd32', '#6495ed']);
         $option->xAxis([
             'name' => '月份',
             "type" => "category",
@@ -1417,7 +1448,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
 
         $option->series($this->result['lion_content']);
         $chart = new Line();
-        $chart->name = $this->result['month']."害虫统计";
+        $chart->name = $this->result['month'] . "害虫统计";
         $chart->itemStyle = [
             'normal' => [
                 'label' => [
@@ -1443,7 +1474,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $option->animation(false);
         $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
         $option->title([
-            "text" => $this->result['month'].'飞虫占比图',
+            "text" => $this->result['month'] . '飞虫占比图',
             "left" => 'center'
         ]);
 //        $option->grid([
@@ -1524,13 +1555,13 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
      * @param int[] $data
      * @return mixed
      * */
-    public function createEcharsBar(string $id = '0', string $title = '柱状图', array $color = ['#4587E7'], array $data = [],array $month = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],$x = "月份",$y = "数量"): string
+    public function createEcharsBar(string $id = '0', string $title = '柱状图', array $color = ['#4587E7'], array $data = [], array $month = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'], $x = "月份", $y = "数量"): string
     {
         $echarts = ECharts::init("#myChart" . $id);
         $option = new Option();
         $option->animation(false);
         $option->color($color);
-        $option->xAxis(["data" => $month,'name' => $x,]);
+        $option->xAxis(["data" => $month, 'name' => $x,]);
         $option->yAxis([
             'name' => $y,
             'type' => 'value',
@@ -1562,7 +1593,6 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $echarts->option($option);
         return $echarts->render();
     }
-
     /**
      * 鼠类图表绘制
      * @return array
@@ -1574,7 +1604,7 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         $id = 1;
         $result = [];
         foreach ($data_bar as $k => $v) {
-            if($k != "蟑螂监测站-蟑螂"){
+            if ($k != "蟑螂监测站-蟑螂") {
                 $result[] = $this->createEcharsBar($k . '_' . $id, strval($k), $color, $v);
             }
             $id++;
@@ -1582,40 +1612,40 @@ GROUP BY number;",[$cust['cust_details']['CustomerID']]);
         return $result;
     }
 
-    public function outputHtml($month,$ctx,$cust)
+    public function outputHtml($month, $ctx, $cust)
     {
-        $dir = $_SERVER['DOCUMENT_ROOT'].'/analyse/'.$month.'/';
+        $dir = $_SERVER['DOCUMENT_ROOT'] . '/analyse/' . $month . '/';
 //        $fileName= $cust.'.html';  //获取文件名
-        if(!is_dir($dir)){   //判断目录是否存在
+        if (!is_dir($dir)) {   //判断目录是否存在
             //不存在则创建
             //   mkdir($pathcurr,0777))
-            mkdir(iconv("UTF-8", "GBK",$dir),0777,true); //iconv方法是为了防止中文乱码，保证可以创建识别中文目录，不用iconv方法格式的话，将无法创建中文目录,第三参数的开启递归模式，默认是关闭的
+            mkdir(iconv("UTF-8", "GBK", $dir), 0777, true); //iconv方法是为了防止中文乱码，保证可以创建识别中文目录，不用iconv方法格式的话，将无法创建中文目录,第三参数的开启递归模式，默认是关闭的
         }
-        $fp = fopen($dir.$cust.'.html', "w");
+        $fp = fopen($dir . $cust . '.html', "w");
         $len = fwrite($fp, $ctx);
         fclose($fp);
-        $rs = $this->exec($dir,$cust,$cust,$month);
+        $rs = $this->exec($dir, $cust, $cust, $month);
         if ($len > 0) {
             return true;
         }
         return false;
     }
 
-    public function exec($path,$filename,$name,$month)
+    public function exec($path, $filename, $name, $month)
     {
         $ext_pdf = '.pdf';
         $ext_html = '.html';
-        $html_name = $path.$filename.$ext_html;
-        $pdf_name = $path.$filename.$ext_pdf;
+        $html_name = $path . $filename . $ext_html;
+        $pdf_name = $path . $filename . $ext_pdf;
         $cmd = "wkhtmltopdf $html_name  $pdf_name 2>&1";
         @exec($cmd, $output, $return_val);
         if ($return_val === 0) {
-            $analyseReportModel =  new AnalyseReport();
-            $file_path = '/analyse/'.$month.'/'.$filename.$ext_pdf;
+            $analyseReportModel = new AnalyseReport();
+            $file_path = '/analyse/' . $month . '/' . $filename . $ext_pdf;
             // $url_orain = 'https://xcx.lbsapps.com/';
             // $url = $url_orain.$file_path;
-            $res = $analyseReportModel->where('url_id',$filename)->update(['url'=>$file_path,'make_flag'=>0]);
-            if($res){
+            $res = $analyseReportModel->where('url_id', $filename)->update(['url' => $file_path, 'make_flag' => 0]);
+            if ($res) {
                 return 1;
             }
         }
