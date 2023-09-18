@@ -33,6 +33,7 @@ if (!function_exists('error')) {
  * @Params path 存放路径
  * @return String
  * */
+//  TODO 还是file_put_contents好用！！
 if (!function_exists('conversionToImg')) {
     function conversionToImg($base64_image_content, $path, $file_name = "")
     {
@@ -40,58 +41,24 @@ if (!function_exists('conversionToImg')) {
         if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $base64_image_content, $result)) {
             $type = $result[2];
             if (!is_dir($path)) {
-                if (!mkdir($path, 0777, true)) {
-                    return '无法创建目录';
-                }
+                mkdir($path, 0777, true);
+            }
+            if (!file_exists($path)) {
+                mkdir($path, 0777, true);
             }
             if ($file_name == "") {
                 $file_name = create_trade_no();
             }
             // 生成唯一的id
-            $new_file = $path . $file_name . ".$type";
+            $new_file = $path . $file_name . ".{$type}";
 
-            // 检查文件是否已存在
-            if (file_exists($new_file)) {
-                return '/' . $new_file;
-            }
+            // 将base64内容写入文件
+            $image_data = base64_decode(str_replace($result[1], '', $base64_image_content));
+            file_put_contents($new_file, $image_data);
 
-            // 解码Base64图像数据
-            $image_data = str_replace($result[1], '', $base64_image_content);
-            $image = imagecreatefromstring(base64_decode($image_data));
-            if ($image !== false) {
-                // 验证图像文件类型
-                $valid_types = ['jpeg', 'jpg', 'png', 'gif'];
-                if (!in_array($type, $valid_types)) {
-                    return '无效的图像文件类型';
-                }
-                // 保存图像文件
-                switch ($type) {
-                    case 'jpeg':
-                    case 'jpg':
-                        if (!imagejpeg($image, $new_file,100)) {
-                            return '无法保存图像文件';
-                        }
-                        break;
-                    case 'png':
-                        if (!imagepng($image, $new_file,0)) {
-                            return '无法保存图像文件';
-                        }
-                        break;
-                    case 'gif':
-                        if (!imagegif($image, $new_file)) {
-                            return '无法保存图像文件';
-                        }
-                        break;
-                    default:
-                        return '无效的图像文件类型';
-                }
-                imagedestroy($image);
-                return '/' . $new_file;
-            } else {
-                return '无效的图像数据';
-            }
+            return '/' . $new_file;
         } else {
-            return '无效的图像数据';
+            return '';
         }
     }
 }
