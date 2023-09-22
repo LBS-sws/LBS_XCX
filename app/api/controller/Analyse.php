@@ -85,13 +85,17 @@ class Analyse extends BaseController
 
     <title>史伟莎有害生物控制总结及趋势分析报告</title>
     <style>
+        
       * {
             page-break-inside: avoid;
             page-break-after: avoid;
             page-break-before: avoid;
         }
-        
-          @@media screen{
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+          @media screen{
                 div.break_here {
                     page-break-after: always !important;
                 }
@@ -102,13 +106,21 @@ class Analyse extends BaseController
             /*font-size: 0.9em;*/
             width: 800px;
         }
-         .inline-table {
+        .inline-table-none {
             /*margin-right: 20px;*/
             width: 50%;
             float: left;
             /*font-size: 0.9em;*/
             border-collapse: collapse;
 
+          }
+         .inline-table {
+            /*margin-right: 20px;*/
+            width: 50%;
+            float: left;
+            /*font-size: 0.9em;*/
+            border-collapse: collapse;
+             border: none
           }
           
           
@@ -153,26 +165,24 @@ class Analyse extends BaseController
         .echart-table{
             margin: 50px auto;
             /*font-size: 0.9em;*/
-            min-width: 400px;
+            width: 800px;
         }
         
         .echart-table-1{
             margin: 0 auto 0 auto;
             /*font-size: 0.9em;*/
-            min-width: 400px;
             width: 800px;
         }
         
         .echart-table-2{
             margin: 0 auto 0 auto;
             /*font-size: 0.9em;*/
-            min-width: 400px;
+            width: 800px;
             /*box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);*/
         }
         .text-table-1{
             margin: 0 auto 0 auto;
             /*font-size: 0.9em;*/
-            min-width: 400px;
             width: 800px;
             /*box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);*/
         }
@@ -481,7 +491,7 @@ EOF;
         }
         if ($this->isInsect == 1) {
             $html .= <<<EOF
-        <div style="padding-top: 100px;"></div>
+        <div style="padding-top: 50px;"></div>
     <table class="echart-table-1">
        <thead>
         <tr>
@@ -578,7 +588,10 @@ EOF
             </th>
         </tr>
     </table>
-    
+EOF;
+        if ((isset($this->result['se_max']) && !empty($this->result['se_max'])) || (isset($this->result['rat_max']) && !empty($this->result['rat_max']))) {
+            $html .= <<<EOF
+
     <table class="text-table-1" style="border: 1px solid;">
         <tr>
             <th colspan="13">
@@ -586,22 +599,25 @@ EOF
             </th>
         </tr>
 EOF;
-        if (!empty($this->result['se_max'])) {
-            $html .= <<<EOF
+            if (!empty($this->result['se_max'])) {
+                $html .= <<<EOF
         <tr>
             <td colspan="13">
 a）鼠饵站：本月盗食情况较上月（{$this->result['pest'][2]['trend']}），盗食情况多发生在设备({$this->result['se_max']})。
             </td>
         </tr> 
 EOF;
-        }
-        $html .= <<<EOF
+            }
+            if (!empty($this->result['rat_max'])) {
+                $html .= <<<EOF
         <tr>
             <td colspan="13">
  b）粘鼠板：本月捕获鼠类（{$this->result['pest'][1]['pest_month_total']}）只，较上月（{$this->result['pest'][1]['trend']}）。
             </td>
         </tr>
-        
+EOF;
+            }
+            $html .= <<<EOF
          <tr>
             <th colspan="13">
                 建议：
@@ -609,7 +625,7 @@ EOF;
         </tr>
         <tr>
             <td colspan="13">
-                √{$this->result['pest'][1]['sub'][1]}
+                √{$this->result['pest'][2]['sub'][1]}
             </td>
         </tr>
         
@@ -620,7 +636,7 @@ EOF;
         </tr>
         <tr>
             <td colspan="13">
-                √{$this->result['pest'][1]['sub'][2]}
+                √{$this->result['pest'][2]['sub'][2]}
             </td>
         </tr>
         
@@ -631,113 +647,95 @@ EOF;
         </tr>
     </table>
 EOF;
+        }
         foreach ($this->result['pest_grouped_data'] as $k => $v) {
-            // var_dump($v);
             $html .= <<<EOF
-    <p style="width: 800px;margin: 50px auto;">{$k}(前三指标性数据)</p>
+    <div style="width: 800px;  word-wrap: break-word;">{$k}(前三指标性数据)<br></div>
     <div class="pest">
 EOF;
+            $tableCount = count($v);
+            $tableSize = ceil($tableCount / 2);
+
             foreach ($v as $k1 => $v1) {
-                if ($k1 == 'MY') {
-
-                    $html .= <<<EOF
+                $html .= <<<EOF
         <table class="inline-table" >
             <tr class="third-th">
                 <td class="third-td td-title">日期</td>
-                <td class="third-td">灭蝇灯编号</td>
+                <td class="third-td">设备编号</td>
                 <td class="third-td">数量</td>
                 <td class="third-td">区域</td>
             </tr>
 EOF;
-                    if (count($v1) >= 1) {
-                        foreach ($v1 as $k2 => $v2) {
-                            $html .= <<<EOF
-          <tr class="third-th">
-                <td class="third-td td-title" >{$v2['job_date']}</td>
-                <td class="third-td" >{$v2['equ_type_num']}0{$v2['number']}</td>
-                <td class="third-td">{$v2['pest_num']}</td>
-                <td class="third-td">{$v2['equ_area']}</td>
-            </tr>
+                if (count($v1) >= 1) {
+                    foreach ($v1 as $k2 => $v2) {
+                        $html .= <<<EOF
+                <tr class="third-th">
+                    <td class="third-td td-title">{$v2['job_date']}</td>
+                    <td class="third-td">{$v2['equ_type_num']}0{$v2['number']}</td>
+                    <td class="third-td">{$v2['pest_num']}</td>
+                    <td class="third-td">{$v2['equ_area']}</td>
+                </tr>
 EOF;
-                        }
-                        for ($x = 3; $x > count($v1); $x--) {
-                            $html .= <<<EOF
-          <tr class="third-th">
-                <td class="third-td td-title"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-            </tr>
-EOF;
-                        }
-                    } else {
-                        for ($x = 0; $x < 3; $x++) {
-                            $html .= <<<EOF
-          <tr class="third-th">
-                <td class="third-td td-title"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-            </tr>
-EOF;
-                        }
                     }
-                    $html .= <<<EOF
-                </table>   
+                    for ($x = 3; $x > count($v1); $x--) {
+                        $html .= <<<EOF
+                <tr class="third-th">
+                    <td class="third-td td-title"></td>
+                    <td class="third-td"></td>
+                    <td class="third-td"></td>
+                    <td class="third-td"></td>
+                </tr>
 EOF;
-                } elseif ($k1 == 'SE') {
-                    $html .= <<<EOF
-        <table class="inline-table" >
-            <tr class="third-th">
+                    }
+                } else {
+                    for ($x = 0; $x < 3; $x++) {
+                        $html .= <<<EOF
+                <tr class="third-th">
+                    <td class="third-td td-title"></td>
+                    <td class="third-td"></td>
+                    <td class="third-td"></td>
+                    <td class="third-td"></td>
+                </tr>
+EOF;
+                    }
+                }
+                $html .= <<<EOF
+        </table>   
+EOF;
+            }
+
+            $html .= <<<EOF
+         <table class="inline-table" style="border: none">
+<tr class="third-th">
                 <td class="third-td td-title">日期</td>
-                <td class="third-td">鼠饵站编号</td>
+                <td class="third-td">设备编号</td>
                 <td class="third-td">数量</td>
                 <td class="third-td">区域</td>
             </tr>
 EOF;
-                    if (count($v1) >= 1) {
-                        foreach ($v1 as $k2 => $v2) {
-                            $html .= <<<EOF
-          <tr class="third-th">
-                 <td class="third-td td-title">{$v2['job_date']}</td>
-                <td class="third-td">{$v2['equ_type_num']}0{$v2['number']}</td>
-                <td class="third-td">{$v2['pest_num']}</td>
-                <td class="third-td">{$v2['equ_area']}</td>
-            </tr>
-EOF;
-                        }
-                        for ($x = 3; $x > count($v1); $x--) {
-                            $html .= <<<EOF
-          <tr class="third-th">
-                <td class="third-td td-title"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-            </tr>
-EOF;
-                        }
-                    } else {
-                        for ($x = 0; $x < 3; $x++) {
+// Add empty tables to match the size of preceding content
+            for ($i = $tableCount; $i < $tableSize * 2; $i++) {
 
-                            $html .= <<<EOF
-          <tr class="third-th">
-                <td class="third-td td-title"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-                <td class="third-td"></td>
-            </tr>
-EOF;
-                        }
-                    }
+
+                for ($end = 3;$end>0;$end--){
                     $html .= <<<EOF
-                </table>   
+                    
+                    <tr class="third-th">
+                    <td class="third-td td-title"></td>
+                    <td class="third-td"></td>
+                    <td class="third-td"></td>
+                    <td class="third-td"></td>
+            
 EOF;
                 }
             }
-            $html .= <<<EOF
-</div>
-    <hr style=" border:none;FILTER:alpha(opacity=100,finishopacity=0,style=2)" width="800px" color=#cad9ea SIZE=0>
 
+            $html .= <<<EOF
+        
+            </tr>
+        </table>
+    </div>
+    <hr style="border:none;FILTER:alpha(opacity=100,finishopacity=0,style=2)" width="800px" color=#cad9ea SIZE=0>
 EOF;
         }
         $html .= <<<EOF
@@ -1110,8 +1108,11 @@ GROUP BY months.month) as k", [$year, $v1['type_name'], $customer_id]);
                             $data_insect_bar['吸蚊灯' . '-' . $k2] = explode(',', $v2[0]['k1']);
                         } elseif ($k1 == 'BY') {
                             $data_insect_bar['捕蝇笼' . '-' . $k2] = explode(',', $v2[0]['k1']);
+                        } elseif ($k1 == 'DJ') {
+                            $data_insect_bar['室外电击式灭蝇灯' . '-' . $k2] = explode(',', $v2[0]['k1']);
                         } else {
                             $data_rodent_bar[$this->type_data_zh[$k1] . '-' . $k2] = explode(',', $v2[0]['k1']);
+                            // dd($data_rodent_bar);
                         }
                     }
                 }
@@ -1133,6 +1134,34 @@ GROUP BY months.month) as k", [$year, $v1['type_name'], $customer_id]);
 //        }
         //、当有以下任一设备灭蝇灯、吸蚊灯、室外点击式灭蝇灯、捕蝇笼时，则需要显示该板块
         $equment_type = $this->statisticsReport->field('type_name as name,type_code,type_value as value')->where('type_code', 'in', 'MY,XW,BY,DJ')->where('customer_id', '=', $cust['cust_details']['CustomerID'])->where($where_statistic)->select()->toArray();
+
+        // 创建一个空数组用于存储结果
+        $result = [];
+
+        // 遍历$equment_type数组
+        foreach ($equment_type as $item) {
+            $name = $item['name'];
+            $value = $item['value'];
+
+            // 如果结果数组中已经存在相同的name，则将value相加
+            if (isset($result[$name])) {
+                $result[$name] += $value;
+            } else {
+                // 否则，将name和value添加到结果数组中
+                $result[$name] = $value;
+            }
+        }
+
+        // 将结果数组重新赋值给$equment_type
+        $equment_type = array_map(function ($name, $value) {
+            return [
+                'name' => $name,
+                'value' => $value
+            ];
+        }, array_keys($result), $result);
+
+        // 输出结果
+
         if (!empty($equment_type)) {
             // $line['key'] 和 $line['value'] 都不为空
             $this->isInsect = 1;
@@ -1151,47 +1180,47 @@ GROUP BY months.month) as k", [$year, $v1['type_name'], $customer_id]);
 
         // 查询每个月设备捕捉数量最多的设备（只展示每个种类的前3条数据）
 
-        $pest_res = Db::query(" SELECT
-	t1.equ_type_num,
-	t1.equ_type_name,
-	t1.job_month,
-	t1.pest_num,
-	t1.equ_area,
-	t1.number,
-	t1.job_date,
-	t1.customer_id 
+        $pest_res = Db::query("SELECT
+    t1.equ_type_num,
+    t1.equ_type_name,
+    t1.job_month,
+    t1.pest_num,
+    t1.equ_area,
+    t1.number,
+    t1.job_date,
+    t1.customer_id
 FROM
-	(
-SELECT
-	equ_type_num,
-	equ_type_name,
-	DATE_FORMAT( job_date, '%Y-%m' ) AS job_month,
-	pest_num,
-	equ_area,
-	number,
-	customer_id,job_date,
-	@rn :=
-IF
-	( @prev_month = DATE_FORMAT( job_date, '%Y-%m' ) AND @prev_type = equ_type_num, @rn + 1, 1 ) AS rn,
-	@prev_month := DATE_FORMAT( job_date, '%Y-%m' ) AS prev_month,
-	@prev_type := equ_type_num AS prev_type 
-FROM
-	lbs_service_equipment_analyse,
-	( SELECT @prev_month := NULL, @prev_type := NULL, @rn := 0 ) AS vars 
-ORDER BY
-	equ_type_num,
-	equ_type_name,
-	DATE_FORMAT( job_date, '%Y-%m' ),
-	pest_num DESC 
-	) AS t1 
+    (
+        SELECT
+            equ_type_num,
+            equ_type_name,
+            DATE_FORMAT(job_date, '%Y-%m') AS job_month,
+            pest_num,
+            equ_area,
+            number,
+            job_date,
+            customer_id,
+            @rn := IF(@prev_month = DATE_FORMAT(job_date, '%Y-%m') AND @prev_type = equ_type_num, @rn + 1, 1) AS rn,
+            @prev_month := DATE_FORMAT(job_date, '%Y-%m') AS prev_month,
+            @prev_type := equ_type_num AS prev_type
+        FROM
+            lbs_service_equipment_analyse,
+            (SELECT @prev_month := NULL, @prev_type := NULL, @rn := 0) AS vars
+        WHERE
+            customer_id = ?
+            AND DATE_FORMAT(job_date, '%Y-%m') <= '{$month}'
+        ORDER BY
+            equ_type_num,
+            DATE_FORMAT(job_date, '%Y-%m'),
+            pest_num DESC
+    ) AS t1
 WHERE
-	t1.rn <= 3 
-	AND t1.customer_id = ? AND t1.job_month <='{$month}'
+    t1.rn <= 3
 ORDER BY
-	t1.job_month,
-	t1.pest_num DESC,
-	t1.equ_type_num,
-	t1.equ_type_name DESC;", [$cust['cust_details']['CustomerID']]);
+    t1.equ_type_num DESC,
+		    t1.job_month DESC,
+    t1.pest_num DESC
+", [$cust['cust_details']['CustomerID']]);
 
         $pest_grouped_data = array_reduce($pest_res, function ($result, $item) {
             $result[$item['job_month']][$item['equ_type_num']][] = $item;
@@ -1212,6 +1241,9 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
             }
         }
 
+        // 单独统计当老鼠最多的设备数量
+        $pest_rat_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num IN('SB','SL') AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;", [$cust['cust_details']['CustomerID']]);
+
         // 单独统计当月鼠饵站鼠捕捉量最多的设备
         $pest_se_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num = 'SE' AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;", [$cust['cust_details']['CustomerID']]);
 //        $pest_se_max = $pest_se_data[0]['equ_type_num'].'0'.$pest_se_data[0]['number'];
@@ -1226,9 +1258,11 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
         $pest_ret[] = $this->getPestData($cust, $year, $singal_month, $month, $type = 3);
         $mian_info['pest'] = $pest_ret ?? '无数据';
         $mian_info['pest_grouped_data'] = $pest_grouped_data;
+        // dd($pest_grouped_data);
         $mian_info['data_insect_bar'] = $data_insect_bar;
         $mian_info['data_rodent_bar'] = $data_rodent_bar;
         $mian_info['se_max'] = $pest_se_max;
+        $mian_info['rat_max'] = $pest_rat_data;
         $mian_info['pie'] = $equment_type;
         $mian_info['lion_title'] = $type_name;
         $mian_info['lion_origin'] = $data_line_sb;
@@ -1277,7 +1311,7 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
             $pest_where = [
                 ['year', '=', $year],
                 ['month', '=', $singal_month],
-                ['type_code', '=', 'MY']
+                ['type_code', 'IN', ['MY','XW','BY','DJ']]
             ];
         } elseif ($type == 2) {
             $pest_where = [
@@ -1327,8 +1361,10 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
             } else {
                 $pest_trend = '平稳';
             }
-            // var_dump($pest_sbj);exit();
             foreach ($pest_sbj as $k => $v) {
+                if($pest_max_data['type_name'] == "盗食占比"){
+                    $pest_max_data['type_name']="老鼠";
+                }
                 if ($v['insect_name'] == $pest_max_data['type_name']) {
                     $pest_result['sub'][] = $v['analysis_result'];
                     $pest_result['sub'][] = $v['suggestion'];
@@ -1351,7 +1387,6 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
         if (empty($pest_result['pest_max_data']) || !is_array($pest_result['pest_max_data'])) {
             $pest_result['pest_max_data'] = ['type_name' => '',];
         }
-
         if (!isset($pest_result['sub'])) {
             $pest_result['sub'][0] = '暂无数据';
             $pest_result['sub'][1] = '暂无数据';
