@@ -48,7 +48,7 @@ class CheckLog extends BaseController
         '鼠饵站' => ['SE'],
         '灭蝇灯' => ['MY'],
         '蟑螂屋' => ['ZJ'],
-        '粘鼠板OR捕鼠夹' => ['SL', 'SJ', 'SC', 'SB'],
+        '粘鼠板OR捕鼠夹' => ['SL', 'SJ', 'SC', 'LB'],
     ];
 
 

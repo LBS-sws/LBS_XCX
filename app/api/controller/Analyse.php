@@ -108,7 +108,7 @@ class Analyse extends BaseController
         }
         .inline-table-none {
             /*margin-right: 20px;*/
-            width: 50%;
+            width: 800px;
             float: left;
             /*font-size: 0.9em;*/
             border-collapse: collapse;
@@ -116,7 +116,7 @@ class Analyse extends BaseController
           }
          .inline-table {
             /*margin-right: 20px;*/
-            width: 50%;
+            width: 100%;
             float: left;
             /*font-size: 0.9em;*/
             border-collapse: collapse;
@@ -648,96 +648,82 @@ EOF;
     </table>
 EOF;
         }
+
+
+//        -------------
+        $html .= '<table class="inline-table">';
+        $html .= '<tbody>';
+
         foreach ($this->result['pest_grouped_data'] as $k => $v) {
-            $html .= <<<EOF
-    <div style="width: 800px;  word-wrap: break-word;">{$k}(前三指标性数据)<br></div>
-    <div class="pest">
-EOF;
-            $tableCount = count($v);
-            $tableSize = ceil($tableCount / 2);
+            $leftData = array();
+            $rightData = array();
+            $isLeft = true; // 初始化$isLeft变量
 
             foreach ($v as $k1 => $v1) {
-                $html .= <<<EOF
-        <table class="inline-table" >
-            <tr class="third-th">
-                <td class="third-td td-title">日期</td>
-                <td class="third-td">设备编号</td>
-                <td class="third-td">数量</td>
-                <td class="third-td">区域</td>
-            </tr>
-EOF;
-                if (count($v1) >= 1) {
-                    foreach ($v1 as $k2 => $v2) {
-                        $html .= <<<EOF
-                <tr class="third-th">
-                    <td class="third-td td-title">{$v2['job_date']}</td>
-                    <td class="third-td">{$v2['equ_type_num']}0{$v2['number']}</td>
-                    <td class="third-td">{$v2['pest_num']}</td>
-                    <td class="third-td">{$v2['equ_area']}</td>
-                </tr>
-EOF;
+                foreach ($v1 as $k2 => $v2) {
+                    if ($isLeft) {
+                        $leftData[] = $v2;
+                    } else {
+                        $rightData[] = $v2;
                     }
-                    for ($x = 3; $x > count($v1); $x--) {
-                        $html .= <<<EOF
-                <tr class="third-th">
-                    <td class="third-td td-title"></td>
-                    <td class="third-td"></td>
-                    <td class="third-td"></td>
-                    <td class="third-td"></td>
-                </tr>
-EOF;
-                    }
+
+                    // 切换左右数据
+                    $isLeft = !$isLeft;
+                }
+            }
+
+            $html .= '<tr class="third-th">';
+            $html .= '<td class="third-td td-title" colspan="8">' . $k . '(前三指标性数据)</td>';
+            $html .= '</tr>';
+
+            $html .= '<tr class="third-th">';
+            $html .= '<td class="third-td td-title">日期</td>';
+            $html .= '<td class="third-td">设备编号</td>';
+            $html .= '<td class="third-td">数量</td>';
+            $html .= '<td class="third-td">区域</td>';
+            $html .= '<td class="third-td td-title">日期</td>';
+            $html .= '<td class="third-td">设备编号</td>';
+            $html .= '<td class="third-td">数量</td>';
+            $html .= '<td class="third-td">区域</td>';
+            $html .= '</tr>';
+
+            $rowCount = max(count($leftData), count($rightData));
+
+            for ($i = 0; $i < $rowCount; $i++) {
+                $html .= '<tr class="third-th">';
+                if ($i < count($leftData)) {
+                    $html .= '<td class="third-td td-title">' . $leftData[$i]['job_date'] . '</td>';
+                    $html .= '<td class="third-td">' . $leftData[$i]['equ_type_num'] . '0' . $leftData[$i]['number'] . '</td>';
+                    $html .= '<td class="third-td">' . $leftData[$i]['pest_num'] . '</td>';
+                    $html .= '<td class="third-td">' . $leftData[$i]['equ_area'] . '</td>';
                 } else {
-                    for ($x = 0; $x < 3; $x++) {
-                        $html .= <<<EOF
-                <tr class="third-th">
-                    <td class="third-td td-title"></td>
-                    <td class="third-td"></td>
-                    <td class="third-td"></td>
-                    <td class="third-td"></td>
-                </tr>
-EOF;
-                    }
+                    $html .= '<td class="third-td td-title"></td>';
+                    $html .= '<td class="third-td"></td>';
+                    $html .= '<td class="third-td"></td>';
+                    $html .= '<td class="third-td"></td>';
                 }
-                $html .= <<<EOF
-        </table>   
-EOF;
-            }
 
-            $html .= <<<EOF
-         <table class="inline-table" style="border: none">
-<tr class="third-th">
-                <td class="third-td td-title">日期</td>
-                <td class="third-td">设备编号</td>
-                <td class="third-td">数量</td>
-                <td class="third-td">区域</td>
-            </tr>
-EOF;
-// Add empty tables to match the size of preceding content
-            for ($i = $tableCount; $i < $tableSize * 2; $i++) {
-
-
-                for ($end = 3;$end>0;$end--){
-                    $html .= <<<EOF
-                    
-                    <tr class="third-th">
-                    <td class="third-td td-title"></td>
-                    <td class="third-td"></td>
-                    <td class="third-td"></td>
-                    <td class="third-td"></td>
-            
-EOF;
+                if ($i < count($rightData)) {
+                    $html .= '<td class="third-td td-title">' . $rightData[$i]['job_date'] . '</td>';
+                    $html .= '<td class="third-td">' . $rightData[$i]['equ_type_num'] . '0' . $rightData[$i]['number'] . '</td>';
+                    $html .= '<td class="third-td">' . $rightData[$i]['pest_num'] . '</td>';
+                    $html .= '<td class="third-td">' . $rightData[$i]['equ_area'] . '</td>';
+                } else {
+                    $html .= '<td class="third-td td-title"></td>';
+                    $html .= '<td class="third-td"></td>';
+                    $html .= '<td class="third-td"></td>';
+                    $html .= '<td class="third-td"></td>';
                 }
-            }
 
-            $html .= <<<EOF
-        
-            </tr>
-        </table>
-    </div>
-    <hr style="border:none;FILTER:alpha(opacity=100,finishopacity=0,style=2)" width="800px" color=#cad9ea SIZE=0>
-EOF;
+                $html .= '</tr>';
+            }
         }
+
+        $html .= '</tbody>';
+        $html .= '</table>';
+
+//        -------------
+
         $html .= <<<EOF
 <!--    表格2-->
    <!--    表格2-->
@@ -944,7 +930,13 @@ EOF;
         //查询到本月此客户有数据了 就不去更新表了 除非去强制更新
 
         //接下来的数据就直接查询该表中的数据就行
-        $has_data = $this->statisticsReport->where($statistics_where)->where('type_code', 'not in', 'SE')->field('distinct type_name, type_code')->order('type_code')->orderRaw('field(type_name,"其他") DESC')->select()->toArray();
+        $has_data = $this->statisticsReport->where($statistics_where)
+            ->where('type_code', 'not in', 'SE')
+            ->field('distinct type_name, type_code')
+            ->orderRaw("FIELD(type_code, 'MY', 'XW', 'BY', 'DJ') ASC")
+            ->orderRaw("FIELD(type_name, '苍蝇', '蚊子', '绿化飞虫', '仓储害虫', '卫生性飞虫') ASC")
+            ->select()
+            ->toArray();
 //        $has_data = [];
 //        foreach ($has_data1 as $k =>$v){
 //            $has_data[][$v['type_code']] = $v['type_name'];
@@ -1133,8 +1125,13 @@ GROUP BY months.month) as k", [$year, $v1['type_name'], $customer_id]);
 //            }
 //        }
         //、当有以下任一设备灭蝇灯、吸蚊灯、室外点击式灭蝇灯、捕蝇笼时，则需要显示该板块
-        $equment_type = $this->statisticsReport->field('type_name as name,type_code,type_value as value')->where('type_code', 'in', 'MY,XW,BY,DJ')->where('customer_id', '=', $cust['cust_details']['CustomerID'])->where($where_statistic)->select()->toArray();
-
+        $equment_type = $this->statisticsReport->field('type_name as name,type_code,type_value as value')
+            ->where('type_code', 'in', 'MY,XW,BY,DJ')
+            ->where('customer_id', '=', $cust['cust_details']['CustomerID'])
+            ->where($where_statistic)
+            ->orderRaw("FIELD(type_code, 'MY', 'XW', 'BY', 'DJ') ASC")
+            ->select()
+            ->toArray();
         // 创建一个空数组用于存储结果
         $result = [];
 
@@ -1242,7 +1239,7 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
         }
 
         // 单独统计当老鼠最多的设备数量
-        $pest_rat_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num IN('SB','SL') AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;", [$cust['cust_details']['CustomerID']]);
+        $pest_rat_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num IN('LB','SL') AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;", [$cust['cust_details']['CustomerID']]);
 
         // 单独统计当月鼠饵站鼠捕捉量最多的设备
         $pest_se_data = Db::query("SELECT equ_type_num,number, SUM(pest_num) AS count FROM lbs_service_equipment_analyse WHERE equ_type_num = 'SE' AND DATE_FORMAT(job_date, '%Y-%m') = '{$month}' AND customer_id = ? GROUP BY number ORDER BY count DESC LIMIT 1;", [$cust['cust_details']['CustomerID']]);
@@ -1672,7 +1669,7 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
         $ext_html = '.html';
         $html_name = $path . $filename . $ext_html;
         $pdf_name = $path . $filename . $ext_pdf;
-        $cmd = "wkhtmltopdf $html_name  $pdf_name 2>&1";
+        $cmd = "wkhtmltopdf --print-media-type --page-size A4 --margin-left 0 --margin-right 0  $html_name $pdf_name 2>&1";
         @exec($cmd, $output, $return_val);
         if ($return_val === 0) {
             $analyseReportModel = new AnalyseReport();
