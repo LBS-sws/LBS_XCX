@@ -117,7 +117,6 @@ class Analyse extends BaseController
          .inline-table {
             /*margin-right: 20px;*/
             width: 100%;
-            float: left;
             /*font-size: 0.9em;*/
             border-collapse: collapse;
              border: none
@@ -324,14 +323,6 @@ class Analyse extends BaseController
             width: 32px;
             padding: 10px 10px 5px 0;
         }
-        
-        .footer-td {
-            color: #0c0c0c;
-            width: 32px;
-            padding: 10px 10px 5px 0;
-        }
-
-
         .title-header {
             border-collapse: collapse;
             margin: 0 auto;
@@ -720,13 +711,12 @@ EOF;
         }
 
         $html .= '</tbody>';
-        $html .= '</table>';
+        $html .= '</table></div>
+';
 
-//        -------------
-
-        $html .= <<<EOF
+//        -----循环表格--------
+        $end_html = <<<EOF
 <!--    表格2-->
-   <!--    表格2-->
     <table class="style-table-content">
         <tr class="footer-th">
             <td class="footer-td" colspan="14">以上报告说明希望得到您的支持和认可，如有疑问请与我们联系。</td>
@@ -738,12 +728,13 @@ EOF;
         </tr>
     </table>
     <!--    表格2-->
-</div>
 </body>
 </html>
 EOF;
+
+        $result_html = $html.$end_html;
 //        echo $html;exit();
-        $res = $this->outputHtml($month, $html, $url_id);
+        $res = $this->outputHtml($month, $result_html, $url_id);
         if ($month == '' || $cust == '' || $city = '') {
             return error(-1, '输入参数有误', []);
         }
@@ -1669,13 +1660,11 @@ GROUP BY number;", [$cust['cust_details']['CustomerID']]);
         $ext_html = '.html';
         $html_name = $path . $filename . $ext_html;
         $pdf_name = $path . $filename . $ext_pdf;
-        $cmd = "wkhtmltopdf --print-media-type --page-size A4 --margin-left 0 --margin-right 0  $html_name $pdf_name 2>&1";
+        $cmd = "wkhtmltopdf --print-media-type --page-size A4 --margin-left 0 --margin-right 0 --enable-local-file-access $html_name $pdf_name 2>&1";
         @exec($cmd, $output, $return_val);
         if ($return_val === 0) {
             $analyseReportModel = new AnalyseReport();
             $file_path = '/analyse/' . $month . '/' . $filename . $ext_pdf;
-            // $url_orain = 'https://xcx.lbsapps.com/';
-            // $url = $url_orain.$file_path;
             $res = $analyseReportModel->where('url_id', $filename)->update(['url' => $file_path, 'make_flag' => 0]);
             if ($res) {
                 return 1;
