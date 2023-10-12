@@ -18,8 +18,10 @@ class Evaluates extends Model
         'id'          => 'int',
         'question'    => 'string',
         'score'       => 'int',
+        'total_score' => 'int',
         'staff_id'    => 'int',
-        'contract_id' => 'string',
+        'order_id'    => 'string',
+        'order_type'  => 'string',
         'customer_id' => 'string',
         'create_time' => 'datetime',
         'update_time' => 'datetime',
@@ -27,7 +29,6 @@ class Evaluates extends Model
 
     //自动时间戳
     protected $autoWriteTimestamp = true;
-
 
     protected $createTime = 'create_time';
     protected $updateTime = 'update_time';

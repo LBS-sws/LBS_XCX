@@ -3,3 +3,7 @@
 /vendor
 *.log
 .env
+/nginx.htaccess
+/.htaccess
+/public/nginx.htaccess
+/public/.htaccess
