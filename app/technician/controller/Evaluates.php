@@ -52,7 +52,7 @@ class Evaluates
         }
 
         //是否已评价过
-        $evaluates = (new \app\technician\model\Evaluates())->where(['staff_id'=>$staffId,'order_id'=>$jobId,'order_type'=>$jobType])->find();
+        $evaluates = (new \app\technician\model\Evaluates())->where(['order_id'=>$jobId,'order_type'=>$jobType])->find();
         if(empty($evaluates)){
             $evaluates = new \app\technician\model\Evaluates();
         }
@@ -110,7 +110,7 @@ class Evaluates
         }
 
         //是否已评价过
-        $evaluates = (new \app\technician\model\Evaluates())->field('id,question')->where(['staff_id'=>$staffId,'order_id'=>$jobId,'order_type'=>$jobType])->find()->toArray();
+        $evaluates = (new \app\technician\model\Evaluates())->field('id,question')->where(['order_id'=>$jobId,'order_type'=>$jobType])->find();
         if(empty($evaluates)){
             $questions = config('evaluates.'.$questionType);
         }else{
