@@ -185,6 +185,9 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
                 }
             }
 
+            //点评问卷
+            $questionJsonData = (new Evaluates)->getAnswer()->getData();
+            $report_datas['question'] = $questionJsonData['data'];
 
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();

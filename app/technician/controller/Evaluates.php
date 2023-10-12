@@ -29,18 +29,7 @@ class Evaluates
         }
 
         //构造数据
-        $data = [];
-        foreach ($questions as $key=>$val){
-            if($val['type'] == 'radio'){//是、否单选项
-                $data[$key] = [
-                    'question' => $val['question'],
-                    //后期如果有多种题型再扩展
-//                    'type' => $val['type'],
-//                    'answer' => [['o'=>'是','v'=>1], ['o'=>'否','v'=>0]]
-                    'answer' => ''
-                ];
-            }
-        }
+        $data = $this->processData($questions);
 
         return success(1,'成功',$data);
     }
@@ -54,19 +43,18 @@ class Evaluates
     {
         $questions_str =  $request->post('questions','');//问题
         $questionType =  $request->post('question_type','questions');//问题类型
-        $staffId =  $request->post('staffid','admin');//职员id
+        $staffId =  $request->post('staffid','');//职员id
         $jobId =  $request->post('job_id',0);//订单id
         $jobType =  $request->post('job_type',0);//订单id
 
-        if(empty($jobId) || empty($jobType)){
+        if(empty($staffId) || empty($jobId) || empty($jobType)){
             return error(0,'缺少参数');
         }
 
         //是否已评价过
-        $evaluatesModel = new \app\technician\model\Evaluates();
-        $evaluates = $evaluatesModel->where(['staff_id'=>$staffId,'order_id'=>$jobId,'order_type'=>$jobType])->find();
-        if(!empty($evaluates)){
-            return error(0,'请不要重复评价');
+        $evaluates = (new \app\technician\model\Evaluates())->where(['staff_id'=>$staffId,'order_id'=>$jobId,'order_type'=>$jobType])->find();
+        if(empty($evaluates)){
+            $evaluates = new \app\technician\model\Evaluates();
         }
 
         //查询订单
@@ -95,7 +83,7 @@ class Evaluates
         }
 
         //保存
-        $evaluatesModel->save([
+        $evaluates->save([
            'question' => $questions_str,
            'score' => $score,
            'total_score' => $total_score,
@@ -107,6 +95,51 @@ class Evaluates
         return success(1, '点评成功');
     }
 
+    /**
+     * 获取问卷与填写详情
+     * @return void
+     */
+    public function getAnswer(): Json{
+        $questionType =  request()->post('question_type','questions');//问题类型
+        $staffId =  request()->post('staffid','');//职员id
+        $jobId =  request()->post('job_id',0);//订单id
+        $jobType =  request()->post('job_type',0);//订单id
 
+        if(empty($staffId) || empty($jobId) || empty($jobType)){
+            return error(0,'缺少参数');
+        }
 
+        //是否已评价过
+        $evaluates = (new \app\technician\model\Evaluates())->field('id,question')->where(['staff_id'=>$staffId,'order_id'=>$jobId,'order_type'=>$jobType])->find()->toArray();
+        if(empty($evaluates)){
+            $questions = config('evaluates.'.$questionType);
+        }else{
+            $questions = json_decode($evaluates['question'],true);
+        }
+
+        //处理数据
+        $data = $this->processData($questions);
+        return success(1,'成功',$data);
+    }
+
+    /**
+     * 处理问题数据
+     * @param $questions
+     * @return array
+     */
+    public function processData($questions){
+        $data = [];
+        foreach ($questions as $key=>$val){
+            if($val['type'] == 'radio'){//是、否单选项
+                $data[$key] = [
+                    'question' => $val['question'],
+                    'type' => $val['type']??'radio',
+                    //后期如果有多种题型再扩展
+//                    'answer' => [['o'=>'是','v'=>1], ['o'=>'否','v'=>0]]
+                    'answer' => $val['answer']??''
+                ];
+            }
+        }
+        return $data;
+    }
 }
