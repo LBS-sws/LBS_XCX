@@ -23,6 +23,7 @@ class Saveequipment
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['id']) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['equipment_name']) || empty($_POST['equipment_area']) || empty($_POST['check_datas'])){
             return json($result);
         }
+
         //获取信息
         $staffid = $_POST['staffid'];
         //获取用户登录信息
@@ -39,7 +40,9 @@ class Saveequipment
             $data['site_photos'] = is_string($_POST['site_photos']) ? $_POST['site_photos'] : json_encode($_POST['site_photos'],JSON_UNESCAPED_UNICODE);
             $data['check_handle'] = isset($_POST['check_handle']) ? $_POST['check_handle'] : null;
             $data['more_info'] = $_POST['more_info'];
-            $save_datas = Db::table('lbs_service_equipments')->where('id', $_POST['id'])->update($data);
+            $ids = explode(',',$_POST['id']);
+
+            $save_datas = Db::table('lbs_service_equipments')->whereIn('id', $ids)->update($data);
             $redis = new Redis();
             if ($save_datas) {
                 //返回数据
