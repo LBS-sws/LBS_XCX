@@ -3,6 +3,7 @@
 namespace app\technician\controller;
 
 use app\Request;
+use app\technician\model\FollowupOrder;
 use app\technician\model\JobOrder;
 use think\response\Json;
 
@@ -61,13 +62,18 @@ class Evaluates
         $customer_id = '';
         switch ($jobType){
             case 1: //jobOrder
-                $Order =  JobOrder::field('JobID,CustomerID')->Where('JobID',$jobId)->find()->toArray();
+                $Order =  JobOrder::field('JobID,CustomerID')->Where('JobID',$jobId)->find();
                 if(empty($Order)){
                     return error(0,'找不到工作单');
                 }
                 $customer_id = $Order['CustomerID'];
                 break;
             case 2: //followUpOrder
+                $Order =  FollowupOrder::field('FollowUpID,CustomerID')->Where('FollowUpID',$jobId)->find();
+                if(empty($Order)){
+                    return error(0,'找不到跟进单');
+                }
+                $customer_id = $Order['CustomerID'];
                 break;
         }
 
