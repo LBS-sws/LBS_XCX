@@ -3,6 +3,9 @@ declare (strict_types = 1);
 
 namespace app\technician\controller;
 use app\BaseController;
+use app\technician\model\AutographV2;
+use app\technician\model\JobOrder;
+use app\technician\model\FollowupOrder;
 use think\facade\Db;
 use think\facade\Request;
 
@@ -42,17 +45,56 @@ class Gethistoryjobs
             $launch_date = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID')->join('lbs_service_city_launch_date l ','e.Text=l.city')->where('o.City', $customer['City'])->where('e.EnumType', 8)->field('l.launch_date')->find();
             if($launch_date){
                 //服务单
-                $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->where($job_wheres)->whereTime('JobDate', 'between', [$launch_date['launch_date'], $jobdate])->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob')->order('JobDate desc')->limit(30)->select();
+                $job_datas = JobOrder::alias('j')
+                    ->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob')
+                    ->with(['ReportAutographV2'=>function($query){
+                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                    }])
+                    ->join('service s','j.ServiceType=s.ServiceType')
+                    ->where($job_wheres)
+                    ->whereTime('JobDate', 'between', [$launch_date['launch_date'], $jobdate])
+                    ->order('JobDate desc')
+                    ->limit(30)
+                    ->select();
                 //跟进单
                 // $job_wheres['j.SType'] = $servicetype;
-                $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->where($job_wheres)->whereTime('JobDate', 'between', [$launch_date['launch_date'], $jobdate])->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime')->order('JobDate desc')->limit(30)->select();
+                $follow_datas = FollowupOrder::alias('j')
+                    ->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime')
+                    ->with(['ReportAutographV2'=>function($query){
+                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                    }])
+                    ->join('service s','j.SType=s.ServiceType')
+                    ->where($job_wheres)
+                    ->whereTime('JobDate', 'between', [$launch_date['launch_date'], $jobdate])
+                    ->order('JobDate desc')
+                    ->limit(30)
+                    ->select();
             }else{
                 //服务单
-                $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->where($job_wheres)->whereTime('JobDate','<',$jobdate)->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob')->order('JobDate desc')->limit(30)->select();
+                $job_datas = JobOrder::alias('j')
+                    ->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob')
+                    ->with(['ReportAutographV2'=>function($query){
+                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                    }])
+                    ->join('service s','j.ServiceType=s.ServiceType')
+                    ->where($job_wheres)
+                    ->whereTime('JobDate','<',$jobdate)
+                    ->order('JobDate desc')
+                    ->limit(30)
+                    ->select();
                
                 //跟进单
                 // $job_wheres['j.SType'] = $servicetype;
-                $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->where($job_wheres)->whereTime('JobDate','<',$jobdate)->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime')->order('JobDate desc')->limit(30)->select();
+                $follow_datas = FollowupOrder::alias('j')
+                    ->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime')
+                    ->with(['ReportAutographV2'=>function($query){
+                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                    }])
+                    ->join('service s','j.SType=s.ServiceType')
+                    ->where($job_wheres)->whereTime('JobDate','<',$jobdate)
+                    ->order('JobDate desc')
+                    ->limit(30)
+                    ->select();
             }
             
             if ($job_datas) {
