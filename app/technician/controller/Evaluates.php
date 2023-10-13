@@ -3,6 +3,7 @@
 namespace app\technician\controller;
 
 use app\Request;
+use app\technician\model\AutographV2;
 use app\technician\model\FollowupOrder;
 use app\technician\model\JobOrder;
 use think\response\Json;
@@ -98,6 +99,10 @@ class Evaluates
            'order_id' => $jobId,
            'order_type' => $jobType
         ]);
+
+        //更新 lbs_report_autograph_v2 的评分
+        (new AutographV2())->where(['job_id'=>$jobId,'job_type'=>$jobType])->save(['customer_grade'=>$score]);
+
         return success(1, '点评成功');
     }
 
