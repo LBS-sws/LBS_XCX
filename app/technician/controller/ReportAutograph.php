@@ -3,9 +3,9 @@
 namespace app\technician\controller;
 
 use app\technician\model\Autograph;
-use app\technician\model\AutographV2;
-use app\technician\model\JobOrder;
-use app\technician\model\FollowupOrder;
+use app\common\model\AutographV2;
+use app\common\model\JobOrder;
+use app\common\model\FollowupOrder;
 use think\facade\Db;
 
 class ReportAutograph

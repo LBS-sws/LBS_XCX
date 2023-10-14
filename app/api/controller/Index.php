@@ -1,7 +1,7 @@
 <?php
 declare (strict_types = 1);
 namespace app\api\controller;
-use app\technician\model\AutographV2;
+use app\common\model\AutographV2;
 
 
 class Index

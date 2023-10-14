@@ -1,6 +1,6 @@
 <?php
 
-namespace app\technician\controller;
+namespace app\customer\controller;
 
 use app\Request;
 use app\common\model\AutographV2;

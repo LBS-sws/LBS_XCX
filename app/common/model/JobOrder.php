@@ -1,8 +1,9 @@
 <?php
 
-namespace app\technician\model;
+namespace app\common\model;
 
 use think\model;
+
 class JobOrder extends Model
 {
     protected $table = 'joborder';
