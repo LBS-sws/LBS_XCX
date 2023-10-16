@@ -6,7 +6,7 @@ use app\BaseController;
 use think\cache\driver\Redis;
 use think\facade\Request;
 use think\facade\Db;
-use app\technician\model\AutographV2;
+use app\common\model\AutographV2;
 
 
 class Jobstart

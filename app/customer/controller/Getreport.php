@@ -2,8 +2,7 @@
 declare (strict_types = 1);
 
 namespace app\customer\controller;
-use app\BaseController;
-use app\technician\model\AutographV2;
+use app\common\model\AutographV2;
 use think\facade\Db;
 use think\facade\Request;
 
@@ -197,6 +196,11 @@ class Getreport
                     $report_datas['autograph']['employee03_signature'] = $employee_signature['signature'];
                 }
             }
+
+            //点评问卷
+            $questionJsonData = (new Evaluates)->getAnswer()->getData();
+            $report_datas['question'] = $questionJsonData['data'];
+
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();
             if($service_sections){

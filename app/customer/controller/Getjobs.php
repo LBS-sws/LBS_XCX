@@ -2,9 +2,10 @@
 declare (strict_types = 1);
 
 namespace app\customer\controller;
-use app\BaseController;
+use app\common\model\AutographV2;
+use app\common\model\FollowupOrder;
+use app\common\model\JobOrder;
 use think\facade\Db;
-use think\facade\Request;
 
 
 class Getjobs
@@ -50,15 +51,67 @@ class Getjobs
                     $job_wheres['j.Status'] = 3;
                     if($launch_date){
                         //服务单
-                        $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-3 month')->order('j.JobDate','desc')->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')->select()->toArray();
+                        $job_datas = JobOrder::alias('j')->alias('j')
+                            ->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')
+                            ->with(['ReportAutographV2'=>function($query){
+                                return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
+                            }])
+                            ->join('service s','j.ServiceType=s.ServiceType')
+                            ->join('staff u','j.Staff01=u.StaffID')
+                            ->join('staff uo','j.Staff02=uo.StaffID','left')
+                            ->join('staff ut','j.Staff03=ut.StaffID','left')
+                            ->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])
+                            ->whereTime('j.JobDate','-3 month')
+                            ->order('j.JobDate','desc')
+                            ->select()
+                            ->toArray();
 
                         //跟进单
-                        $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
+                        $follow_datas = FollowupOrder::alias('j')
+                            ->field('j.FollowUpID,j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')
+                            ->with(['ReportAutographV2'=>function($query){
+                                return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                            }])
+                            ->join('service s','j.SType=s.ServiceType')
+                            ->join('staff u','j.Staff01=u.StaffID')
+                            ->join('staff uo','j.Staff02=uo.StaffID','left')
+                            ->join('staff ut','j.Staff03=ut.StaffID','left')
+                            ->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])
+                            ->whereTime('j.JobDate','-1 month')
+                            ->order('j.JobDate','desc')
+                            ->select()
+                            ->toArray();
                     }else{
                         //服务单
-                        $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')->select()->toArray();
+                        $job_datas = JobOrder::alias('j')
+                            ->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')
+                            ->with(['ReportAutographV2'=>function($query){
+                                return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
+                            }])
+                            ->join('service s','j.ServiceType=s.ServiceType')
+                            ->join('staff u','j.Staff01=u.StaffID')
+                            ->join('staff uo','j.Staff02=uo.StaffID','left')
+                            ->join('staff ut','j.Staff03=ut.StaffID','left')
+                            ->where($job_wheres)
+                            ->whereTime('j.JobDate','-1 month')
+                            ->order('j.JobDate','desc')
+                            ->select()
+                            ->toArray();
                         //跟进单
-                        $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
+                        $follow_datas = FollowupOrder::alias('j')
+                            ->field('j.FollowUpID,j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')
+                            ->with(['ReportAutographV2'=>function($query){
+                                return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                            }])
+                            ->join('service s','j.SType=s.ServiceType')
+                            ->join('staff u','j.Staff01=u.StaffID')
+                            ->join('staff uo','j.Staff02=uo.StaffID','left')
+                            ->join('staff ut','j.Staff03=ut.StaffID','left')
+                            ->where($job_wheres)
+                            ->whereTime('j.JobDate','-1 month')
+                            ->order('j.JobDate','desc')
+                            ->select()
+                            ->toArray();
                     }
                     if (count($job_datas)>0) {
                         foreach ($job_datas as $key => $value) {
@@ -91,14 +144,65 @@ class Getjobs
                 $job_wheres['j.Status'] = 3;
                 if($launch_date){
                     //服务单
-                    $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')->select()->toArray();
+                    $job_datas = JobOrder::alias('j')
+                        ->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.Staff01 as JStaff01,j.Staff02 as JStaff02,j.Staff03 as JStaff03,j.FirstJob')
+                        ->with(['ReportAutographV2'=>function($query){
+                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
+                        }])
+                        ->join('service s','j.ServiceType=s.ServiceType')
+                        ->join('staff u','j.Staff01=u.StaffID')
+                        ->join('staff uo','j.Staff02=uo.StaffID','left')
+                        ->join('staff ut','j.Staff03=ut.StaffID','left')
+                        ->where($job_wheres)
+                        ->whereTime('j.JobDate','>=',$launch_date['launch_date'])
+                        ->whereTime('j.JobDate','-1 month')
+                        ->order('j.JobDate','desc')
+                        ->select()
+                        ->toArray();
+
                     //跟进单
-                    $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','>=',$launch_date['launch_date'])->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
+                    $follow_datas = FollowupOrder::alias('j')
+                        ->field('j.FollowUpID,j.FollowUpID as JobID, j.CustomerName, j.JobDate, j.StartTime, j.FinishTime, s.ServiceName, j.StartTime, u.StaffName as Staff01, uo.StaffName as Staff02, ut.StaffName as Staff03, j.Staff01 as JStaff01,j.Staff02 as JStaff02,j.Staff03 as JStaff03')
+                        ->with(['ReportAutographV2'=>function($query){
+                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                        }])
+                        ->join('service s','j.SType=s.ServiceType')
+                        ->join('staff u','j.Staff01=u.StaffID')
+                        ->join('staff uo','j.Staff02=uo.StaffID','left')
+                        ->join('staff ut','j.Staff03=ut.StaffID','left')
+                        ->where($job_wheres)
+                        ->whereTime('j.JobDate','>=',$launch_date['launch_date'])
+                        ->whereTime('j.JobDate','-1 month')
+                        ->order('j.JobDate','desc')
+                        ->select()
+                        ->toArray();
                 }else{
                     //服务单
-                    $job_datas = Db::table('joborder')->alias('j')->join('service s','j.ServiceType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')->select()->toArray();
+                    $job_datas = JobOrder::alias('j')
+                        ->field('j.JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03,j.FirstJob')
+                        ->with(['ReportAutographV2'=>function($query){
+                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
+                        }])
+                        ->join('service s','j.ServiceType=s.ServiceType')
+                        ->join('staff u','j.Staff01=u.StaffID')
+                        ->join('staff uo','j.Staff02=uo.StaffID','left')
+                        ->join('staff ut','j.Staff03=ut.StaffID','left')
+                        ->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')
+                        ->select()
+                        ->toArray();
                     //跟进单
-                    $follow_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('staff uo','j.Staff02=uo.StaffID','left')->join('staff ut','j.Staff03=ut.StaffID','left')->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')->field('j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
+                    $follow_datas = FollowupOrder::alias('j')
+                        ->field('j.FollowUpID,j.FollowUpID as JobID,j.CustomerName,j.JobDate,j.StartTime,j.FinishTime,s.ServiceName,j.StartTime,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')
+                        ->with(['ReportAutographV2'=>function($query){
+                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
+                        }])
+                        ->join('service s','j.SType=s.ServiceType')
+                        ->join('staff u','j.Staff01=u.StaffID')
+                        ->join('staff uo','j.Staff02=uo.StaffID','left')
+                        ->join('staff ut','j.Staff03=ut.StaffID','left')
+                        ->where($job_wheres)->whereTime('j.JobDate','-1 month')->order('j.JobDate','desc')
+                        ->select()
+                        ->toArray();
                 }
                 if (count($job_datas)>0) {
                     foreach ($job_datas as $key => $value) {

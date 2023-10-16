@@ -4,7 +4,7 @@ namespace app\api\controller;
 
 use app\BaseController;
 use app\technician\model\Risks;
-use app\technician\model\JobOrder;
+use app\common\model\JobOrder;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;

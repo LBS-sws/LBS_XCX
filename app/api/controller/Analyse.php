@@ -6,7 +6,7 @@ use app\BaseController;
 use app\technician\model\AnalyseReport;
 use app\technician\model\CustomerCompany;
 use app\technician\model\EquipmentAnalyse;
-use app\technician\model\JobOrder;
+use app\common\model\JobOrder;
 use app\technician\model\ServiceEquipments;
 use app\technician\model\ServiceItems;
 use app\technician\model\StatisticsReport;

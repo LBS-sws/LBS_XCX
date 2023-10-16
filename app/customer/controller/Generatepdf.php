@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\customer\controller;
 use app\BaseController;
-use app\technician\model\AutographV2;
+use app\common\model\AutographV2;
 use app\technician\model\CustomerCompany;
 use think\facade\Db;
 use think\facade\Request;
