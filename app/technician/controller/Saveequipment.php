@@ -35,14 +35,25 @@ class Saveequipment
         if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
           
             $data['equipment_name'] = $_POST['equipment_name'];
-            $data['equipment_area'] =$_POST['equipment_area'];
+
             $data['check_datas'] = is_string($_POST['check_datas']) ? $_POST['check_datas'] : json_encode($_POST['check_datas'],JSON_UNESCAPED_UNICODE);
             $data['site_photos'] = is_string($_POST['site_photos']) ? $_POST['site_photos'] : json_encode($_POST['site_photos'],JSON_UNESCAPED_UNICODE);
             $data['check_handle'] = isset($_POST['check_handle']) ? $_POST['check_handle'] : null;
             $data['more_info'] = $_POST['more_info'];
-            $ids = explode(',',$_POST['id']);
 
-            $save_datas = Db::table('lbs_service_equipments')->whereIn('id', $ids)->update($data);
+            $ids = explode(',',$_POST['id']);
+            if(count($ids) == 1){
+                $data['equipment_area'] = $_POST['equipment_area'];
+                $save_datas = Db::table('lbs_service_equipments')->whereIn('id', $ids)->update($data);
+            }else{
+                foreach ($ids as $key=>$item){
+                    $equipment_area = Db::table('lbs_service_equipments')->where('id', $item)->value('equipment_area');
+                    $data['equipment_area'] = $equipment_area && $equipment_area != 'null' ? $equipment_area : $_POST['equipment_area'];
+                    $save_datas = Db::table('lbs_service_equipments')->where('id', $item)->update($data);
+                }
+            }
+
+
             $redis = new Redis();
             if ($save_datas) {
                 //返回数据
