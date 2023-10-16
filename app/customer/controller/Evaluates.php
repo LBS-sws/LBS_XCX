@@ -110,11 +110,11 @@ class Evaluates
      * 获取问卷与填写详情
      * @return void
      */
-    public function getAnswer(): Json{
-        $questionType =  request()->post('question_type','questions');//问题类型
-        $staffId =  request()->post('staffid','');//职员id
-        $jobId =  request()->post('job_id',0);//订单id
-        $jobType =  request()->post('job_type',0);//订单id
+    public function getAnswer($staffid='', $job_id=0, $job_type=0, $type='questions'): Json{
+        $questionType =  request()->post('question_type',$type);//问题类型
+        $staffId =  request()->post('staffid',$staffid);//职员id
+        $jobId =  request()->post('job_id',$job_id);//订单id
+        $jobType =  request()->post('job_type',$job_type);//订单id
 
         if(empty($staffId) || empty($jobId) || empty($jobType)){
             return error(0,'缺少参数');
