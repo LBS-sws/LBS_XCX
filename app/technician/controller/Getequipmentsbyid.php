@@ -32,53 +32,29 @@ class Getequipmentsbyid
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
-            
-            $data['e.id'] = $_POST['id'];
+            $ids = explode(',',$_POST['id']);
+//            $data['e.id'] = ['in',$ids];
             $data['e.job_id'] = $_POST['job_id'];
             $data['e.job_type'] = $_POST['job_type'];
 
-            $equipment_datas['eq'] = Db::table('lbs_service_equipments')->alias('e')->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')->where($data)->field('e.*,t.type,t.check_targt,t.check_handles,t.id as tid')->find();
+            $equipment_datas['eq'] = Db::table('lbs_service_equipments')->alias('e')
+                ->join('lbs_service_equipment_type t','e.equipment_type_id=t.id','right')
+                ->where($data)
+                ->whereIn('e.id',$ids)
+                ->field('e.*,t.type,t.check_targt,t.check_handles,t.id as tid')
+                ->select();
 
-            if($equipment_datas['eq']['check_datas']==null){
-            	$check_datas = [];
-                $targets = $equipment_datas['eq']['check_targt']?explode(',',$equipment_datas['eq']['check_targt']):[];
-                if ($equipment_datas['eq']['type']==1) {
-                    for ($j=0; $j < count($targets); $j++) {
-                        $check_datas[$j]['label'] =  $targets[$j];
-                        $check_datas[$j]['value'] =  0;
-                    }
-                }elseif($equipment_datas['eq']['type']==2){
-                    for ($j=0; $j < count($targets); $j++) {
-                        $check_datas[$j]['label'] =  $targets[$j];
-                        $cd['check_targt'] = $j;
-                        $cd['equipment_type_id'] = $equipment_datas['eq']['tid'];
-                        $cd_value = Db::table('lbs_service_equipment_type_selects')->where($cd)->find();
-                        $selects =  isset($cd_value['check_selects'])?explode(',',$cd_value['check_selects']):[];
-                        $g_s =array();
-                        for ($m=0; $m < count($selects); $m++) {
-                            $g_s[$m]['label'] = $selects[$m];
-                            $g_s[$m]['value'] = $selects[$m];
-                        }
-                        $check_datas[$j]['selects'] =  $g_s;
-                        $check_datas[$j]['value'] =  '';
-                    }
-                }
-
-            	$equipment_datas['eq']['check_datas'] = $check_datas;
-            }else{
-                $equipment_datas['eq']['check_datas'] = json_decode($equipment_datas['eq']['check_datas'],true);
+            //检查数据
+            foreach ($equipment_datas['eq'] as $key=>$item){
+                $equipment_datas['eq'][$key] = $this->checkDatas($item);
             }
-            if($equipment_datas['eq']['check_handles']){
-                $check_handles = [];
-                $check_handle = $equipment_datas['eq']['check_handles']?explode(',',$equipment_datas['eq']['check_handles']):[];
-                for ($j=0; $j < count($check_handle); $j++) {
-                    $check_handles[$j]['label'] =  $check_handle[$j];
-                    $check_handles[$j]['value'] = $check_handle[$j];
-                }
-                $equipment_datas['eq']['check_handles'] = $check_handles;
-            }
+//            print_r($result);exit;
 
-            $equipment_datas['use_areas'] = Db::table('lbs_service_use_areas')->where('city',$city)->where('area_type','equipment')->field('use_area as label,use_area as value')->select();
+            $equipment_datas['use_areas'] = Db::table('lbs_service_use_areas')
+                ->where('city',$city)
+                ->where('area_type','equipment')
+                ->field('use_area as label,use_area as value')
+                ->select();
             if ($equipment_datas) {
                 //返回数据
                 $result['code'] = 1;
@@ -90,10 +66,55 @@ class Getequipmentsbyid
                 $result['data'] = null;
             }
         }else{
-             $result['code'] = 0;
-             $result['msg'] = '登录失效，请重新登陆';
-             $result['data'] = null;
+            $result['code'] = 0;
+            $result['msg'] = '登录失效，请重新登陆';
+            $result['data'] = null;
         }
         return json($result);
+    }
+
+    public function checkDatas($data)
+    {
+        if($data['check_datas']==null){
+            $check_datas = [];
+            $targets = $data['check_targt']?explode(',',$data['check_targt']):[];
+            if ($data['type']==1) {
+                for ($j=0; $j < count($targets); $j++) {
+                    $check_datas[$j]['label'] =  $targets[$j];
+                    $check_datas[$j]['value'] =  0;
+                }
+            }elseif($data['type']==2){
+                for ($j=0; $j < count($targets); $j++) {
+                    $check_datas[$j]['label'] =  $targets[$j];
+                    $cd['check_targt'] = $j;
+                    $cd['equipment_type_id'] = $data['tid'];
+                    $cd_value = Db::table('lbs_service_equipment_type_selects')->where($cd)->find();
+                    $selects =  isset($cd_value['check_selects'])?explode(',',$cd_value['check_selects']):[];
+                    $g_s =array();
+                    for ($m=0; $m < count($selects); $m++) {
+                        $g_s[$m]['label'] = $selects[$m];
+                        $g_s[$m]['value'] = $selects[$m];
+                    }
+                    $check_datas[$j]['selects'] =  $g_s;
+                    $check_datas[$j]['value'] =  '';
+                }
+            }
+
+            $data['check_datas'] = $check_datas;
+        }else{
+            $data['check_datas'] = json_decode($data['check_datas'],true);
+        }
+
+        if($data['check_handles']){
+            $check_handles = [];
+            $check_handle = $data['check_handles']?explode(',',$data['check_handles']):[];
+            for ($j=0; $j < count($check_handle); $j++) {
+                $check_handles[$j]['label'] =  $check_handle[$j];
+                $check_handles[$j]['value'] = $check_handle[$j];
+            }
+            $data['check_handles'] = $check_handles;
+        }
+
+        return $data;
     }
 }
