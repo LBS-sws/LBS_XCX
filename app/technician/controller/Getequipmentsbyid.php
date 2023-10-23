@@ -43,9 +43,10 @@ class Getequipmentsbyid
                 ->whereIn('e.id',$ids)
                 ->field('e.*,t.type,t.check_targt,t.check_handles,t.id as tid')
                 ->select();
-
+            $idsCount = count($ids);
             //检查数据
             foreach ($equipment_datas['eq'] as $key=>$item){
+                if($idsCount > 1) $item['equipment_area'] = null;
                 $equipment_datas['eq'][$key] = $this->checkDatas($item);
             }
 //            print_r($result);exit;
