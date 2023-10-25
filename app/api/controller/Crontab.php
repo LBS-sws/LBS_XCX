@@ -255,17 +255,19 @@ class Crontab extends BaseController
      *查询今天有哪些工厂客户 例如 2022-04-29 然后查找当天下面有哪些客户信息
      *
      * */
-    public function getAllJobInfo($date = ''){
+    public function getAllJobInfo($date = '',$customer_id = ''){
         if(empty($date)){
             exit('错误！');
         }
         // $date = '2023-03-24';//date('Y-m-d')    ;
         $cc_where = [
-
             'j.JobDate' => $date,
             'j.Status' => 3,
             'j.ServiceType' => 2,
         ];
+        if (isset($customer_id) && $customer_id != '') {
+            $cc_where['j.CustomerID'] = $customer_id;
+        }
         //查询今天有哪些工厂客户
         $cust = $this->customerCompanyModel->field('j.CustomerID,j.CustomerName,j.City,GROUP_CONCAT(j.JobID) as job_ids,j.JobDate')->alias('cc')->join('joborder j','j.CustomerID = cc.CustomerID')->whereIn('cc.CustomerType',$this->custType)->where($cc_where)->group('cc.CustomerID')->select()->toArray();
         //已取得所有客户下的 订单信息
