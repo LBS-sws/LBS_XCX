@@ -10,6 +10,7 @@ return [
         'HttpEnd'  => [],
         'LogLevel' => [],
         'LogWrite' => [],
+        'CreatePDF'    =>    ['app\listener\CreatePDFListener'],
     ],
 
     'subscribe' => [
