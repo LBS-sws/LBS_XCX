@@ -1,13 +1,10 @@
 <?php
 namespace app\jobs\service;
 
-use app\technician\model\CustomerCompany;
-use app\technician\model\EquipmentAnalyse;
+use app\common\model\ServiceBriefingsModel;
+use app\common\model\ServiceMaterialsModel;
+use app\common\model\ServicePhotosModel;
 use app\technician\model\JobOrder;
-use app\technician\model\ServiceEquipments;
-use app\technician\model\ServiceItems;
-use app\technician\model\StatisticsReport;
-use think\facade\Db;
 
 class ReportData
 {
@@ -102,4 +99,62 @@ class ReportData
         return $job_datas;
     }
 
+    /**
+     * 服务简报
+     * @param $param
+     * @return ServiceBriefingsModel|array|mixed|\think\Model|null
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function getServiceBriefingInfo($param)
+    {
+        return (new ServiceBriefingsModel())->where('job_id',$param['jobid'])->where('job_type',$param['jobtype'])->field('content,proposal')->find();
+    }
+
+    /**
+     * 现场工作照数据
+     * @param $param
+     * @return array|string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function getWorkPhotosInfo($param)
+    {
+        $data = (new ServicePhotosModel())
+            ->where('job_id',$param['jobid'])
+            ->where('job_type',$param['jobtype'])
+            ->field('site_photos,remarks')
+            ->select()->toArray();
+        if(!empty($data)){
+            foreach ($data as $key=>$item){
+                $data[$key]['site_photos'] = !empty($item['site_photos']) ? explode(',',$item['site_photos']) : '' ;
+            }
+            return $data;
+        }
+        return '';
+    }
+
+    /**
+     * 物料使用
+     * @param $param
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function getMaterialUsageInfo($param)
+    {
+       return (new ServiceMaterialsModel())
+            ->where('job_id',$param['jobid'])
+            ->where('job_type',$param['jobtype'])
+            ->field('material_name,processing_space,material_ratio,dosage,unit,use_mode,targets,use_area,matters_needing_attention')
+            ->select()->toArray();
+    }
+
+    public static function getRiskInfo($param)
+    {
+
+    }
 }

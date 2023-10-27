@@ -4,7 +4,7 @@ namespace app\common\model;
 
 use think\model;
 
-class ServiceModer extends Model
+class ServiceModel extends Model
 {
     protected $name = 'service';
 }

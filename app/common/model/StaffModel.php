@@ -4,7 +4,7 @@ namespace app\common\model;
 
 use think\model;
 
-class StaffModer extends Model
+class StaffModel extends Model
 {
     protected $name = 'staff';
     protected $pk = 'id';

@@ -2,8 +2,8 @@
 
 namespace app\technician\model;
 
-use app\common\model\ServiceModer;
-use app\common\model\StaffModer;
+use app\common\model\ServiceModel;
+use app\common\model\StaffModel;
 use think\model;
 class JobOrder extends Model
 {
@@ -19,7 +19,7 @@ class JobOrder extends Model
     {
         $StaffArr = array_filter([$data['Staff01'],$data['Staff02'],$data['Staff03']]);
         if(!empty($StaffArr)){
-            $data = (new StaffModer())->whereIn('StaffID',$StaffArr)->column('StaffName','StaffID');
+            $data = (new StaffModel())->whereIn('StaffID',$StaffArr)->column('StaffName','StaffID');
             return !empty($data) ? implode(',',$data) : '';
         }
         return '';
@@ -65,7 +65,7 @@ class JobOrder extends Model
      */
     public function ServiceName()
     {
-        return $this->hasOne(ServiceModer::class,'ServiceType','ServiceType')->field('ServiceName,ServiceType');
+        return $this->hasOne(ServiceModel::class,'ServiceType','ServiceType')->field('ServiceName,ServiceType');
     }
 
 }

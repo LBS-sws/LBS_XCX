@@ -52,12 +52,21 @@ class CreateHtml
 
     public static function CreateHtml($param)
     {
+        //基础信息
         $BaseHtml = self::CreateBaseHtml($param);
-        return self::$startBody . $BaseHtml . self::$endBody;
+        //服务简报
+        $ServiceBriefingHtml = self::CreateServiceBriefing($param);
+        //现场工作照
+        $WorkPhotosHtml = self::CreateWorkPhotosHtml($param);
+        //物料使用
+        $MaterialUsageHtml = self::CreateMaterialUsageHtml($param);
+        //现场风险评估与建议
+        $RiskHtml = self::CreateRiskHtml($param);
+        return self::$startBody . $BaseHtml . $ServiceBriefingHtml . $WorkPhotosHtml . $MaterialUsageHtml . $RiskHtml .self::$endBody;
     }
 
     /**
-     * 创建基础信息
+     * 基础信息
      * @param $param
      * @return string
      * @throws \think\db\exception\DataNotFoundException
@@ -105,5 +114,157 @@ class CreateHtml
                 </tr>
 EOD;
         return $baseInfoHtml;
+    }
+
+    /**
+     * 服务简报
+     * @param $param
+     * @return string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function CreateServiceBriefing($param)
+    {
+        $ServiceBriefingData = ReportData::getServiceBriefingInfo($param);
+        $ServiceBriefingHtml = '';
+        if(!empty($ServiceBriefingData)){
+            $ServiceBriefingHtml = <<<EOD
+                <tr class="myTitle">
+                        <th width="100%" align="left">服务简报</th>
+                    </tr>
+                    <tr>
+                        <td width="15%">服务内容</td>
+                        <td width="85%" align="left">{$ServiceBriefingData['content']}</td>
+                    </tr>
+                    <tr>
+                        <td width="15%">跟进与建议</td>
+                        <td width="85%" align="left">{$ServiceBriefingData['proposal']}</td>
+                    </tr>
+EOD;
+        }
+        return $ServiceBriefingHtml;
+    }
+
+    /**
+     * 现场工作照
+     * @param $param
+     * @return string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function CreateWorkPhotosHtml($param)
+    {
+        $WorkPhotosData = ReportData::getWorkPhotosInfo($param);
+        $WorkPhotosHtml = '';
+        if(!empty($WorkPhotosData)){
+            $WorkPhotosHtml .= <<<EOD
+                    <tr class="myTitle">
+                        <th width="100%" align="left">现场工作照</th>
+                    </tr>
+EOD;
+            foreach ($WorkPhotosData as $item){
+                $WorkPhotosHtml .= <<<EOD
+                    <tr>
+                        <td width="15%">{$item['remarks']}</td>
+                        <td width="20%" align="center">
+EOD;
+                foreach ($item['site_photos'] as $v) {
+                    $WorkPhotosHtml .= <<<EOD
+                    <img src="{$v}" width="80" height="100" style="padding:20px 50px;">
+EOD;
+                }
+                    $WorkPhotosHtml .= <<<EOD
+                        </td>
+                    </tr>
+EOD;
+            }
+        }
+        return $WorkPhotosHtml;
+    }
+
+    /**
+     * 物料使用
+     * @param $param
+     * @return string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function CreateMaterialUsageHtml($param)
+    {
+        $MaterialUsageData = ReportData::getMaterialUsageInfo($param);
+        $MaterialUsageHtml = '';
+        if(!empty($MaterialUsageData)){
+            $MaterialUsageHtml .= <<<EOD
+                    <tr class="myTitle">
+                       <th width="100%" align="left">物料使用</th>
+                    </tr>  
+                    <tr>
+                        <td width="15%">名称</td>
+                        <td width="12%">处理面积</td>
+                        <td width="7%">配比</td>
+                        <td width="8%">用量</td>
+                        <td width="12%">使用方式</td>
+                        <td width="12%">靶标</td>
+                        <td width="12%">使用区域</td>
+                        <td width="22%">备注</td>
+                    </tr>
+EOD;
+            foreach ($MaterialUsageData as $item){
+                $MaterialUsageHtml .= <<<EOD
+                        <tr>
+                            <td width="15%">{$item['material_name']}</td>
+                            <td width="12%">{$item['processing_space']}</td>
+                            <td width="7%">{$item['material_ratio']}</td>
+                            <td width="8%">{$item['dosage']} {$item['unit']}</td>
+                            <td width="12%" align="left">{$item['use_mode']}</td>
+                            <td width="12%" align="left">{$item['targets']}</td>
+                            <td width="12%" align="left">{$item['use_area']}</td>
+                            <td width="22%" align="left">{$item['matters_needing_attention']}</td>
+                      </tr>  
+EOD;
+            }
+        }
+        return $MaterialUsageHtml;
+    }
+
+    public static function CreateRiskHtml($param)
+    {
+        $RiskData = ReportData::getRiskInfo($param);
+        $RiskHtml = '';
+        if(!empty($RiskData)){
+            $RiskHtml .= <<<EOD
+                     <tr class="myTitle">
+                            <th width="100%"align="left">现场风险评估与建议</th>
+                     </tr>  
+                     <tr>
+                            <td width="16%">风险类别</td>
+                            <td width="19%">风险描述</td>
+                            <td width="13%">靶标</td>
+                            <td width="7%">级别</td>
+                            <td width="15%">整改建议</td>
+                            <td width="15%">采取措施</td>
+                            <td width="15%">跟进日期</td>
+                     </tr>
+EOD;
+            foreach ($RiskData as $item){
+                $MaterialUsageHtml .= <<<EOD
+                        <tr>
+                            <td width="15%">{$item['material_name']}</td>
+                            <td width="12%">{$item['processing_space']}</td>
+                            <td width="7%">{$item['material_ratio']}</td>
+                            <td width="8%">{$item['dosage']} {$item['unit']}</td>
+                            <td width="12%" align="left">{$item['use_mode']}</td>
+                            <td width="12%" align="left">{$item['targets']}</td>
+                            <td width="12%" align="left">{$item['use_area']}</td>
+                            <td width="22%" align="left">{$item['matters_needing_attention']}</td>
+                        </tr>  
+EOD;
+            }
+        }
+        return $RiskHtml;
+
     }
 }
