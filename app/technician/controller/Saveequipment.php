@@ -33,7 +33,7 @@ class Saveequipment
         $c_time = ($now_time - $login_time)/60/60;
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
-          
+
             $data['equipment_name'] = $_POST['equipment_name'];
 
             $data['check_datas'] = is_string($_POST['check_datas']) ? $_POST['check_datas'] : json_encode($_POST['check_datas'],JSON_UNESCAPED_UNICODE);
@@ -71,9 +71,9 @@ class Saveequipment
                 $redis->delete($lock_key);
             }
         }else{
-             $result['code'] = 0;
-             $result['msg'] = '登录失效，请重新登陆';
-             $result['data'] = null;
+            $result['code'] = 0;
+            $result['msg'] = '登录失效，请重新登陆';
+            $result['data'] = null;
         }
         return json($result);
     }
