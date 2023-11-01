@@ -125,11 +125,12 @@ class Getreport
                 $name = $val['material_name'];
                 $url = "https://dms.lbsapps.cn/sv-uat/index.php/JsonMateriallist/index?user=admin&ac=xcx_list&text=".$name."&city=".$city;
                 $output = $this->http_curl_get($url);
-                $json = utf8_encode($output);
-                $res = json_decode($json,true);
-                // print_r($res);
-                if($output && $res['item']['img_arr']){
-                    $materialList[$key]['img_arr'] = 1;
+                if ($output !== false) {
+                    $json = utf8_encode($output);
+                    $res = json_decode($json, true);
+                    if ($res && isset($res['item']['img_arr'])) {
+                        $materialList[$key]['img_arr'] = 1;
+                    }
                 }
             }
             // print_r($materialList);
