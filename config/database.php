@@ -26,13 +26,13 @@ return [
             // 数据库类型
             'type'            => Env::get('database.type', 'mysql'),
             // 服务器地址
-            'hostname'        => Env::get('database.hostname', 'localhost'),
+            'hostname'        => Env::get('database.hostname', '172.16.0.6'),
             // 数据库名
             'database'        => Env::get('database.database', 'lbs_xcx'),
             // 用户名
-            'username'        => Env::get('database.username', 'root'),
+            'username'        => Env::get('database.username', 'lbs_xcx'),
             // 密码
-            'password'        => Env::get('database.password', 'root'),
+            'password'        => Env::get('database.password', 'hz8G83KdW3H2ntFs'),
             // 端口
             'hostport'        => Env::get('database.hostport', '3306'),
             // 数据库连接参数
@@ -57,7 +57,7 @@ return [
             // 监听SQL
             'trigger_sql'     => Env::get('app_debug', true),
             // 开启字段缓存
-            'fields_cache'    => Env::get('database.fields_cache', true),
+            'fields_cache'    => true,
         ],
 
         // 更多的数据库配置信息
