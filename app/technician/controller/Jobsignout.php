@@ -39,6 +39,9 @@ class Jobsignout
         // 发票信息
         $invoice_item = Db::table('lbs_invoice')->where('jobid',$jobid)->find();
 
+        event('CreatePDF',$_POST);
+        exit;
+
         if(!$invoice_item && $pics){
 
             $invoice_data = ['jobid'=>$jobid, 'jobtype'=>$jobtype,'pics'=>$pics];
