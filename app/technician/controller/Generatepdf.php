@@ -582,7 +582,8 @@ EOF;
              * 签名处理结束
              * #############################################################
              * */
-
+            // 23-10-16 导出ptf点评改为3颗星
+            $customer_grade = ($customer_grade > 3) ? 3 : $customer_grade?: 0;
 
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             $pdf->SetFont('cid0cs', '');
@@ -591,7 +592,7 @@ EOF;
                             <th width="100%" align="left">客户点评</th>
                         </tr>
                         <tr>
-                        <td width="100%" align="left">{$customer_grade}星(1~5)</td>
+                        <td width="100%" align="left">{$customer_grade}星(1~3)</td>
                         </tr>
                         <tr class="myTitle">
                             <th  width="100%" align="left">报告签名</th>
