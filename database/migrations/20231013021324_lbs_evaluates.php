@@ -15,7 +15,7 @@ final class LbsEvaluates extends AbstractMigration
               `question` mediumtext NOT NULL COMMENT '问题内容',
               `score` int(3) NOT NULL DEFAULT '0' COMMENT '问题得分',
               `total_score` int(3) unsigned NOT NULL DEFAULT '0' COMMENT '问题总分',
-              `staff_id` int(10) unsigned NOT NULL COMMENT '员工id',
+              `staff_id` varchar(32) unsigned NOT NULL COMMENT '员工id',
               `order_id` varchar(20) NOT NULL COMMENT '跟进单/服务单/合约 id',
               `order_type` tinyint(1) NOT NULL COMMENT '订单类型 1:joborder 2:followuporder',
               `customer_id` varchar(20) NOT NULL COMMENT '客户id',
@@ -50,7 +50,7 @@ final class LbsEvaluates extends AbstractMigration
             CREATE TRIGGER `trg_del_lbs_evaluates` BEFORE DELETE ON `lbs_evaluates` FOR EACH ROW BEGIN
               INSERT INTO datasync.sync_data_log(db_id, tab_id, action_id, json_data)
               VALUES ('lbs_xcx', 'lbs_evaluates', 'delete', JSON_OBJECT(
-                'id',NEW.id,'question',NEW.question,'score',NEW.score,'total_score',NEW.total_score,'staff_id',NEW.staff_id,'order_id',NEW.order_id,'order_type',NEW.order_type,'customer_id',NEW.customer_id,'create_time',NEW.create_time,'update_time',NEW.update_time
+                'id',OLD.id,'question',OLD.question,'score',OLD.score,'total_score',OLD.total_score,'staff_id',OLD.staff_id,'order_id',OLD.order_id,'order_type',OLD.order_type,'customer_id',OLD.customer_id,'create_time',OLD.create_time,'update_time',OLD.update_time
               ));
             END;
         ");
