@@ -31,7 +31,7 @@ class Evaluates
         }
 
         //构造数据
-        $data = $this->processData($questions);
+        $data = $this->processData($questions,$type);
 
         return success(1,'成功',$data);
     }
@@ -129,7 +129,7 @@ class Evaluates
         }
 
         //处理数据
-        $data = $this->processData($questions);
+        $data = $this->processData($questions,$type);
         return success(1,'成功',$data);
     }
 
@@ -138,12 +138,15 @@ class Evaluates
      * @param $questions
      * @return array
      */
-    public function processData($questions){
+    public function processData($questions, $type='questions'){
+        $questions_src = config('evaluates.'.$type);
         $data = [];
+
         foreach ($questions as $key=>$val){
             if($val['type'] == 'radio'){//是、否单选项
                 $data[$key] = [
                     'question' => $val['question'],
+                    'en' => $val['en'] ?: ($questions_src[$key]['en'] ?: ''),
                     'type' => $val['type']??'radio',
                     //后期如果有多种题型再扩展
 //                    'answer' => [['o'=>'是','v'=>1], ['o'=>'否','v'=>0]]
