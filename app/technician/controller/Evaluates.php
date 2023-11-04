@@ -212,7 +212,7 @@ class Evaluates
             if($val['type'] == 'radio'){//是、否单选项
                 $data[$key] = [
                     'question' => $val['question'],
-                    'en' => $val['en'] ?: ($questions_src[$key]['en'] ?: ''),
+                    'en' => isset($val['en'])&&$val['en'] ? $val['en'] : ($questions_src[$key]['en'] ?: ''),
                     'type' => $val['type']??'radio',
                     //后期如果有多种题型再扩展
 //                    'answer' => [['o'=>'是','v'=>1], ['o'=>'否','v'=>0]]
