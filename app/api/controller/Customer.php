@@ -37,7 +37,7 @@ class Customer extends BaseController
         }
 
         if ($city != '') {
-            $where[] = ['city', '=', $city]; // 添加城市查询条件
+            $where[] = ['city', 'IN', $city]; // 添加城市查询条件
         }
 
         if ($search != '') {
