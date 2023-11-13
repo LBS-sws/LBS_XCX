@@ -143,9 +143,19 @@ class Evaluates
             // 单个保存
             $evaluates->save($originalOrder);
         }
-        //更新 lbs_report_autograph_v2 的评分
-        $res = AutographV2::whereIn('job_id',$jobId)->where(['job_type' => $jobType])->update(['customer_grade' => $score]);
-        if($res) return success(1, '点评成功');
+        try {
+            // 更新 lbs_report_autograph_v2 的评分
+            $res = AutographV2::whereIn('job_id', $jobId)->where(['job_type' => $jobType])->update(['customer_grade' => $score]);
+            if ($res) {
+                return success(1, '点评成功');
+            }else{
+                return error(0, '点评失败');
+            }
+        } catch (Exception $e) {
+            return error(0, '点评失败: ' . $e->getMessage());
+        }
+        return error(0, '点评失败');
+
     }
 
     public function checkOrders($condition): array
