@@ -25,7 +25,6 @@ class Saveautograph
         }
         //获取信息
         $staffid = $_POST['staffid'];
-        $is_grade = isset($_REQUEST['is_grade'])?$_REQUEST['is_grade']:0;
 
         //获取用户登录信息
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
@@ -49,25 +48,17 @@ class Saveautograph
             $staff_file_name= $staffid;
 
             if($result !== null) {
-                if(isset($_POST['customer_signature']) && $_POST['customer_signature'] != ''){
-                    if(isset($_POST['customer_grade']) && $_POST['customer_grade']>0){
-                        $data['customer_grade'] = $_POST['customer_grade'];
-                        $is_grade = $_POST['customer_grade'];
-                    }else{
-                        if(strpos($_POST['customer_signature'],$customer_dir) !== false){
+                if(strpos($_POST['customer_signature'],$customer_dir) !== false){
 
-                        }else{
-                            //不存在
-                            $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
-                            $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
-                            $cmd = " /usr/bin/convert -rotate -90 $imgPath  $imgPath 2>&1";
-                            @exec($cmd,$output,$return_val);
-                            if($return_val === 0){
-                                $data['conversion_flag'] = 0;
-                            }
-                        }
+                }else{
+                    //不存在
+                    $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir,$customer_file_name);
+                    $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
+                    $cmd = " /usr/bin/convert -rotate -90 $imgPath  $imgPath 2>&1";
+                    @exec($cmd,$output,$return_val);
+                    if($return_val === 0){
+                        $data['conversion_flag'] = 0;
                     }
-
                 }
                 //如果查出来不是空的那么这里就需要进行update  只需要更新客户的评分以及客户的签名即可
                 $data['pid']=$result['pid']+1;
@@ -80,10 +71,7 @@ class Saveautograph
                 $data['staff_id01_url'] = conversionToImg($_POST['employee01_signature'], $staff_dir,$staff_file_name);
                 $data['staff_id02_url'] = conversionToImg($_POST['employee02_signature'], $staff_dir);
                 $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
-//                $data['customer_grade'] = $_POST['customer_grade'];
-                if($is_grade != 0){
-                    $data['customer_grade'] = $_POST['customer_grade'];
-                }
+
                 $data['creat_time'] = date('Y-m-d H:i:s');
                 $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];
                 $cmd = " /usr/bin/convert -rotate -90 $imgPath  $imgPath 2>&1";
@@ -108,15 +96,9 @@ class Saveautograph
             }
             if ($save_datas) {
                 //返回数据
-                if($is_grade != 0){
-                    $result['code'] = 1;
-                    $result['msg'] = '【史伟莎】感谢您的点评';
-                    $result['data'] = $save_datas;
-                }else{
-                    $result['code'] = 1;
-                    $result['msg'] = '完成签名';
-                    $result['data'] = $save_datas;
-                }
+                $result['code'] = 1;
+                $result['msg'] = '完成签名';
+                $result['data'] = $save_datas;
             }else{
                 $result['code'] = 1;
                 $result['msg'] = '成功，无数据';

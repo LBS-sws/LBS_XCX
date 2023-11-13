@@ -101,7 +101,23 @@ class Evaluates
         ]);
 
         //更新 lbs_report_autograph_v2 的评分
-        (new AutographV2())->where(['job_id'=>$jobId,'job_type'=>$jobType])->save(['customer_grade'=>$score]);
+        //2023-11-13注： 因为签名和点评分开了，但还有很多地方需要签名表(AutographV2)中的customer_grade, 所以需要分开更新，但又因签名图片过大，往往出现点评成功后，签名图片还未更新成功的情况，因此此处判断是否需要插入数据
+        $AutographV2 = (new AutographV2())->where(['job_id'=>$jobId,'job_type'=>$jobType])->find();
+        if($AutographV2){//已存在
+            (new AutographV2())->where(['job_id'=>$jobId,'job_type'=>$jobType])->save(['customer_grade'=>$score]);
+        }else{//插入
+            $data = [
+                'job_id'=>$jobId,
+                'job_type'=>$jobType,
+                'customer_signature_url' => '',
+                'staff_id01_url' => '',
+                'staff_id02_url' => '',
+                'staff_id03_url' => '',
+                'creat_time' => date('Y-m-d H:i:s'),
+                'customer_grade' => $score,
+            ];
+            (new AutographV2())->insert($data);
+        }
 
         return success(1, '点评成功');
     }
