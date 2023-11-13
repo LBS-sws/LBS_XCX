@@ -146,6 +146,9 @@ class Evaluates
 
         //更新 lbs_report_autograph_v2 的评分
         //2023-11-13注： 因为签名和点评分开了，但还有很多地方需要签名表(AutographV2)中的customer_grade, 所以需要分开更新，但又因签名图片过大，往往出现点评成功后，签名图片还未更新成功的情况，因此此处判断是否需要插入数据
+        if(!is_array($jobId)) {//当不是批量时
+            $jobId = [$jobId];
+        }
         $data = [
             'job_id'=>0,
             'job_type'=>$jobType,
