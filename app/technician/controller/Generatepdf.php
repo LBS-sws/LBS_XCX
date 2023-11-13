@@ -169,6 +169,9 @@ class Generatepdf
                 }
             }
             $report_datas['equipment'] = $equipmenthz_datas;
+
+            print_r($equipmenthz_datas);exit;
+
             //photo
             //TODO 将类型为250的图片取10组
             $photo_num = 4;
@@ -199,6 +202,9 @@ class Generatepdf
                 $report_datas['autograph']['customer_grade'] = '';
 
             }
+            
+            //生成智能设备报告
+            $this->createSmarttechReport();
 
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();
@@ -685,5 +691,10 @@ EOF;
 
         //生成新图
         imagepng($newImg, $url);
+    }
+
+    public function createSmarttechReport()
+    {
+        
     }
 }
