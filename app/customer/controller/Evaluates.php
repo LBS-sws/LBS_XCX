@@ -53,6 +53,12 @@ class Evaluates
             return error(0,'缺少参数');
         }
 
+        //检查是否签名过
+        $AutographV2 = (new AutographV2())->where(['job_id'=>$jobId,'job_type'=>$jobType])->find();
+        if(!$AutographV2){
+            return error(0, '请先完成签名 ( Please sign first )');
+        }
+
         //是否已评价过
         $evaluates = (new \app\technician\model\Evaluates())->where(['order_id'=>$jobId,'order_type'=>$jobType])->find();
         if(empty($evaluates)){
