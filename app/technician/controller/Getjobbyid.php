@@ -260,35 +260,27 @@ class Getjobbyid
     public function CheckData()
     {
         $param = request()->param();
-        $JobDate = '';
+        $JobDate = '0000-00-00';  // 默认值
         switch ($param['jobtype']){
             case 1;
                 $JobDate = Db::table('joborder')->where('JobID',$param['jobid'])->value('JobDate');
                 break;
-            case 2;
-                $JobDate = Db::table('followuporder')->where('FollowUpID',$param['jobid'])->value('JobDate');
-                break;
+//            case 2;
+//                $JobDate = Db::table('followuporder')->where('FollowUpID',$param['jobid'])->value('JobDate');
+//                break;
             default:
         }
-        if (!empty($JobDate)) {
-            $JobDate = strtotime($JobDate); //工作单日期
-            $currentDate = strtotime(date('Y-m-d')); // 当前日期
-
-            if ($currentDate < $JobDate) {
-                $result['code'] = -1;
-                $result['msg'] = '未到工作单日期，不能提前进行！';
-                $result['data'] = null;
-            } else {
-                $result['code'] = 0;
-                $result['msg'] = '';
-                $result['data'] = null;
-            }
-        } else {
+        $JobDate = strtotime($JobDate); //工作单日期
+        $currentDate = strtotime(date('Y-m-d')); // 当前日期
+        if ($currentDate < $JobDate) {
             $result['code'] = -1;
-            $result['msg'] = '工作单日期为空！';
+            $result['msg'] = '未到工作单日期，不能提前进行！';
+            $result['data'] = null;
+        } else {
+            $result['code'] = 0;
+            $result['msg'] = '';
             $result['data'] = null;
         }
-
         return json($result);
     }
 }
