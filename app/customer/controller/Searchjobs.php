@@ -68,9 +68,7 @@ class Searchjobs
                     'j.Status' => 3,
                 ];
                 $jobQuery = JobOrder::alias('j')->alias('j')
-                    ->with(['ReportAutographV2'=>function($query){
-                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
-                    }])
+                    ->append(['customer_grade'])
                     ->join('service s', 'j.ServiceType=s.ServiceType')
                     ->join('staff u', 'j.Staff01=u.StaffID')
                     ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')
@@ -82,9 +80,7 @@ class Searchjobs
 
                 $followQuery = FollowupOrder::alias('j')
                     ->field('j.FollowUpID,j.FollowUpID as JobID, j.CustomerName, j.JobDate, j.StartTime, j.FinishTime, s.ServiceName, j.StartTime, u.StaffName as Staff01, uo.StaffName as Staff02, ut.StaffName as Staff03')
-                    ->with(['ReportAutographV2'=>function($query){
-                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
-                    }])
+                    ->append(['customer_grade'])
                     ->join('service s', 'j.SType=s.ServiceType')
                     ->join('staff u', 'j.Staff01=u.StaffID')
                     ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')
@@ -111,9 +107,7 @@ class Searchjobs
                 if ($launch_date) {
                     //服务单
                     $job_datas = JobOrder::alias('j')
-                        ->with(['ReportAutographV2'=>function($query){
-                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
-                        }])
+                        ->append(['customer_grade'])
                         ->join('service s', 'j.ServiceType=s.ServiceType')
                         ->join('staff u', 'j.Staff01=u.StaffID')
                         ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')
@@ -129,9 +123,7 @@ class Searchjobs
                     //跟进单
                     $follow_datas = FollowupOrder::alias('j')
                         ->field('j.FollowUpID, j.FollowUpID as JobID, j.CustomerName, j.JobDate, j.StartTime, j.FinishTime, s.ServiceName, j.StartTime, u.StaffName as Staff01, uo.StaffName as Staff02, ut.StaffName as Staff03')
-                        ->with(['ReportAutographV2'=>function($query){
-                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
-                        }])
+                        ->append(['customer_grade'])
                         ->join('service s', 'j.SType=s.ServiceType')
                         ->join('staff u', 'j.Staff01=u.StaffID')
                         ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')
@@ -145,9 +137,7 @@ class Searchjobs
                 } else {
                     //服务单
                     $job_datas = JobOrder::alias('j')
-                        ->with(['ReportAutographV2'=>function($query){
-                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
-                        }])
+                        ->append(['customer_grade'])
                         ->join('service s', 'j.ServiceType=s.ServiceType')
                         ->join('staff u', 'j.Staff01=u.StaffID')
                         ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')
@@ -161,9 +151,7 @@ class Searchjobs
                     //跟进单
                     $follow_datas = FollowupOrder::alias('j')
                         ->field('j.FollowUpID,j.FollowUpID as JobID, j.CustomerName, j.JobDate, j.StartTime, j.FinishTime, s.ServiceName, j.StartTime, u.StaffName as Staff01, uo.StaffName as Staff02, ut.StaffName as Staff03')
-                        ->with(['ReportAutographV2'=>function($query){
-                            return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
-                        }])
+                        ->append(['customer_grade'])
                         ->join('service s', 'j.SType=s.ServiceType')
                         ->join('staff u', 'j.Staff01=u.StaffID')
                         ->join('staff uo', 'j.Staff02=uo.StaffID', 'left')

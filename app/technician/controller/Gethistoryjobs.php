@@ -47,9 +47,7 @@ class Gethistoryjobs
                 //服务单
                 $job_datas = JobOrder::alias('j')
                     ->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob')
-                    ->with(['ReportAutographV2'=>function($query){
-                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
-                    }])
+                    ->append(['customer_grade'])
                     ->join('service s','j.ServiceType=s.ServiceType')
                     ->where($job_wheres)
                     ->whereTime('JobDate', 'between', [$launch_date['launch_date'], $jobdate])
@@ -60,9 +58,7 @@ class Gethistoryjobs
                 // $job_wheres['j.SType'] = $servicetype;
                 $follow_datas = FollowupOrder::alias('j')
                     ->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime')
-                    ->with(['ReportAutographV2'=>function($query){
-                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
-                    }])
+                    ->append(['customer_grade'])
                     ->join('service s','j.SType=s.ServiceType')
                     ->where($job_wheres)
                     ->whereTime('JobDate', 'between', [$launch_date['launch_date'], $jobdate])
@@ -73,9 +69,7 @@ class Gethistoryjobs
                 //服务单
                 $job_datas = JobOrder::alias('j')
                     ->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob')
-                    ->with(['ReportAutographV2'=>function($query){
-                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
-                    }])
+                    ->append(['customer_grade'])
                     ->join('service s','j.ServiceType=s.ServiceType')
                     ->where($job_wheres)
                     ->whereTime('JobDate','<',$jobdate)
@@ -87,9 +81,7 @@ class Gethistoryjobs
                 // $job_wheres['j.SType'] = $servicetype;
                 $follow_datas = FollowupOrder::alias('j')
                     ->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime')
-                    ->with(['ReportAutographV2'=>function($query){
-                        return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
-                    }])
+                    ->append(['customer_grade'])
                     ->join('service s','j.SType=s.ServiceType')
                     ->where($job_wheres)->whereTime('JobDate','<',$jobdate)
                     ->order('JobDate desc')
