@@ -25,7 +25,6 @@ class Saveautograph
         }
         //获取信息
         $staffid = $_POST['staffid'];
-        $is_grade = isset($_REQUEST['is_grade'])?$_REQUEST['is_grade']:0;
 
         //获取用户登录信息
         $user_token = Db::name('cuztoken')->where('StaffID',$staffid)->find();
@@ -65,9 +64,6 @@ class Saveautograph
                 if($return_val === 0){
                     $data['conversion_flag'] = 0;
                 }
-                if($is_grade > 0 ){
-                    $data['customer_grade'] = $_POST['customer_grade'];
-                }
                 $save_datas = $autographV2Model->where('id','=',$result['id'])->update($data);
             }else{
                 $data['customer_signature_url'] = conversionToImg($_POST['customer_signature'],$customer_dir);
@@ -79,9 +75,6 @@ class Saveautograph
                 }
                 if(isset($_POST['employee03_signature'])) {
                     $data['staff_id03_url'] = conversionToImg($_POST['employee03_signature'], $staff_dir);
-                }
-                if($is_grade > 0 ){
-                    $data['customer_grade'] = $_POST['customer_grade'];
                 }
                 $data['creat_time'] = date('Y-m-d H:i:s');
                 $imgPath = app()->getRootPath().'public'.$data['customer_signature_url'];

@@ -183,11 +183,11 @@ class GeneratepdfOFasn
 
             //先查询lbs_report_autograph中是否有相关数据。
             $autographModel =new AutographV2();
-            $autographV2 = $autographModel->where($w)->find();
+            $autographV2 = $autographModel->where($w)->append(['score'])->find();
             if($autographV2 !== null){
 //                查出来不为空走查询图片路径的路径。
                 $autograph_flag = 1;
-                $autograph_data = $autographV2;
+                $autograph_data = $autographV2->toArray();
 
             }else{
 //                否则取之前表里边的值

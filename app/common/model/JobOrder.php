@@ -2,6 +2,7 @@
 
 namespace app\common\model;
 
+use app\technician\model\Evaluates;
 use think\model;
 
 class JobOrder extends Model
@@ -34,5 +35,16 @@ class JobOrder extends Model
             return [];
         }
         return $orders->toArray();
+    }
+
+    /**
+     * 获取分数(来自点评)
+     * @param $value
+     * @param $data
+     * @return mixed
+     */
+    public function getCustomerGradeAttr($value,$data)
+    {
+        return (new Evaluates())->where(['order_id'=>$data['JobID'],'order_type'=>1])->value('score',null);
     }
 }

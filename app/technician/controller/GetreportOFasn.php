@@ -160,7 +160,7 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
             //autograph
 //            $report_datas['autograph'] = Db::table('lbs_report_autograph')->where($w)->find();
             $autographModel =new AutographV2();
-            $autograph= $autographModel->where($w)->find();
+            $autograph= $autographModel->where($w)->append(['score'])->find();
             //获取当前域名
             $sign_url = Request::instance()->domain();
             $report_datas['autograph'] = $autograph;

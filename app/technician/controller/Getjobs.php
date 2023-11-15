@@ -39,9 +39,7 @@ class Getjobs
             //服务单
             $job_datas = JobOrder::alias('j')
                 ->field('j.JobID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,j.FirstJob,s.ServiceName,j.Status,j.StartTime,j.FirstJob,c.CustomerType')
-                ->with(['ReportAutographV2'=>function($query){
-                    return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_jobOrder])->find();
-                }])
+                ->append(['customer_grade'])
                 ->join('service s','j.ServiceType=s.ServiceType')
                 ->join('customercompany c','c.CustomerID=j.CustomerID')
                 ->where($job_wheres)
@@ -52,9 +50,7 @@ class Getjobs
             //跟进单
             $follow_datas = FollowupOrder::alias('j')
                 ->field('j.FollowUpID,j.CustomerName,j.Addr,j.JobDate,j.JobTime,j.JobTime2,s.ServiceName,j.Status,j.StartTime,c.CustomerType')
-                ->with(['ReportAutographV2'=>function($query){
-                    return $query->field('job_id,customer_grade')->where(['job_type'=>AutographV2::jobType_followOrder])->find();
-                }])
+                ->append(['customer_grade'])
                 ->join('service s','j.SType=s.ServiceType')
                 ->join('customercompany c','c.CustomerID=j.CustomerID')
                 ->where($job_wheres)
