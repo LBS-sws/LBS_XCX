@@ -119,3 +119,37 @@ function decrypt($data, $key) {
     list($encrypted_data, $iv) = explode('::', base64_decode($data), 2);
     return openssl_decrypt($encrypted_data, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
 }
+
+/**
+ * 图片转换为base64编码
+ * */
+if (!function_exists('base64EncodeImage')) {
+    function base64EncodeImage ($img_file) {
+//        $img_file='https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F66e18b4c-fb2c-45cb-b90f-a645afc73846%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1693986530&t=67aedd5c98b1d307e7a6d16ec3571f4c';
+
+        $img_info=getimagesize($img_file);
+        $base_url=base64_encode(file_get_contents($img_file));
+//dump($base_url);
+        $encode = '<img width=80 decoding="async" src="data:image/jpg/png/gif;base64,'. $base_url .'" >';
+        return $encode;
+
+    }
+}
+
+if (!function_exists('createDateRange')) {
+    function createDateRange($start_date, $end_date) {
+        // 初始化结果数组
+        $dates = array();
+        // 将开始日期转换为时间戳
+        $current_date = strtotime($start_date);
+        $end_date = strtotime($end_date);
+        // 循环直到当前日期大于结束日期
+        while ($current_date <= $end_date) {
+            // 将当前日期添加到结果数组中
+            $dates[] = date('Y-m-d', $current_date);
+            // 增加一天
+            $current_date = strtotime('+1 day', $current_date);
+        }
+        return $dates;
+    }
+}

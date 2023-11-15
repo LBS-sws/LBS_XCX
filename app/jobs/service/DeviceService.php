@@ -7,10 +7,10 @@ class DeviceService
 {
     public static function getDeviceList($type)
     {
-        $queryStr = "?estate=McDonald_Star_House&floor=0&layer=0&group=Zone+1&status=active&page=1&perPage=25&orderBy=id&order=asc";
+        $queryStr = "?estate=McDonald_Star_House&perPage=1000&orderBy=id&order=desc";
         switch ($type){
             case 'sigfox':
-                $url = config('app.smarttech_mousetrap_device_api.SigfoxDevice').$queryStr.'&type=ratSense';
+                $url = config('app.smarttech_mousetrap_device_api.SigfoxDevice').$queryStr;
                 break;
             case 'nbiot':
                 $url = config('app.smarttech_mousetrap_device_api.NbiotDevice').$queryStr.'&type=trapSensor';
@@ -41,12 +41,20 @@ class DeviceService
             $arr['linkQuality'] = $item['rawData']['linkQuality'] ?? '';
             $arr['Battery_Level'] = $item['rawData']['currentBattery'];
             $arr['Device_Status'] = $item['status'];
+            $arr['floor_id'] = $item['floor'];
+            $arr['layer_id'] = $item['layer'];
+            $arr['others_id'] = $item['group'];
+            $arr['area_group'] = $item['floor'].'-'.$item['layer'].'-'.$item['group'];
             if($item['floor']) $arr['floor'] = self::getFloor($item['estateObj'],$item['floor']);
             if($item['layer']) $arr['layer'] = self::getLayer($item['estateObj'],$item['layer']);
             if($item['group']) $arr['others'] = self::getOthers($item['estateObj'],$item['group']);
             array_push($list,$arr);
         }
-        (new CustomerDeviceModel())->saveAll($list,false);
+        try {
+            (new CustomerDeviceModel())->saveAll($list, false);
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
     }
 
     public static function getFloor($data,$id)

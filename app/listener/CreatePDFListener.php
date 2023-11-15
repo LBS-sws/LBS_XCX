@@ -14,6 +14,6 @@ class CreatePDFListener
     public function handle($param)
     {
         $class = new CreatePDF();
-        $result = $class->htmlTopPDF($param);
+        return $class->htmlTopPDF($param);
     }
 }

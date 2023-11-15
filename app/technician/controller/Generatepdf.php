@@ -4,7 +4,12 @@ declare (strict_types = 1);
 namespace app\technician\controller;
 use app\BaseController;
 use app\common\model\AutographV2;
+use app\common\model\CustomerDeviceModel;
+use app\technician\model\AnalyseReport;
 use app\technician\model\CustomerCompany;
+use beyong\echarts\charts\Pie;
+use beyong\echarts\ECharts;
+use beyong\echarts\Option;
 use think\facade\Db;
 use think\facade\Request;
 use TCPDF;
@@ -14,7 +19,12 @@ class Generatepdf
 {
     public $custType = 250;
 
+
     public function index(){
+        $data = event('CreatePDF',$_POST);
+        return success(0, 'success', $data);
+    }
+    public function index_bak(){
         $result['code'] = 0;
         $result['msg'] = '请输入用户名、令牌和日期';
         $result['data'] = null;
@@ -142,10 +152,20 @@ class Generatepdf
 
             for ($i=0; $i < count($equipment_type_ids); $i++) {
                 $equipmenthz_allcount = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->count();
-                $equipmenthz_count = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->count();
+                $equipmenthz_count = Db::table('lbs_service_equipments')
+                    ->where($w)
+                    ->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])
+                    ->whereNotNull('equipment_area')
+                    ->whereNotNull('check_datas')
+                    ->count();
                 $equipment_type = Db::table('lbs_service_equipment_type')->where('id',$equipment_type_ids[$i]['equipment_type_id'])->field('name')->find();
                 $equipmenthz_datas[$i]['title'] = $equipment_type['name']."(".$equipmenthz_count."/".$equipmenthz_allcount.")";
-                $check_datas = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->order('id', 'asc')->select();
+                $check_datas = Db::table('lbs_service_equipments')->where($w)
+                    ->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])
+                    ->whereNotNull('equipment_area')
+                    ->whereNotNull('check_datas')
+                    ->order('id', 'asc')
+                    ->select();
                 if ($check_datas) {
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
@@ -170,7 +190,7 @@ class Generatepdf
             }
             $report_datas['equipment'] = $equipmenthz_datas;
 
-            print_r($equipmenthz_datas);exit;
+            $Smarttech_list = $this->createSmarttechHtml($job_datas['CustomerID']);
 
             //photo
             //TODO 将类型为250的图片取10组
@@ -202,9 +222,6 @@ class Generatepdf
                 $report_datas['autograph']['customer_grade'] = '';
 
             }
-            
-            //生成智能设备报告
-            $this->createSmarttechReport();
 
             //查询服务板块
             $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$service_type)->find();
@@ -219,6 +236,10 @@ class Generatepdf
             $company_img = "../public/pdf/company/".$city.".jpg";
             //pdf生成
             $html = <<<EOF
+<!DOCTYPE html>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <title>史伟莎服务现场管理报告</title>
             <style>
             body{
                 padding: 0;
@@ -253,7 +274,7 @@ class Generatepdf
                 line-height:10px;
             }
             </style>
-            <body>
+            <body style="height: 100%;">
             <table class="myTable" cellpadding="5">
                 <tr style="border: none;border-top: none;border-right:none;border-left:none;">
                     <td width="25%" style="float:left;border: none;border-top: none;">
@@ -511,6 +532,12 @@ EOF;
                     }
                 }
             }
+
+            if($Smarttech_list){
+                $html .= $Smarttech_list;
+            }
+
+//            print_r($html);exit;
             /**
              * #############################################################
              * 很好 接下来就进入到处理小程序这边签名问题的处理了，开始---
@@ -588,17 +615,16 @@ EOF;
              * 签名处理结束
              * #############################################################
              * */
-            // 23-10-16 导出ptf点评改为3颗星
-            $customer_grade = ($customer_grade > 3) ? 3 : $customer_grade?: 0;
 
-            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-            $pdf->SetFont('cid0cs', '');
+
+//            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+//            $pdf->SetFont('cid0cs', '');
             $html .= <<<EOF
                         <tr class="myTitle">
                             <th width="100%" align="left">客户点评</th>
                         </tr>
                         <tr>
-                        <td width="100%" align="left">{$customer_grade}星(1~3)</td>
+                        <td width="100%" align="left">{$customer_grade}星(1~5)</td>
                         </tr>
                         <tr class="myTitle">
                             <th  width="100%" align="left">报告签名</th>
@@ -633,38 +659,64 @@ EOF;
             </table>
             <img src="{$company_img}">
             </body>
+</html>
 EOF;
 
 
+//            print_r($html);exit;
+
+//            $result_html = $html;
+//        echo $html;exit();
+            $month = date('Y-m',time());
+            $name = $report_datas['basic']['CustomerName'];
+            $res = $this->outputHtml($month, $html, $name);
+//            if ($month == '' || $cust == '' || $city = '') {
+//                return error(-1, '输入参数有误', []);
+//            }
+            $file_path = 'report/' . $month . '/' . $name . '.pdf';
+//        if (is_file($file_path)) {
+            $domain = 'http://xcx.com/';
+            $url = $domain . $file_path;
+            //有报告就返回，没返回就
+            return success(0, 'success', $url);
 
 
-            // set some language-dependent strings (optional)
-            if (@file_exists(dirname(__FILE__).'/lang/chi.php')) {
-                require_once(dirname(__FILE__).'/lang/chi.php');
-                $pdf->setLanguageArray($l);
-            }
-            //$pdf->setFontSubsetting(true);
-            $pdf->SetPrintHeader(false);
-            $pdf->SetPrintFooter(false);
-            $pdf->AddPage();
-            //$pdf->setTextShadow(array('enabled'=>true, 'depth_w'=>0.2, 'depth_h'=>0.2, 'color'=>array(196,196,196), 'opacity'=>1, 'blend_mode'=>'Normal'));
+        }
+    }
 
-            // Set some content to print
+    public function outputHtml($month, $ctx, $cust)
+    {
+        $dir = $_SERVER['DOCUMENT_ROOT'] . '/report/' . $month . '/';
+//        $fileName= $cust.'.html';  //获取文件名
+        if (!is_dir($dir)) {
+            //iconv方法是为了防止中文乱码，保证可以创建识别中文目录，不用iconv方法格式的话，将无法创建中文目录,第三参数的开启递归模式，默认是关闭的
+            mkdir(iconv("UTF-8", "GBK", $dir), 0777, true);
+        }
+        $fp = fopen($dir . $cust . '.html', "w");
+        $len = fwrite($fp, $ctx);
+        fclose($fp);
+        $rs = $this->exec($dir, $cust, $cust, $month);
+        if ($len > 0) {
+            return true;
+        }
+        return false;
+    }
 
-
-            // Print text using writeHTMLCell()
-            // $pdf->writeHTMLCell(0, 0, '', '', $html, 0, 1, 0, true, '', true);
-
-            // ---------------------------------------------------------
-            $pdf->WriteHTML($html, 1);
-            //Close and output PDF document
-            $pdf->Output('服务报告.pdf', 'D');
-            //将图片旋转还原
-//            $cmd = " /usr/bin/convert -rotate 90 $imgPath  $imgPath 2>&1";
-//            @exec($cmd,$output,$return_val);
-            //============================================================+
-            // END OF FILE
-            //============================================================+
+    public function exec($path, $filename, $name, $month)
+    {
+        $ext_pdf = '.pdf';
+        $ext_html = '.html';
+        $html_name = $path . $filename . $ext_html;
+        $pdf_name = $path . $filename . $ext_pdf;
+        $cmd = "wkhtmltopdf --print-media-type --page-size A4 --margin-left 0 --margin-right 0 --enable-local-file-access $html_name $pdf_name 2>&1";
+        @exec($cmd, $output, $return_val);
+        if ($return_val === 0) {
+//            $analyseReportModel = new AnalyseReport();
+            $file_path = '/report/' . $month . '/' . $filename . $ext_pdf;
+//            $res = $analyseReportModel->where('url_id', $filename)->update(['url' => $file_path, 'make_flag' => 0]);
+//            if ($res) {
+                return 1;
+//            }
         }
     }
 
@@ -693,8 +745,139 @@ EOF;
         imagepng($newImg, $url);
     }
 
-    public function createSmarttechReport()
+    public function createSmarttechHtml($CustomerID)
     {
-        
+        $CustomerID = 'McDonald_Star_House';
+        $CustomerDeviceModel = new CustomerDeviceModel();
+        $deviceCount = $CustomerDeviceModel->where('CustomerID',$CustomerID)->append(['all_trigger_count','device_cn_name'])->field('type,CustomerID,count(id) as device_count')->group('type')->select()->toArray();
+        if(!empty($deviceCount)){
+            $list = array_column($deviceCount,null,'type');
+            $allDevice = $CustomerDeviceModel
+                ->where('CustomerID',$CustomerID)
+                ->append(['day_trigger_count','night_trigger_count'])
+                ->field('type,Device_ID,CustomerID,Device_Name,floor,layer,others')
+                ->select()
+                ->toArray();
+            if(!empty($allDevice)){
+                foreach ($allDevice as $key=>$item){
+                    if($list[$item['type']]) $list[$item['type']]['list'][] = $item;
+                }
+            }
+            $html = '<tr class="myTitle">
+                        <th width="100%" align="left">智能设备</th>
+                    </tr>';
+            foreach ($list  as $item){
+                $html .= <<<EOF
+                    <tr>
+						<th width="100%" align="left"> 
+                            {$item['device_cn_name']} ({$item['all_trigger_count']}/{$item['device_count']})
+                        </th>
+					</tr>
+					<tr>
+					    <td width="25%">装置名称</td>        
+						<td width="20%">区域</td>         
+						<td width="25%">08：00-00:00触发次数</td>          
+						<td width="25%">00：00-08:00触发次数</td>  
+					</tr>
+EOF;
+                foreach ($item['list']  as $k=>$v) {
+                    $html .= <<<EOF
+					<tr>       
+						<td width="25%">{$v['Device_Name']}</td>  
+						<td width="20%">{$v['floor']} {$v['layer']} {$v['others']}</td>   
+						<td width="25%">{$v['day_trigger_count']}</td>      
+						<td width="25%">{$v['night_trigger_count']}</td>      
+					</tr> 
+EOF;
+                }
+            }
+            $PieHtml = $this->createPieHtml();
+            return $html.$PieHtml;
+        }
+        return '';
+    }
+
+    public function createPieHtml()
+    {
+        $html = <<<EOF
+                <tr class="myTitle">
+                        <th width="100%" align="left">智能设备饼状图</th>
+                    </tr>';
+                <tr>       
+					<td width="100%">
+                        <div style="width: 800px;height: 100%">
+                            {$this->chartPie()}
+                        </div>
+                    </td>      
+				</tr> 
+EOF;
+        return $html;
+    }
+
+    public function chartPie()
+    {
+        $echarts = ECharts::init("#chartPie");
+        $option = new Option();
+        $option->animation(false);
+        $option->color(['#4587E7', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83']);
+        $option->title([
+            "text" => '智能饼状图',
+            "left" => 'center'
+        ]);
+//        $option->grid([
+//            "top"=>"25%"
+//        ]);
+        $option->legend([
+            "orient" => 'vertical',
+            "left" => 'left',
+
+        ]);
+
+        $data = [['value'=>1048,'name'=>'Search Engine'],['value'=>735,'name'=>'Direct'],['value'=>580,'name'=>'Email'],['value'=>484,'name'=>'Union Ads'],['value'=>800,'name'=>'Video Ads']];
+
+        $option->series([
+//                'name' => 'Access From',
+                'type' => 'pie',
+                'radius' => '65%',
+                'data' => $data,
+                "backgroundColor" => 'white',
+                'label' => [
+                    'normal' => [
+                        'formatter' => '{b}:{c} ({d}%)',
+                        'textStyle' => [
+                            'fontWeight' => 'normal',
+                            'color' => 'black',
+                            'fontSize' => 18
+                        ]
+
+                    ]
+                ],
+                'emphasis' => [
+                    'itemStyle' => [
+                        'shadowBlur' => 10,
+                        'shadowOffsetX' => 0,
+                        'shadowColor' => 'rgba(0, 0, 0, 0.5)'
+                    ]
+                ],
+            ]
+        );
+//        $option->yAxis([]);
+        $chart = new Pie();
+//        $chart->name = "8月害虫统计";
+        $chart->itemStyle = [
+            'normal' => [
+                'label' => [
+                    'show' => true,
+                    'position' => 'top',
+                    'textStyle' => [
+                        'color' => 'black',
+                        'fontSize' => 18
+                    ]
+                ]
+            ]
+        ];
+        $option->addSeries($chart);
+        $echarts->option($option);
+        return $echarts->render();
     }
 }

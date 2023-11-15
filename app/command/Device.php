@@ -21,7 +21,7 @@ class Device extends Command
 
     protected function execute(Input $input, Output $output)
     {
-        $typeArrr = ['sigfox','nbiot'];
+        $typeArrr = ['sigfox'];
         foreach ($typeArrr as $item){
             DeviceService::getDeviceList($item);
         }

@@ -10,7 +10,7 @@ class TriggerDeviceService
     {
         $eventTimeFrom = '';
         $eventTimeTo = '';
-        $queryStr = "?estate=McDonald_Star_House&perPage=1000&orderBy=id&order=desc";
+        $queryStr = "?estate=McDonald_Star_House&perPage=100&orderBy=id&order=desc";
         switch ($type){
             case 'sigfox':
                 $url = config('app.smarttech_mousetrap_trigger_api.Sigfox_trigger').$queryStr;
