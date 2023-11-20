@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\technician\controller;
 use app\BaseController;
+use app\technician\model\ServiceEquipments;
 use COM;
 use think\facade\Db;
 use think\facade\Request;
@@ -93,7 +94,13 @@ class GetequipmentsOFasn
             }else{
                 $eqs_file = 'equipment_name as label,id as value,check_datas,equipment_number as eq_number,number';
             }
-             $service_data['equipments'] = Db::table('lbs_service_equipments')->where($wheres)->order('equipment_number', 'desc')->order('number', 'asc')->field($eqs_file)->select();
+             $service_data['equipments'] = (new ServiceEquipments())
+                 ->where($wheres)
+                 ->order('equipment_number', 'desc')
+                 ->order('number', 'asc')
+                 ->field($eqs_file)
+                 ->append(['eq_number'])
+                 ->select();
             //使用区域
             $usearea_select1 = array(array("label"=>"全部区域","value"=>""));
             $usearea_select2 =  Db::table('lbs_service_equipments')->Distinct(true)->where($wheres)->where('equipment_area','not null')->field('equipment_area as label,equipment_area as value')->select()->toArray();
@@ -104,7 +111,19 @@ class GetequipmentsOFasn
             $service_data['equipment_select'] = $equipment_select2?array_merge($equipment_select1,$equipment_select2):'';
             //新增所有设备
             $allow_eqs = Db::table('lbs_service_serviceequipments')->where('city',$city)->where('service_type',$_POST['service_type'])->find();
-            $service_data['equipment_add_lists'] = $allow_eqs ? Db::table('lbs_service_equipment_type')->where('city',$city)->whereIn('id',$allow_eqs['equipment_ids'])->field('name as label,id as value')->select():'';
+            if(!empty($allow_eqs)){
+                $eqData = Db::table('lbs_service_equipment_type')->where('city',$city)->whereIn('id',$allow_eqs['equipment_ids'])->field('name as label,id as value')->select();
+                if($eqData->isEmpty()){
+                    $data = '';
+                }else{
+                    $data = $eqData->toArray();
+                    $arr = Db::table('lbs_service_equipment_type')->where('id',245)->field('name as label,id as value')->find();
+                    array_push($data,$arr);
+                }
+            }else{
+                $data = '';
+            }
+            $service_data['equipment_add_lists'] = $data;//$allow_eqs ? Db::table('lbs_service_equipment_type')->where('city',$city)->whereIn('id',$allow_eqs['equipment_ids'])->field('name as label,id as value')->select():'';
             if ($service_data) {
                 //返回数据
                 $result['code'] = 1;

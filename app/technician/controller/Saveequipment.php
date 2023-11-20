@@ -44,11 +44,12 @@ class Saveequipment
             $ids = explode(',',$_POST['id']);
             if(count($ids) == 1){
                 $data['equipment_area'] = $_POST['equipment_area'];
+                if(!empty($_POST['eq_mark_num'])) $data['number'] = $_POST['eq_mark_num'];
                 $save_datas = Db::table('lbs_service_equipments')->whereIn('id', $ids)->update($data);
             }else{
                 foreach ($ids as $key=>$item){
-                    $equipment_area = Db::table('lbs_service_equipments')->where('id', $item)->value('equipment_area');
-                    $data['equipment_area'] = $equipment_area && $equipment_area != 'null' ? $equipment_area : $_POST['equipment_area'];
+//                    $equipment_area = Db::table('lbs_service_equipments')->where('id', $item)->value('equipment_area');
+//                    $data['equipment_area'] = $equipment_area && $equipment_area != 'null' ? $equipment_area : $_POST['equipment_area'];
                     $save_datas = Db::table('lbs_service_equipments')->where('id', $item)->update($data);
                 }
             }

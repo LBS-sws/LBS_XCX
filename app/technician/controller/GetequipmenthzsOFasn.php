@@ -34,7 +34,10 @@ class GetequipmenthzsOFasn
             
             $wheres['job_id'] = $_POST['job_id'];
             $wheres['job_type'] = $_POST['job_type'];
-            $equipment_type_ids = Db::table('lbs_service_equipments')->where($wheres)->group('equipment_type_id')->field('equipment_type_id')->select();
+            $equipment_type_ids = Db::table('lbs_service_equipments')->where('equipment_type_id','<>',245)->where($wheres)->group('equipment_type_id')->field('equipment_type_id')->select();
+
+//            print_r($equipment_type_ids);exit;
+
             $equipmenthz_datas = [];
             for ($i=0; $i < count($equipment_type_ids); $i++) {
             	$equipmenthz_allcount = Db::table('lbs_service_equipments')->where($wheres)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->count();

@@ -2,6 +2,7 @@
 namespace app\jobs\service;
 
 use app\common\model\AutographV2;
+use app\common\model\ClientDeviceModel;
 use app\common\model\CustomerDeviceModel;
 use app\common\model\FollowupOrder;
 use app\common\model\ServiceBriefingsModel;
@@ -18,20 +19,6 @@ use beyong\echarts\Option;
 
 class ReportData
 {
-    protected static $jobOrderModel = null;
-
-    public function __construct()
-    {
-        $this->jobOrderModel = new JobOrder();
-//        $this->customerCompanyModel = new CustomerCompany();
-//        $serviceItemsModel = new ServiceItems();
-//        $this->serviceEquipments = new ServiceEquipments();
-//        $this->statisticsReport = new StatisticsReport();
-//        $this->equipmentAnalyse = new EquipmentAnalyse();
-//        //加载所有items内容
-//        $this->serviceItems = $serviceItemsModel->items;
-    }
-
     /**
      * 基础信息
      * @param $param
@@ -43,11 +30,13 @@ class ReportData
     public static function getBaseInfo($param)
     {
         $data = (new JobOrder())
-            ->field('JobID,CustomerName,Addr,ServiceType,JobDate,ContactName,Mobile,Staff01,Staff02,Staff03,FirstJob,Item01,Item02,Item03,Item04,Item05,Item06,Item07,Item08,Item09,Item10,Item11,Item12,Item13,Item13Rmk,Item12Rmk,Item09Rmk,Item08Rmk,Item07Rmk,Item06Rmk,Item05Rmk,Item10Rmk,Item11Rmk,Item04Rmk')
+            ->field('JobID,CustomerName,Addr,ServiceType,JobDate,ContactName,Mobile,Staff01,Staff02,Staff03,FirstJob,Item01,Item02,Item03,Item04,Item05,Item06,Item07,Item08,Item09,Item10,Item11,Item12,Item13,Item13Rmk,Item12Rmk,Item09Rmk,Item08Rmk,Item07Rmk,Item06Rmk,Item05Rmk,Item10Rmk,Item11Rmk,Item04Rmk,FirstJob')
             ->where('JobID',$param['job_id'])
             ->append(['staff','device','task_type'])
             ->with('ServiceName')
-            ->find()->toArray();
+            ->find();
+        if(!$data) return [];
+        $data = $data->toArray();
         return self::serviceProjects($param['job_type'],$data['ServiceType'],$data);
     }
 
@@ -136,14 +125,13 @@ class ReportData
             ->where('job_id',$param['job_id'])
             ->where('job_type',$param['job_type'])
             ->field('site_photos,remarks')
-            ->select()->toArray();
-        if(!empty($data)){
-            foreach ($data as $key=>$item){
-                $data[$key]['site_photos'] = !empty($item['site_photos']) ? explode(',',$item['site_photos']) : '' ;
-            }
-            return $data;
+            ->select();
+        if($data->isEmpty()) return [];
+        $data = $data->toArray();
+        foreach ($data as $key=>$item){
+            $data[$key]['site_photos'] = !empty($item['site_photos']) ? explode(',',$item['site_photos']) : '' ;
         }
-        return '';
+        return $data;
     }
 
     /**
@@ -156,11 +144,13 @@ class ReportData
      */
     public static function getMaterialUsageInfo($param)
     {
-       return (new ServiceMaterialsModel())
+        $data = (new ServiceMaterialsModel())
             ->where('job_id',$param['job_id'])
             ->where('job_type',$param['job_type'])
             ->field('material_name,processing_space,material_ratio,dosage,unit,use_mode,targets,use_area,matters_needing_attention')
-            ->select()->toArray();
+            ->select();
+        if($data->isEmpty()) return [];
+        return  $data->toArray();
     }
 
     /**
@@ -173,12 +163,14 @@ class ReportData
      */
     public static function getRiskInfo($param)
     {
-        return (new Risks())
+        $data = (new Risks())
             ->where('job_id',$param['job_id'])
             ->where('job_type',$param['job_type'])
             ->append(['ct','site_img'])
             ->field('risk_types,risk_description,risk_targets,risk_rank,risk_proposal,take_steps,creat_time,site_photos')
-            ->select()->toArray();
+            ->select();
+        if($data->isEmpty()) return [];
+        return $data->toArray();
     }
 
     /**
@@ -188,16 +180,26 @@ class ReportData
      */
     public static function getDeviceInspectionInfo($param)
     {
-        return (new ServiceEquipments())
+        $data =  (new ServiceEquipments())
             ->where('job_id',$param['job_id'])
             ->where('job_type',$param['job_type'])
+            ->where('equipment_type_id','<>',245)
             ->whereNotNull('equipment_area')
             ->whereNotNull('check_datas')
             ->group('equipment_type_id')
             ->field('equipment_type_id,job_id,count(id) as equipment_total_count')
             ->append(['device_info','tigger_count','equipment_list'])
-            ->select()
-            ->toArray();
+            ->select();
+        if($data->isEmpty()) return [];
+        $DeviceInspectionData = $data = $data->toArray();
+        $DeviceInspectionData = array_column($DeviceInspectionData,'device_info',null);
+        $DeviceInspectionData = array_column($DeviceInspectionData,'check_targt',null);
+        $max_count = 0;
+        foreach ($DeviceInspectionData as $item){
+            $count = count($item);
+            if($count > $max_count) $max_count = $count;
+        }
+        return ['data'=>$data,'max_count'=>$max_count];
     }
 
     /**
@@ -210,30 +212,83 @@ class ReportData
      */
     public static function getSmarttechInfo($param)
     {
+        //客户编号
         $CustomerID = self::getCustomerID($param);
         $CustomerID = 'McDonald_Star_House';
         if(!$CustomerID) return [];
+        //营业时间
+        $timeArr = self::getShowTime($CustomerID);
+        if(!$timeArr) return [];
+        $list['work_time'] = $timeArr['openingTime'] . '-' . $timeArr['closingTime'];
+        $list['no_work_time'] = $timeArr['closingTime'] . '-' . $timeArr['openingTime'];
+        //所有设备
         $CustomerDeviceModel = new CustomerDeviceModel();
-        $deviceCount = $CustomerDeviceModel
-            ->where('CustomerID',$CustomerID)
-            ->append(['all_trigger_count','device_cn_name'])
-            ->field('type,CustomerID,count(id) as device_count')
-            ->group('type')
-            ->select()
-            ->toArray();
-        if(!$deviceCount) return [];
-        $list = array_column($deviceCount,null,'type');
         $allDevice = $CustomerDeviceModel
             ->where('CustomerID',$CustomerID)
-            ->append(['day_trigger_count','night_trigger_count'])
-            ->field('type,Device_ID,CustomerID,Device_Name,floor,layer,others')
-            ->select()
-            ->toArray();
-        if(!$allDevice) return [];
-        foreach ($allDevice as $key=>$item){
-            if($list[$item['type']]) $list[$item['type']]['list'][] = $item;
+            ->field('Device_ID,Device_Name,floor,layer,others')
+            ->select();
+        if($allDevice->isEmpty()) return [];
+        $allDevice = $allDevice->toArray();
+        $allDeviceIds = array_column($allDevice,'Device_ID',null);
+        $allDevice = array_column($allDevice,null,'Device_ID');
+        //获取触发数据查询时间段
+        $timeData = self::getTimeSlot($param);
+        if(!empty($timeData)){
+            $startDate = $timeData['JobDate'];
+            $endDate = date('Y-m-d',time());
+            $where[] = ['triggerDate','>=',$startDate];
+            $where[] = ['triggerDate','<=',$endDate];
+        }else{
+            $where = [];
         }
+        //设备触发数据
+        $tiggerData = (new TriggerDeviceModel)
+            ->where($where)
+            ->where('CustomerID',$CustomerID)
+            ->whereIn('Device_ID',$allDeviceIds)
+            ->field('Device_ID,triggerTime')
+            ->select();
+        if($tiggerData->isEmpty()) return [];
+        $tiggerData = $tiggerData->toArray();
+        $tiggerDeviceArr = [];
+        $deviceList=[];
+        foreach ($tiggerData as $item){
+            array_push($tiggerDeviceArr,$item['Device_ID']); //触发的设备总数
+            if(!empty($deviceList[$item['Device_ID']])){
+                if($item['triggerTime'] >= $timeArr['openingTime'] && $item['triggerTime'] <= $timeArr['closingTime']){
+                    $deviceList[$item['Device_ID']]['work_count'] += 1;
+                }else{
+                    $deviceList[$item['Device_ID']]['no_work_count'] += 1;
+                }
+            }else{
+                $deviceList[$item['Device_ID']] = [
+                    'Device_Name'=>$allDevice[$item['Device_ID']]['Device_Name'],
+                    'area'=>$allDevice[$item['Device_ID']]['floor'].' ' . $allDevice[$item['Device_ID']]['layer'] .' '.$allDevice[$item['Device_ID']]['others'],
+                    'work_count'=>0,
+                    'no_work_count'=>1
+                ];
+            }
+        }
+        $tiggerDeviceArr = array_values(array_unique($tiggerDeviceArr));
+        $list['device_cn_name'] = CustomerDeviceModel::SIGFOX;
+        $list['device_count'] = Count($allDevice);
+        $list['tigger_device_count'] = Count($tiggerDeviceArr);
+        $list['list'] = $deviceList;
         return $list;
+    }
+
+    public static function getTimeSlot($param)
+    {
+        $ContractNumber = (new JobOrder())->where('JobID',$param['job_id'])->value('ContractNumber');
+        $data = (new JobOrder())
+            ->where('ContractNumber',$ContractNumber)
+            ->where('ServiceType',2)
+            ->where('JobID','<',$param['job_id'])
+            ->field('JobID,ContractNumber,JobDate,JobTime,JobTime2')
+            ->order('JobID desc')
+            ->find();
+        if(!$data) return [];
+        return $data->toArray();
     }
 
     /**
@@ -245,7 +300,7 @@ class ReportData
     {
         switch ($param['job_type']){
             case 1:
-                $CustomerID = (new \app\common\model\JobOrder())->where('JobID',$param['job_id'])->value('CustomerID');
+                $CustomerID = (new JobOrder())->where('JobID',$param['job_id'])->value('CustomerID');
                 break;
             case 2:
                 $CustomerID = (new FollowupOrder())->where('FollowUpID',$param['job_id'])->value('CustomerID');
@@ -257,34 +312,95 @@ class ReportData
         return $CustomerID;
     }
 
+    /**
+     * 获取数据筛选时间
+     * @param $CustomerID
+     * @return ClientDeviceModel|array|mixed|\think\Model|null
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function getShowTime($CustomerID)
+    {
+        if(!$CustomerID) return [];
+        $data = (new ClientDeviceModel())->where('Client_Key',$CustomerID)->field('Client_Key,closingTime,openingTime')->find();
+        if(!$data) return [];
+        return $data->toArray();
+    }
+
+    /**
+     * 智能设备饼状图数据
+     * @param $param
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
     public static function getCakeData($param)
     {
         $CustomerID = self::getCustomerID($param);
         $CustomerID = 'McDonald_Star_House';
-        $data = (new CustomerDeviceModel())
+        //所有设备
+        $CustomerDeviceModel = new CustomerDeviceModel();
+        $allDevice = $CustomerDeviceModel
             ->where('CustomerID',$CustomerID)
-            ->group('area_group')
-            ->field('CustomerID,type,area_group,type,floor,layer,others')
-            ->append(['area_tigger_count','area_name_group'])
-            ->select()
-            ->toArray();
-        if(!$data) return ['count'=>0,'data'=>[]];;
-        $count = array_sum(array_column($data,'area_tigger_count'));
+            ->field('Device_ID,floor,layer,others')
+            ->select();
+        if($allDevice->isEmpty()) return [];
+        $allDevice = $allDevice->toArray();
+        $allDeviceIds = array_column($allDevice,'Device_ID',null);
+        $allDevice = array_column($allDevice,null,'Device_ID');
+        //获取触发数据查询时间段
+        $timeData = self::getTimeSlot($param);
+        if(!empty($timeData)){
+            $startDate = $timeData['JobDate'];
+            $endDate = date('Y-m-d',time());
+            $where[] = ['triggerDate','>=',$startDate];
+            $where[] = ['triggerDate','<=',$endDate];
+        }else{
+            $where = [];
+        }
+        //设备触发数据
+        $tiggerData = (new TriggerDeviceModel)
+            ->where($where)
+            ->where('CustomerID',$CustomerID)
+            ->whereIn('Device_ID',$allDeviceIds)
+            ->field('Device_ID')
+            ->select();
+        if($tiggerData->isEmpty()) return [];
+        $tiggerData = $tiggerData->toArray();
+        foreach ($tiggerData as $key=>$item){
+            $tiggerData[$key]['area'] = $allDevice[$item['Device_ID']]['floor'] . '-' .$allDevice[$item['Device_ID']]['layer']. '-' .$allDevice[$item['Device_ID']]['others'];
+        }
+        $deviceList=[];
+        foreach ($tiggerData as $item) {
+            if(!empty($deviceList[$item['area']])){
+                $deviceList[$item['area']] += 1;
+            }else{
+                $deviceList[$item['area']] = 1;
+            }
+        }
+        $count = array_sum($deviceList);
         $list=[];
-        foreach ($data as $item){
-            $percentage = bcmul(bcdiv(strval($item['area_tigger_count']),strval($count),2),'100'); //($item['area_tigger_count'] / $count) * 100;
-            array_push($list,['value'=>$percentage,'name'=>$item['area_name_group']]);
+        foreach ($deviceList as $key=>$item){
+            $percentage = bcmul(bcdiv(strval($item),strval($count),2),'100'); //($item['area_tigger_count'] / $count) * 100;
+            array_push($list,['value'=>$percentage,'name'=>$key]);
         }
         return $list;
     }
+
     /**
      * 智能设备饼状图
      * @param $param
-     * @return mixed
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
     public static function getSmarttechCakeInfo($param)
     {
         $data = self::getCakeData($param);
+        if(!$data) return [];
         $echarts = ECharts::init("#SmarttechCake");
         $option = new Option();
         $option->animation(false);
@@ -329,35 +445,90 @@ class ReportData
         return $echarts->render();
     }
 
+    /**
+     * 智能设备折线图（侦测趋势 (按时间)）数据
+     * @param $param
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
     public static function getLineTimeData($param)
     {
         $CustomerID = self::getCustomerID($param);
         $CustomerID = 'McDonald_Star_House';
-        $data = (new CustomerDeviceModel())
+        //所有设备
+        $CustomerDeviceModel = new CustomerDeviceModel();
+        $allDevice = $CustomerDeviceModel
             ->where('CustomerID',$CustomerID)
-            ->group('area_group')
-            ->field('CustomerID,type,area_group,floor_id,layer_id,others_id,type,floor,layer,others')
-            ->append(['area_name_group','area_tirgget_group'])
-            ->select()
-            ->toArray();
-        if(!$data) return [];
-        $list=[];
-        $area=[];
-        foreach ($data as $item){
-            array_push($area,$item['area_name_group']);
-            $arr = ['name'=>$item['area_name_group'],'type'=>'line','stack'=>'Total','data'=>$item['area_tirgget_group']];
+            ->field('Device_ID,floor,layer,others')
+            ->select();
+        if($allDevice->isEmpty()) return [];
+        $allDevice = $allDevice->toArray();
+        $allDeviceIds = array_column($allDevice,'Device_ID',null);
+        $allDevice = array_column($allDevice,null,'Device_ID');
+        //获取触发数据查询时间段
+        $timeData = self::getTimeSlot($param);
+        if(!empty($timeData)){
+            $startDate = $timeData['JobDate'];
+            $endDate = date('Y-m-d',time());
+            $where[] = ['triggerDate','>=',$startDate];
+            $where[] = ['triggerDate','<=',$endDate];
+        }else{
+            $where = [];
+        }
+        //设备触发数据
+        $tiggerData = (new TriggerDeviceModel)
+            ->where($where)
+            ->where('CustomerID',$CustomerID)
+            ->whereIn('Device_ID',$allDeviceIds)
+            ->field('Device_ID,triggerTime')
+            ->select();
+        if($tiggerData->isEmpty()) return [];
+        $tiggerData = $tiggerData->toArray();
+
+        $area = [];
+        $deviceList=[];
+        foreach ($tiggerData as $key=>$item){
+            $flo = $allDevice[$item['Device_ID']]['floor'] . '-' .$allDevice[$item['Device_ID']]['layer']. '-' .$allDevice[$item['Device_ID']]['others'];
+            $tiggerData[$key]['area'] = $flo;
+            $area[] = $flo;
+            if(!empty($deviceList[$flo])){
+                $deviceList[$flo][] = $item;
+            }else{
+                $deviceList[$flo][] = $item;
+            }
+        }
+        $area = array_values(array_unique($area));
+
+        if(!$deviceList) return [];
+        $list = [];
+        foreach ($deviceList as $key=>$item){
+            $hourArr = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,];
+            foreach ($item as $v){
+                $H = intval(date('H',strtotime($v['triggerTime'])));
+                $hourArr[$H] +=1;
+            }
+            $arr['name'] = $key;
+            $arr['type'] = 'line';
+            $arr['data'] = $hourArr;
             array_push($list,$arr);
         }
         return ['area'=>$area,'list'=>$list];
     }
+
     /**
      * 智能设备折线图（侦测趋势 (按时间)）
      * @param $param
-     * @return mixed
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
     public static function getSmarttechLineTimeInfo($param)
     {
         $data = self::getLineTimeData($param);
+        if(!$data) return [];
         $echarts = ECharts::init("#chartLine");
         $option = new Option();
         $option->animation(false);
@@ -383,6 +554,7 @@ class ReportData
                 'left' => '4%',
                 'right' => '4%',
                 'bottom' => '3%',
+                'top' => '17%',
                 'containLabel' => true
             ]
         );
@@ -413,35 +585,64 @@ class ReportData
     {
         $CustomerID = self::getCustomerID($param);
         $CustomerID = 'McDonald_Star_House';
-        $data = (new CustomerDeviceModel())
-            ->where('CustomerID',$CustomerID)
-            ->group('area_group')
-            ->field('CustomerID,type,area_group,floor_id,layer_id,others_id,type,floor,layer,others')
-            ->append(['area_name_group','date_tirgget_group'])
-            ->select()
-            ->toArray();
-        if(!$data) return [];
-        $dateArr = (new TriggerDeviceModel)
-            ->field('max(triggerDate) as max_date,min(triggerDate) as min_date')
-//            ->where('type',$data['type'])
-            ->where('CustomerID',$CustomerID)
-            ->find()
-            ->toArray();
-        $allDate = createDateRange($dateArr['min_date'],$dateArr['max_date']);
-        $Arr = [];
-        foreach ($allDate as $key=>$item){
-            $Arr[$item] = 0;
+        //获取触发数据查询时间段
+        $timeData = self::getTimeSlot($param);
+        if(!empty($timeData)){
+            $startDate = $timeData['JobDate'];
+            $endDate = date('Y-m-d',time());
+            $where[] = ['triggerDate','>=',$startDate];
+            $where[] = ['triggerDate','<=',$endDate];
+        }else{
+            $where = [];
         }
-        $list=[];
-        $area=[];
-        foreach ($data as $item){
-            array_push($area,$item['area_name_group']);
-            if(!empty($item['date_tirgget_group'])){
-                foreach ($item['date_tirgget_group'] as $k=>$v){
-                    $Arr[$k] += 1;
-                }
+        if(!$where) return [];
+        //所有设备
+        $CustomerDeviceModel = new CustomerDeviceModel();
+        $allDevice = $CustomerDeviceModel
+            ->where('CustomerID',$CustomerID)
+            ->field('Device_ID,floor,layer,others')
+            ->select();
+        if($allDevice->isEmpty()) return [];
+        $allDevice = $allDevice->toArray();
+        $allDeviceIds = array_column($allDevice,'Device_ID',null);
+        $allDevice = array_column($allDevice,null,'Device_ID');
+        //设备触发数据
+        $tiggerData = (new TriggerDeviceModel)
+            ->where($where)
+            ->where('CustomerID',$CustomerID)
+            ->whereIn('Device_ID',$allDeviceIds)
+            ->field('Device_ID,triggerDate')
+            ->select();
+        if($tiggerData->isEmpty()) return [];
+        $tiggerData = $tiggerData->toArray();
+        $allDate = createDateRange($startDate,$endDate);
+        $area = [];
+        $deviceList=[];
+        foreach ($tiggerData as $key=>$item){
+            $flo = $allDevice[$item['Device_ID']]['floor'] . '-' .$allDevice[$item['Device_ID']]['layer']. '-' .$allDevice[$item['Device_ID']]['others'];
+            $tiggerData[$key]['area'] = $flo;
+            $area[] = $flo;
+            if(!empty($deviceList[$flo])){
+                $deviceList[$flo][] = $item;
+            }else{
+                $deviceList[$flo][] = $item;
             }
-            $arr = ['name'=>$item['area_name_group'],'type'=>'line','stack'=>'Total','data'=>array_values($Arr)];
+        }
+        $area = array_values(array_unique($area));
+        if(!$deviceList) return [];
+        $list = [];
+        foreach ($deviceList as $key=>$item){
+            $DateArr = [];
+            for($i=0;$i<count($allDate);$i++){
+                $DateArr[$i] = 0;
+            }
+            foreach ($item as $v){
+                $DateArr_key = array_search($v['triggerDate'], $allDate);
+                $DateArr[$DateArr_key] +=1;
+            }
+            $arr['name'] = $key;
+            $arr['type'] = 'line';
+            $arr['data'] = $DateArr;
             array_push($list,$arr);
         }
         return ['area'=>$area,'list'=>$list,'allDate'=>$allDate];
@@ -458,6 +659,7 @@ class ReportData
     public static function getSmarttechLineDateInfo($param)
     {
         $data = self::getLineDateData($param);
+        if(!$data) return [];
         $echarts = ECharts::init("#chartLineDate");
         $option = new Option();
         $option->animation(false);
@@ -481,6 +683,7 @@ class ReportData
                 'left' => '4%',
                 'right' => '4%',
                 'bottom' => '3%',
+                'top' => '17%',
                 'containLabel' => true
             ]
         );
@@ -525,10 +728,12 @@ class ReportData
         $data = (new AutographV2())
             ->where('job_id',$param['job_id'])
             ->where('job_type',$param['job_type'])
-            ->field('customer_signature_url,staff_id01_url,staff_id02_url,staff_id03_url')
-            ->find()->toArray();
+            ->field('customer_signature_url,customer_signature_url_add,staff_id01_url,staff_id02_url,staff_id03_url')
+            ->find();
+        if(!$data) return [];
+        $data->toArray();
         return [
-            'customer_signature_url'=>$data['customer_signature_url'],
+            'customer_signature'=>[$data['customer_signature_url'],$data['customer_signature_url_add']],
             'staff'=>[$data['staff_id01_url'],$data['staff_id02_url'],$data['staff_id03_url']]
         ];
     }

@@ -125,12 +125,17 @@ function decrypt($data, $key) {
  * */
 if (!function_exists('base64EncodeImage')) {
     function base64EncodeImage ($img_file) {
-//        $img_file='https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F66e18b4c-fb2c-45cb-b90f-a645afc73846%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1693986530&t=67aedd5c98b1d307e7a6d16ec3571f4c';
-
-        $img_info=getimagesize($img_file);
-        $base_url=base64_encode(file_get_contents($img_file));
-//dump($base_url);
-        $encode = '<img width=80 decoding="async" src="data:image/jpg/png/gif;base64,'. $base_url .'" >';
+        $arrContextOptions=array(
+            "ssl"=>array(
+                "verify_peer"=>false,
+                "verify_peer_name"=>false,
+            ),
+        );
+//        getimagesize($img_file);
+        $file_content = @file_get_contents($img_file,false, stream_context_create($arrContextOptions));
+        if($file_content === false) return '图片不存在';
+        $base_url=base64_encode($file_content);
+        $encode = '<img class="report-img" decoding="async" src="data:image/jpg/png/gif;base64,'. $base_url .'" >';
         return $encode;
 
     }

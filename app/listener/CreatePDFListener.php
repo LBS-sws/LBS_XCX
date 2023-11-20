@@ -7,13 +7,12 @@ use app\jobs\service\CreatePDF;
 class CreatePDFListener
 {
     /**
-     * 事件监听处理
-     *
-     * @return mixed
+     * @param $param
+     * @return void
      */
     public function handle($param)
     {
         $class = new CreatePDF();
-        return $class->htmlTopPDF($param);
+        $class->htmlTopPDF($param);
     }
 }

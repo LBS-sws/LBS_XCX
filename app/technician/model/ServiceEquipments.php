@@ -7,6 +7,10 @@ class ServiceEquipments extends Model
 {
     protected $table = 'lbs_service_equipments';
 
+    public function getEqNumberAttr($value,$data)
+    {
+        return !empty($value) ? $value : '' ;
+    }
     /**
      * 报告设备巡查-设备信息
      * @param $value

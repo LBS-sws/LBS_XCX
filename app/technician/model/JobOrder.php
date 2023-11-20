@@ -7,6 +7,7 @@ use app\common\model\StaffModel;
 use think\model;
 class JobOrder extends Model
 {
+    const KILL_INSECT_SERVICE = 2;
     protected $table = 'joborder';
 
     /**
