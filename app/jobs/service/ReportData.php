@@ -214,7 +214,7 @@ class ReportData
     {
         //客户编号
         $CustomerID = self::getCustomerID($param);
-        $CustomerID = 'McDonald_Star_House';
+//        $CustomerID = 'McDonald_Star_House';
         if(!$CustomerID) return [];
         //营业时间
         $timeArr = self::getShowTime($CustomerID);
@@ -339,7 +339,7 @@ class ReportData
     public static function getCakeData($param)
     {
         $CustomerID = self::getCustomerID($param);
-        $CustomerID = 'McDonald_Star_House';
+//        $CustomerID = 'McDonald_Star_House';
         //所有设备
         $CustomerDeviceModel = new CustomerDeviceModel();
         $allDevice = $CustomerDeviceModel
@@ -456,7 +456,7 @@ class ReportData
     public static function getLineTimeData($param)
     {
         $CustomerID = self::getCustomerID($param);
-        $CustomerID = 'McDonald_Star_House';
+//        $CustomerID = 'McDonald_Star_House';
         //所有设备
         $CustomerDeviceModel = new CustomerDeviceModel();
         $allDevice = $CustomerDeviceModel
@@ -584,7 +584,7 @@ class ReportData
     public static function getLineDateData($param)
     {
         $CustomerID = self::getCustomerID($param);
-        $CustomerID = 'McDonald_Star_House';
+//        $CustomerID = 'McDonald_Star_House';
         //获取触发数据查询时间段
         $timeData = self::getTimeSlot($param);
         if(!empty($timeData)){

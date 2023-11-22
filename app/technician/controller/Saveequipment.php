@@ -24,6 +24,7 @@ class Saveequipment
             return json($result);
         }
 
+
         //获取信息
         $staffid = $_POST['staffid'];
         //获取用户登录信息
@@ -44,7 +45,22 @@ class Saveequipment
             $ids = explode(',',$_POST['id']);
             if(count($ids) == 1){
                 $data['equipment_area'] = $_POST['equipment_area'];
-                if(!empty($_POST['eq_mark_num'])) $data['number'] = $_POST['eq_mark_num'];
+                if(!empty($_POST['eq_mark_num'])){
+                    if(empty($_POST['eq_mark_num'])){
+                        return error(-1,'编号不能为空',[]);
+                    }
+                    $numberCount = Db::table('lbs_service_equipments')
+                        ->where('equipment_name', $_POST['equipment_name'])
+                        ->where('job_id', $_POST['job_id'])
+                        ->where('job_type', $_POST['job_type'])
+                        ->where('id', '<>',$_POST['id'])
+                        ->where('number', $_POST['eq_mark_num'])
+                        ->count();
+                    if($numberCount){
+                        return error(0,'当前编号已存在',[]);
+                    }
+                    $data['number'] = $_POST['eq_mark_num'];
+                }
                 $save_datas = Db::table('lbs_service_equipments')->whereIn('id', $ids)->update($data);
             }else{
                 foreach ($ids as $key=>$item){

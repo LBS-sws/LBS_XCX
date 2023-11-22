@@ -57,7 +57,8 @@ class CreatePDF
         $ext_html = '.html';
         $html_name = $path . $filename . $ext_html;
         $pdf_name = $path . $filename . $ext_pdf;
-        $cmd = "wkhtmltopdf --print-media-type --page-size A4 --margin-left 0 --margin-right 0 --enable-local-file-access --footer-center [page]/[topage]  $html_name $pdf_name 2>&1"; //--print-media-type --page-size A4 --margin-left 0 --margin-right 0 --enable-local-file-access
+        $set_charset = 'export LANG=en_US.UTF-8;';
+        $cmd = $set_charset."wkhtmltopdf --print-media-type --page-size A4 --margin-left 0 --margin-right 0 --enable-local-file-access --footer-center [page]/[topage]  $html_name $pdf_name 2>&1"; //--print-media-type --page-size A4 --margin-left 0 --margin-right 0 --enable-local-file-access
         @exec($cmd, $output, $return_val);
         if($return_val === 0){
             return 1;

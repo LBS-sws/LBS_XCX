@@ -94,13 +94,39 @@ class GetequipmentsOFasn
             }else{
                 $eqs_file = 'equipment_name as label,id as value,check_datas,equipment_number as eq_number,number';
             }
-             $service_data['equipments'] = (new ServiceEquipments())
+            $eq_list = (new ServiceEquipments())
                  ->where($wheres)
                  ->order('equipment_number', 'desc')
                  ->order('number', 'asc')
                  ->field($eqs_file)
                  ->append(['eq_number'])
                  ->select();
+            $newList = [];
+            if($eq_list->isEmpty()){
+                $newList=[];
+            }else{
+                $eq_list = $eq_list->toArray();
+                $list = [];
+                foreach ($eq_list as $item){
+                    if(isset($list[$item['label']])){
+                        array_push($list[$item['label']],$item);
+                    }else{
+                        $list[$item['label']][] = $item;
+                    }
+                }
+                foreach ($list as $item){
+                    $cmf_arr = array_column($item, 'number');
+                    array_multisort($cmf_arr, SORT_ASC, $item);
+                    if(empty($newList)){
+                        $newList = $item;
+                    }else{
+                        foreach ($item as $v){
+                            array_push($newList,$v);
+                        }
+                    }
+                }
+            }
+            $service_data['equipments'] = $newList;
             //使用区域
             $usearea_select1 = array(array("label"=>"全部区域","value"=>""));
             $usearea_select2 =  Db::table('lbs_service_equipments')->Distinct(true)->where($wheres)->where('equipment_area','not null')->field('equipment_area as label,equipment_area as value')->select()->toArray();
