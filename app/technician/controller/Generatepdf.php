@@ -151,7 +151,7 @@ class Generatepdf
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
 
                         $equipmenthz_datas[$i]['table_title'][0] = '序号';
-                        $equipmenthz_datas[$i]['content'][$j][0] = $check_datas[$j]['number'];//sprintf('%02s', $j+1);
+                        $equipmenthz_datas[$i]['content'][$j][0] = sprintf('%02s', $j+1);
                         $equipmenthz_datas[$i]['table_title'][1] = '编号';
                         $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_number'];
                         $equipmenthz_datas[$i]['table_title'][1] = '区域';
@@ -168,7 +168,6 @@ class Generatepdf
                     }
                 }
             }
-//            print_r($equipmenthz_datas);exit;
             $report_datas['equipment'] = $equipmenthz_datas;
             //photo
             //TODO 将类型为250的图片取10组
@@ -584,7 +583,7 @@ EOF;
              * #############################################################
              * */
             // 23-10-16 导出ptf点评改为3颗星
-            $customer_grade =  0;
+            $customer_grade = ($customer_grade > 3) ? 3 : $customer_grade?: 0;
 
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             $pdf->SetFont('cid0cs', '');
