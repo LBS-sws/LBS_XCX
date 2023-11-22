@@ -18,7 +18,7 @@ class Index
         $model = new AutographV2();
         $params['job_id'] = $job_id;
         $params['job_type'] = $job_type;
-        $result = $model->where($params)->find();
+        $result = $model->where($params)->append(['score'])->find();
         if(empty($result)){
             return error(-1,'返回结果为空',[]);
         }
