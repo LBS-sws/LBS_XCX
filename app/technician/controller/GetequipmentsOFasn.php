@@ -116,7 +116,10 @@ class GetequipmentsOFasn
                 }
                 foreach ($list as $item){
                     $cmf_arr = array_column($item, 'number');
-                    array_multisort($cmf_arr, SORT_ASC, $item);
+//                    sort($cmf_arr,SORT_NATURAL);
+                    array_multisort($cmf_arr, SORT_ASC,SORT_NATURAL, $item);
+//                    print_r($cmf_arr);exit;
+
                     if(empty($newList)){
                         $newList = $item;
                     }else{
