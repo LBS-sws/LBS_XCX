@@ -146,10 +146,27 @@ class Generatepdf
                 $equipment_type = Db::table('lbs_service_equipment_type')->where('id',$equipment_type_ids[$i]['equipment_type_id'])->field('name')->find();
                 $equipmenthz_datas[$i]['title'] = $equipment_type['name']."(".$equipmenthz_count."/".$equipmenthz_allcount.")";
                 $check_datas = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->order('id', 'asc')->select();
+
                 if ($check_datas) {
+                    $check_datas = $check_datas->toArray();
+                    // 获取number字段的值
+                    $numbers = array_column($check_datas, 'number');
+
+                    // 自然排序
+                    natsort($numbers);
+
+                    $sorted_check_datas = [];
+                    foreach ($numbers as $number) {
+                        foreach ($check_datas as $data) {
+                            if ($data['number'] === $number) {
+                                $sorted_check_datas[] = $data;
+                                break;
+                            }
+                        }
+                    }
+                    $check_datas = $sorted_check_datas;
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
-
                         $equipmenthz_datas[$i]['table_title'][0] = '序号';
 
                         $eq_num = $check_datas[$j]['number'];
@@ -174,6 +191,23 @@ class Generatepdf
                     }
                 }
             }
+
+
+            // if(!empty($equipmenthz_datas)){
+            //     foreach ($equipmenthz_datas as $key=>$item){
+            //         if(!empty($item['content'])){
+            //             $content =[];
+            //             foreach ($item['content'] as $k=>$v){
+            //                 $content[$v[0]] = $v;
+            //             }
+            //             ksort($content);
+            //             $content =array_values($content);
+            //             $equipmenthz_datas[$key]['content'] = $content;
+            //         }
+            //     }
+            // }
+
+
             $report_datas['equipment'] = $equipmenthz_datas;
             //photo
             //TODO 将类型为250的图片取10组
