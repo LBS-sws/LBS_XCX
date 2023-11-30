@@ -10,7 +10,7 @@ class TriggerDeviceService
     {
         $eventTimeFrom = '';
         $eventTimeTo = '';
-        $queryStr = "?estate=McDonald_Star_House&perPage=100&orderBy=id&order=desc";
+        $queryStr = "?estate=kpkp-ZY&perPage=20000&orderBy=id&order=desc";
         switch ($type){
             case 'sigfox':
                 $url = config('app.smarttech_mousetrap_trigger_api.Sigfox_trigger').$queryStr;
@@ -44,9 +44,9 @@ class TriggerDeviceService
             $arr['layer'] = $item['sigfoxDevice']['layer'];
             $arr['group'] = $item['sigfoxDevice']['group'];
             $arr['status'] = $item['sigfoxDevice']['status'];
-            $arr['Network_Status'] = $item['sigfoxDevice']['rawData']['isConnected'] ? 1 : 0;
-            $arr['linkQuality'] = $item['sigfoxDevice']['rawData']['linkQuality'] ?? '';
-            $arr['Battery_Level'] = $item['sigfoxDevice']['rawData']['currentBattery'];
+//            $arr['Network_Status'] = $item['sigfoxDevice']['rawData']['isConnected'] ? 1 : 0;
+//            $arr['linkQuality'] = $item['sigfoxDevice']['rawData']['linkQuality'] ?? '';
+//            $arr['Battery_Level'] = $item['sigfoxDevice']['rawData']['currentBattery'];
             array_push($list,$arr);
         }
         (new TriggerDeviceModel())->saveAll($list,false);

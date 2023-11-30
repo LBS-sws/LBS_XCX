@@ -167,14 +167,16 @@ class Generatepdf
                     $check_datas = $sorted_check_datas;
                     for($j=0; $j < count($check_datas); $j++){
                         $check_data = json_decode($check_datas[$j]['check_datas'],true);
-                        $equipmenthz_datas[$i]['table_title'][0] = '序号';
 
+                        // $equipmenthz_datas[$i]['table_title'][0] = '序号';
+
+                        $equipmenthz_datas[$i]['table_title'][0] = '序号';
                         $eq_num = $check_datas[$j]['number'];
                         if(ctype_digit($eq_num)){
                             $eq_num = $eq_num <= 9 ? '0'.$eq_num : $eq_num;
                         }
-                        $equipmenthz_datas[$i]['content'][$j][0] = $eq_num;//sprintf('%02s', $j+1);
 
+                        $equipmenthz_datas[$i]['content'][$j][0] = $eq_num;//sprintf('%02s', $j+1);
                         $equipmenthz_datas[$i]['table_title'][1] = '编号';
                         $equipmenthz_datas[$i]['content'][$j][1] = $check_datas[$j]['equipment_number'];
                         $equipmenthz_datas[$i]['table_title'][1] = '区域';

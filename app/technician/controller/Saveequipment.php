@@ -64,8 +64,12 @@ class Saveequipment
                 $save_datas = Db::table('lbs_service_equipments')->whereIn('id', $ids)->update($data);
             }else{
                 foreach ($ids as $key=>$item){
-//                    $equipment_area = Db::table('lbs_service_equipments')->where('id', $item)->value('equipment_area');
-//                    $data['equipment_area'] = $equipment_area && $equipment_area != 'null' ? $equipment_area : $_POST['equipment_area'];
+                    $equipment_area = Db::table('lbs_service_equipments')->where('id', $item)->value('equipment_area');
+                    if(!empty($equipment_area)){
+                        $data['equipment_area'] = $equipment_area;
+                    }else{
+                        $data['equipment_area'] = $_POST['equipment_area'];;
+                    }
                     $save_datas = Db::table('lbs_service_equipments')->where('id', $item)->update($data);
                 }
             }

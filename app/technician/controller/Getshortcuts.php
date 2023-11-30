@@ -45,7 +45,13 @@ class Getshortcuts
             }
             //search_key 结束
             
-            $shortcut_datas = Db::table('lbs_service_shortcuts')->alias('s')->join('lbs_service_shortcut_contents c','s.id=c.shortcut_id')->where($wheres)->where($wheres_search)->field('c.content as value,c.content as label')->select();
+            $shortcut_datas = Db::table('lbs_service_shortcuts')
+                ->alias('s')
+                ->join('lbs_service_shortcut_contents c','s.id=c.shortcut_id')
+                ->where($wheres)
+                ->where($wheres_search)
+                ->field('c.content as value,c.content as label')
+                ->select();
              if ($shortcut_datas) {
                 //返回数据
                 $result['code'] = 1;

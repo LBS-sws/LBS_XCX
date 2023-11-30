@@ -214,6 +214,7 @@ class ReportData
     {
         //客户编号
         $CustomerID = self::getCustomerID($param);
+
 //        $CustomerID = 'McDonald_Star_House';
         if(!$CustomerID) return [];
         //营业时间
@@ -234,8 +235,8 @@ class ReportData
         //获取触发数据查询时间段
         $timeData = self::getTimeSlot($param);
         if(!empty($timeData)){
-            $startDate = $timeData['JobDate'];
-            $endDate = date('Y-m-d',time());
+            $startDate = $timeData['data']['JobDate'];
+            $endDate = $timeData['endDate'];
             $where[] = ['triggerDate','>=',$startDate];
             $where[] = ['triggerDate','<=',$endDate];
         }else{
@@ -279,16 +280,19 @@ class ReportData
 
     public static function getTimeSlot($param)
     {
-        $ContractNumber = (new JobOrder())->where('JobID',$param['job_id'])->value('ContractNumber');
+        $jobOrderInfo = (new JobOrder())->where('JobID',$param['job_id'])->field('jobDate,ContractNumber')->find();
         $data = (new JobOrder())
-            ->where('ContractNumber',$ContractNumber)
+            ->where('ContractNumber',$jobOrderInfo['ContractNumber'])
             ->where('ServiceType',2)
-            ->where('JobID','<',$param['job_id'])
+            ->where('Status',3)
+            ->where('JobID','<>',$param['job_id'])
+            ->where('jobDate','<',$jobOrderInfo['jobDate'])
             ->field('JobID,ContractNumber,JobDate,JobTime,JobTime2')
-            ->order('JobID desc')
+            ->order('JobDate desc')
             ->find();
         if(!$data) return [];
-        return $data->toArray();
+        $data = $data->toArray();
+        return ['endDate'=>$jobOrderInfo['jobDate'],'data'=>$data];
     }
 
     /**
@@ -353,8 +357,8 @@ class ReportData
         //获取触发数据查询时间段
         $timeData = self::getTimeSlot($param);
         if(!empty($timeData)){
-            $startDate = $timeData['JobDate'];
-            $endDate = date('Y-m-d',time());
+            $startDate = $timeData['data']['JobDate'];
+            $endDate = $timeData['endDate'];
             $where[] = ['triggerDate','>=',$startDate];
             $where[] = ['triggerDate','<=',$endDate];
         }else{
@@ -383,8 +387,8 @@ class ReportData
         $count = array_sum($deviceList);
         $list=[];
         foreach ($deviceList as $key=>$item){
-            $percentage = bcmul(bcdiv(strval($item),strval($count),2),'100'); //($item['area_tigger_count'] / $count) * 100;
-            array_push($list,['value'=>$percentage,'name'=>$key]);
+//            $percentage = bcmul(bcdiv(strval($item),strval($count),2),'100');
+            array_push($list,['value'=>$item,'name'=>$key]);
         }
         return $list;
     }
@@ -470,8 +474,8 @@ class ReportData
         //获取触发数据查询时间段
         $timeData = self::getTimeSlot($param);
         if(!empty($timeData)){
-            $startDate = $timeData['JobDate'];
-            $endDate = date('Y-m-d',time());
+            $startDate = $timeData['data']['JobDate'];
+            $endDate = $timeData['endDate'];
             $where[] = ['triggerDate','>=',$startDate];
             $where[] = ['triggerDate','<=',$endDate];
         }else{
@@ -588,8 +592,8 @@ class ReportData
         //获取触发数据查询时间段
         $timeData = self::getTimeSlot($param);
         if(!empty($timeData)){
-            $startDate = $timeData['JobDate'];
-            $endDate = date('Y-m-d',time());
+            $startDate = $timeData['data']['JobDate'];
+            $endDate = $timeData['endDate'];
             $where[] = ['triggerDate','>=',$startDate];
             $where[] = ['triggerDate','<=',$endDate];
         }else{

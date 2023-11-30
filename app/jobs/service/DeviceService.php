@@ -7,7 +7,7 @@ class DeviceService
 {
     public static function getDeviceList($type)
     {
-        $queryStr = "?estate=McDonald_Star_House&perPage=1000&orderBy=id&order=desc";
+        $queryStr = "?estate=kpkp-ZY&perPage=2000&orderBy=id&order=desc";
         switch ($type){
             case 'sigfox':
                 $url = config('app.smarttech_mousetrap_device_api.SigfoxDevice').$queryStr;
@@ -37,9 +37,9 @@ class DeviceService
             $arr['Device_ID'] = $item['sigfoxId'];
             $arr['Device_Name'] = $item['name'];
             $arr['Device_Type'] = $item['type'];
-            $arr['Network_Status'] = $item['rawData']['isConnected'] ? 1 : 0;
-            $arr['linkQuality'] = $item['rawData']['linkQuality'] ?? '';
-            $arr['Battery_Level'] = $item['rawData']['currentBattery'];
+//            $arr['Network_Status'] = !empty($item['rawData']) ? $item['rawData']['isConnected'] ? 1 : 0 : 0;
+//            $arr['linkQuality'] = !empty($item['rawData']) ? $item['rawData']['linkQuality'] ?? '' : '';
+//            $arr['Battery_Level'] = !empty($item['rawData']) ? $item['rawData']['currentBattery'] : '';
             $arr['Device_Status'] = $item['status'];
             $arr['floor_id'] = $item['floor'];
             $arr['layer_id'] = $item['layer'];
@@ -50,6 +50,7 @@ class DeviceService
             if($item['group']) $arr['others'] = self::getOthers($item['estateObj'],$item['group']);
             array_push($list,$arr);
         }
+
         try {
             (new CustomerDeviceModel())->saveAll($list, false);
         } catch (\Exception $e) {

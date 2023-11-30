@@ -12,12 +12,12 @@ class CreateHtml
     <title>史伟莎服务现场管理报告</title>
     <style>
         body {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
         .style-table {
             border-collapse:collapse;
-            width: 800px;
+            width: 900px;
         }
         .logo {
             width: 120px;
@@ -69,11 +69,12 @@ class CreateHtml
         }
 		.mian-title{
 			text-align:left;
-			padding-left: 8px;
+			font-size: 24px;
+			padding: 10px 8px;
 		}
         .style-table-content {
             margin: 50px auto;
-            width: 800px;
+            width: 900px;
         }
         .footer-td {
             color: #0c0c0c;
@@ -107,6 +108,9 @@ class CreateHtml
 		.img {
 			max-width: 100%;
 			transform: scale(0.5);
+		}
+		.device-title{
+		    font-size: 20px;
 		}
     </style>
 </head>
@@ -195,7 +199,7 @@ class CreateHtml
                 </tr>
                 <tr>
                     <td class="first-th">客户名称</td>
-                    <td class="first-td " colspan="10">{$baseInfoData['CustomerName']}</td>
+                    <td class="first-td" colspan="10">{$baseInfoData['CustomerName']}</td>
                     <td class="first-th" colspan="1">服务日期</td>
                     <td class="first-td" colspan="6">{$baseInfoData['JobDate']}</td>
                 </tr>
@@ -204,22 +208,22 @@ class CreateHtml
                     <td class="first-td" colspan="12">{$baseInfoData['Addr']}</td>
                 </tr>
                 <tr>
-                    <td class="first-th" colspan="1">服务类型</td>
-                    <td class="first-td" colspan="6">{$baseInfoData['ServiceName']['ServiceName']}</td>
+                    <td class="first-th">服务类型</td>
+                    <td class="first-td" colspan="10">{$baseInfoData['ServiceName']['ServiceName']}</td>
                     <td class="first-th" colspan="1">服务项目</td>
                     <td class="first-td" colspan="6">{$baseInfoData['service_projects']}</td>
                 </tr>
                 <tr>
-                    <td class="first-th">服务人员</td>
-                    <td class="first-td" colspan="6">{$baseInfoData['ContactName']}</td>
-                    <td class="first-th">联系电话</td>
-                    <td class="first-td" colspan="7">{$baseInfoData['Mobile']}</td>
+                    <td class="first-th">联系人员</td>
+                    <td class="first-td" colspan="10">{$baseInfoData['ContactName']}</td>
+                    <td class="first-th" colspan="1">联系电话</td>
+                    <td class="first-td" colspan="6">{$baseInfoData['Mobile']}</td>
                 </tr>
                 <tr>
                     <td class="first-th">任务类型</td>
-                    <td class="first-td" colspan="6">{$baseInfoData['task_type']}</td>
-                    <td class="first-th">服务人员</td>
-                    <td class="first-td" colspan="7">{$baseInfoData['staff']}</td>
+                    <td class="first-td" colspan="10">{$baseInfoData['task_type']}</td>
+                    <td class="first-th" colspan="1">服务人员</td>
+                    <td class="first-td" colspan="6">{$baseInfoData['staff']}</td>
                 </tr>
                 <tr>
                     <td class="first-th">监测设备</td>
@@ -291,9 +295,9 @@ EOD;
 EOD;
                 foreach ($item['site_photos'] as $v) {
                     if(!empty($v)){
-                        $img = base64EncodeImage(self::$imgLink.$v);
+                        $img = self::$imgLink.$v;
                         $WorkPhotosHtml .= <<<EOD
-                    {$img}
+                    <img src="{$img}" width="20%">
 EOD;
                     }
                 }
@@ -326,14 +330,14 @@ EOD;
                             <th class="first-th mian-title" colspan="13">物料使用</th>
                         </tr>
                     <tr>
-                        <th class="first-th">名称</th>
-                        <th class="first-th">处理面积</th>
-                        <th class="first-th">配比</th>
-                        <th class="first-th">用量</th>
-                        <th class="first-th">使用方式</th>
-                        <th class="first-th">靶标</th>
-                        <th class="first-th">使用区域</th>
-                        <th class="first-th">备注</th>
+                        <td class="first-th">名称</td>
+                        <td class="first-th">处理面积</td>
+                        <td class="first-th">配比</td>
+                        <td class="first-th">用量</td>
+                        <td class="first-th">使用方式</td>
+                        <td class="first-th">靶标</td>
+                        <td class="first-th">使用区域</td>
+                        <td class="first-th">备注</td>
                     </tr>
 EOD;
             foreach ($MaterialUsageData as $item){
@@ -405,9 +409,9 @@ EOD;
                             <td class="first-td" colspan="6">
 EOD;
                     foreach ($item['site_img'] as $img){
-                        $img = base64EncodeImage(self::$imgLink.$img);
+                        $img = self::$imgLink.$img;
                         $RiskHtml .= <<<EOD
-                           {$img}
+                           <img src="{$img}" width="20%">
 EOD;
                     }
                     $RiskHtml .= <<<EOD
@@ -444,7 +448,7 @@ EOD;
             foreach ($DeviceInspectionData as $key=>$item){
                 $DeviceInspectionHtml .= <<<EOD
                     <tr>
-                        <td colspan="13" align="left">{$item['device_info']['name']}({$item['tigger_count']}/{$item['equipment_total_count']})</td>
+                        <td class="device-title" colspan="13" align="left">{$item['device_info']['name']}({$item['tigger_count']}/{$item['equipment_total_count']})</td>
                     </tr>
 EOD;
                 $DeviceInspectionHtml .= <<<EOD
@@ -539,7 +543,7 @@ EOD;
 EOF;
             $SmarttechHtml .= <<<EOF
                     <tr>
-                        <td colspan="13" align="left">{$SmarttechData['device_cn_name']} ({$SmarttechData['tigger_device_count']}/{$SmarttechData['device_count']})</td>
+                        <td class="device-title" colspan="13" align="left">{$SmarttechData['device_cn_name']} ({$SmarttechData['tigger_device_count']}/{$SmarttechData['device_count']})</td>
                     </tr>
 					<tr>
                         <td class="first-th">装置名称</td>
@@ -578,7 +582,7 @@ EOF;
             $SmarttechCakeHtml = <<<EOF
                 <table class="style-table echart-border-none">
                    <tr>
-                         <td colspan="13" align="left" >最常侦测区域</td>
+                         <td class="device-title" colspan="13" align="left" >最常侦测区域</td>
                    </tr>   
                    <tr>       
                         <td width="100%">
@@ -607,7 +611,7 @@ EOF;
             $SmarttechLineTimeHtml = <<<EOF
                 <table class="style-table echart-border-none">
                     <tr>
-                         <td colspan="13" align="left" >侦测趋势 (按时间)</td>
+                         <td class="device-title" colspan="13" align="left" >侦测趋势 (按时间)</td>
                     </tr>    
                     <tr>       
                         <td width="100%">
@@ -636,7 +640,7 @@ EOF;
             $SmarttechLineDateHtml = <<<EOF
                 <table class="style-table echart-border-none">
                     <tr>
-                        <td colspan="13" align="left" >侦测趋势 (按日期)</td>
+                        <td class="device-title" colspan="13" align="left" >侦测趋势 (按日期)</td>
                     </tr>
                     <tr>       
                         <td width="100%">
@@ -656,10 +660,8 @@ EOF;
      */
     public static function createCustomerCommentsHtml($param)
     {
-        $CustomerCommentsData = ReportData::getCustomerCommentsInfo($param);
-        $CustomerCommentsHtml = '';
-        if(!empty($CustomerCommentsData)){
-            $CustomerCommentsHtml .= <<<EOF
+        $CustomerCommentsData = ReportData::getCustomerCommentsInfo($param) ?? 0;
+        return <<<EOF
                 <table class="style-table">
                         <tr class='head-title'>
                             <th class="first-th mian-title" colspan="13">客户点评</th>
@@ -669,8 +671,6 @@ EOF;
                     </tr>
                 </table>
 EOF;
-        }
-        return $CustomerCommentsHtml;
     }
 
     /**
@@ -688,36 +688,36 @@ EOF;
         if(!empty($ReportSignatureData)){
             $ReportSignatureHtml .= <<<EOF
                 <table class="style-table">
-                        <tr class='head-title'>
-                            <th class="first-th mian-title" colspan="13">报告签名</th>
-                        </tr>
+                    <tr class='head-title'>
+                        <th class="first-th mian-title" colspan="13">报告签名</th>
+                    </tr>
                     <tr>
                         <th class="first-th">服务人员签字</th>
                         <th class="first-th">客户签字</th>
                     </tr>
                     <tr>
-                        <td class="first-td">
+                        <td class="first-td" style="width:50%;">
 EOF;
             if(!empty($ReportSignatureData['staff'])){
                 foreach ($ReportSignatureData['staff'] as $item){
                     if(!empty($item)){
-                        $img = base64EncodeImage(self::$imgLink.$item);
+                        $img = self::$imgLink.$item;
                         $ReportSignatureHtml .= <<<EOF
-                            {$img}
+                            <img src="{$img}" width="60%">
 EOF;
                     }
                 }
             }
             $ReportSignatureHtml .= <<<EOF
                         </td>
-                        <td class="first-td">
+                        <td class="first-td" style="width:50%;">
 EOF;
             if(!empty($ReportSignatureData['customer_signature'])){
                 foreach ($ReportSignatureData['customer_signature'] as $item){
                     if(!empty($item)){
-                        $img = base64EncodeImage(self::$imgLink.$item);
+                        $img = self::$imgLink.$item;
                         $ReportSignatureHtml .= <<<EOF
-                            {$img}
+                            <img src="{$img}" width="60%">
 EOF;
                     }
                 }
