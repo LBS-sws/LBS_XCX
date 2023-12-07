@@ -26,13 +26,13 @@ return [
             // 数据库类型
             'type'            => Env::get('database.type', 'mysql'),
             // 服务器地址
-            'hostname'        => Env::get('database.hostname', '172.16.0.6'),
+            'hostname'        => Env::get('database.hostname', 'localhost'),
             // 数据库名
             'database'        => Env::get('database.database', 'lbs_xcx'),
             // 用户名
-            'username'        => Env::get('database.username', 'lbs_xcx'),
+            'username'        => Env::get('database.username', 'root'),
             // 密码
-            'password'        => Env::get('database.password', 'hz8G83KdW3H2ntFs'),
+            'password'        => Env::get('database.password', 'root'),
             // 端口
             'hostport'        => Env::get('database.hostport', '3306'),
             // 数据库连接参数

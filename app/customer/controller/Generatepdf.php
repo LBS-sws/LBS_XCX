@@ -77,6 +77,16 @@ class Generatepdf
                 $report_datas['basic']['task_type'] = "跟进服务";
             }
 
+            // 获取配置信息
+            $cust_config = config('cust');
+
+            $reportDate = '';
+            if(in_array($job_datas['CustomerID'],$cust_config)){
+                $reportDateStart = isset($job_datas['StartTime'])?date('H:i',strtotime($job_datas['StartTime'])):'';
+                $reportDateEnd = isset($job_datas['FinishTime'])?date('H:i',strtotime($job_datas['FinishTime'])):'';
+                $reportDate = $reportDateStart.'  -  '.$reportDateEnd;
+            }
+
             //服务项目
             $service_projects = '';
             if($job_type==1 && $service_type==1){//洁净
@@ -284,8 +294,20 @@ class Generatepdf
                 <tr>
                     <td width="15%">客户名称</td>
                     <td width="35%" align="left">{$report_datas['basic']['CustomerName']}</td>
-                    <td width="15%">服务日期</td>
-                    <td width="35%" align="left">{$report_datas['basic']['JobDate']}</td>
+                                        
+EOD;
+            if($reportDate == ''){
+                $html .= <<<EOD
+    <td width="15%">服务日期</td>
+    <td width="35%" align="left">{$report_datas['basic']['JobDate']}</td>
+EOD;
+            }else{
+                $html .= <<<EOD
+<td width="15%">服务时间</td>
+    <td width="35%" align="left">{$report_datas['basic']['JobDate']}<br/>{$reportDate}</td>
+EOD;
+            }
+            $html .= <<<EOD
                 </tr>
                 <tr>
                     <td width="15%">客户地址</td>

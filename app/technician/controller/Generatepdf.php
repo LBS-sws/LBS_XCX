@@ -76,7 +76,15 @@ class Generatepdf
             }else{
                 $report_datas['basic']['task_type'] = "跟进服务";
             }
+            // 获取配置信息
+            $cust_config = config('cust');
 
+            $reportDate = '';
+            if(in_array($job_datas['CustomerID'],$cust_config)){
+                $reportDateStart = isset($job_datas['StartTime'])?date('H:i',strtotime($job_datas['StartTime'])):'';
+                $reportDateEnd = isset($job_datas['FinishTime'])?date('H:i',strtotime($job_datas['FinishTime'])):'';
+                $reportDate = $reportDateStart.'  -  '.$reportDateEnd;
+            }
             //服务项目
             $service_projects = '';
             if($job_type==1 && $service_type==1){//洁净
@@ -215,8 +223,9 @@ class Generatepdf
             //TODO 将类型为250的图片取10组
             $photo_num = 4;
             $customerCompanyModel = new CustomerCompany();
+
             if(isset($report_datas['basic']['CustomerID'])) {
-                $cust_type = $customerCompanyModel->field('CustomerType')->where('CustomerID','=',$report_datas['basic']['CustomerID'])->findOrEmpty();
+                $cust_type = $customerCompanyModel->field('CustomerID,CustomerType')->where('CustomerID','=',$report_datas['basic']['CustomerID'])->findOrEmpty();
                 if(isset($cust_type) && $cust_type->CustomerType == $this->custType){
                     $photo_num = 50;
                 }
@@ -305,8 +314,21 @@ class Generatepdf
                 <tr>
                     <td width="15%">客户名称</td>
                     <td width="35%" align="left">{$report_datas['basic']['CustomerName']}</td>
-                    <td width="15%">服务日期</td>
-                    <td width="35%" align="left">{$report_datas['basic']['JobDate']}</td>
+                    
+EOF;
+            if($reportDate == ''){
+                $html .= <<<EOF
+    <td width="15%">服务日期</td>
+    <td width="35%" align="left">{$report_datas['basic']['JobDate']}</td>
+EOF;
+            }else{
+                $html .= <<<EOF
+<td width="15%">服务时间</td>
+    <td width="35%" align="left">{$report_datas['basic']['JobDate']}<br/>{$reportDate}</td>
+EOF;
+            }
+            $html .= <<<EOF
+                    
                 </tr>
                 <tr>
                     <td width="15%">客户地址</td>
