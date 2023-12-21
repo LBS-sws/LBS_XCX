@@ -239,9 +239,9 @@ class Generatepdf
                 $report_datas['service_sections'] = '';
             }
             $baseUrl_imgs = "../public";
-
-
             $company_img = "../public/pdf/company/".$city.".jpg";
+            $report_datas['briefing']['content'] = nl2br($report_datas['briefing']['content']);
+            $report_datas['briefing']['proposal'] = nl2br($report_datas['briefing']['proposal']);
             //pdf生成
             $html = <<<EOD
             <style>
