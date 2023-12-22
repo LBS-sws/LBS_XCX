@@ -215,6 +215,7 @@ class Getjobs
                 // 证件
                 $key = $v['Staff01'];
                 $itemx = Db::table('lbs_papersstaff')->where('name|code', '=', $key)->find();
+                $code = '';
                 if ($itemx) {
                     $staffCode = $itemx['code'];
                     $itemInfo = Db::table('lbs_papersstaff_info')->where('StaffCode', '=', $staffCode)->find();
