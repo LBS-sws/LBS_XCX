@@ -259,9 +259,8 @@ class Generatepdf
                 $report_datas['service_sections'] = '';
             }
             $baseUrl_imgs = "../public";
-
-            $report_datas['briefing']['content'] = nl2br($report_datas['briefing']['content']);
-            $report_datas['briefing']['proposal'] = nl2br($report_datas['briefing']['proposal']);
+            $report_datas['briefing']['content'] = isset($report_datas['briefing']['content']) ? nl2br($report_datas['briefing']['content']) : '';
+            $report_datas['briefing']['proposal'] = isset($report_datas['briefing']['proposal']) ? nl2br($report_datas['briefing']['proposal']) : '';
 
             $company_img = "../public/pdf/company/".$city.".jpg";
             //pdf生成
@@ -362,8 +361,8 @@ EOF;
 EOF;
             if($report_datas['briefing']!=''){
                 if(($report_datas['service_sections']!='' && in_array('1',$report_datas['service_sections'])) || $report_datas['service_sections']==''){
-                    $bc = nl2br($city=='MO' ? $report_datas['briefing']['content'] : mb_convert_encoding(mb_convert_encoding($report_datas['briefing']['content'], 'GB2312', 'UTF-8'), 'UTF-8', 'GB2312'));
-                    $bp = nl2br($city=='MO' ? $report_datas['briefing']['proposal'] : mb_convert_encoding(mb_convert_encoding($report_datas['briefing']['proposal'], 'GB2312', 'UTF-8'), 'UTF-8', 'GB2312'));
+                    $bc = $city=='MO' ? $report_datas['briefing']['content'] : mb_convert_encoding(mb_convert_encoding($report_datas['briefing']['content'], 'GB2312', 'UTF-8'), 'UTF-8', 'GB2312');
+                    $bp = $city=='MO' ? $report_datas['briefing']['proposal'] : mb_convert_encoding(mb_convert_encoding($report_datas['briefing']['proposal'], 'GB2312', 'UTF-8'), 'UTF-8', 'GB2312');
                     $html .= <<<EOF
                     <tr class="myTitle">
                         <th width="100%" align="left">服务简报</th>
