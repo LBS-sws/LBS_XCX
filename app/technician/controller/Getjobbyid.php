@@ -88,7 +88,9 @@ class Getjobbyid
 
             }elseif ($jobtype==2) {
                 $job_wheres['j.FollowUpID'] = $jobid;
-                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->cache(true,60)->find();
+                // $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->cache(true,60)->find();
+                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->find();
+
                 $service_type = $job_datas['SType'];
             }
 
