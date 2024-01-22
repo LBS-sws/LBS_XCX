@@ -212,7 +212,19 @@ class Getjobs
                 $item = Db::table('lbs_invoice')->where('jobid',$v['JobID'])->find();
                 $datas[$k]['pics'] = $item['pics'];
 
+                // 证件
+                $key = $v['Staff01'];
+                $itemx = Db::table('lbs_papersstaff')->where('name|code', '=', $key)->find();
+                $code = '';
+                if ($itemx) {
+                    $staffCode = $itemx['code'];
+                    $itemInfo = Db::table('lbs_papersstaff_info')->where('StaffCode', '=', $staffCode)->find();
 
+                    if ($itemInfo['imgUrl']) {
+                        $code = isset($itemx['code'])?$itemx['code']:'';
+                    }
+                }
+                $datas[$k]['papers'] = $code;
             }
             //获取时间
             $begin_date = date("Y-m-d",strtotime("now"));
