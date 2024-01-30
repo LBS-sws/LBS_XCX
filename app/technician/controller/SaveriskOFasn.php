@@ -39,6 +39,28 @@ class SaveriskOFasn
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
+
+
+        // 客户类型
+        if($_POST['customer_type']==248){
+            $arr = json_decode($_POST['check_datas'],true);
+            // print_r($arr);
+            foreach ($arr as $key=>$val){
+                if($val['type']==2 && $val['value']==''){
+                    $result['code'] = 0;
+                    $result['msg'] = $val['label'] .'必填';
+                    $result['data'] = null;
+                    return json($result);
+                }
+                if($val['type']==3 && $val['value']==''){
+                    $result['code'] = 0;
+                    $result['msg'] = $val['label'] .'必填';
+                    $result['data'] = null;
+                    return json($result);
+                }
+            }
+        }
+
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             $id = $_POST['id']?$_POST['id']:0;
@@ -60,7 +82,6 @@ class SaveriskOFasn
 
             $data['risk_data'] = $_POST['check_datas'] ? $_POST['check_datas'] : json_encode($_POST['check_datas'],true);
 
-            $result ['xxx'] = Db::table('lbs_service_risks')->where('id', $id)->find();
 
             if ($id>0) {
 

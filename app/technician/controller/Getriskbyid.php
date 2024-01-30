@@ -42,12 +42,16 @@ class Getriskbyid
             $wheres['job_id'] = $job_id;
             $wheres['job_type'] = $job_type;
             $service_data['risk'] = [];
+
+            // 客户类型
+            $CustomerID = Db::table('joborder')->where('JobID',$job_id)->value('CustomerID');
+            $CustomerType = Db::table('customercompany')->where('CustomerID',$CustomerID)->value('CustomerType');
+
             if($id>0){
                 $service_data['risk'] = Db::table('lbs_service_risks')->where('id',$id)->find();
 
 
-                $CustomerID = Db::table('joborder')->where('JobID',$service_data['risk']['job_id'])->value('CustomerID');
-                $CustomerType = Db::table('customercompany')->where('CustomerID',$CustomerID)->value('CustomerType');
+
             }
             $service_data['targets'] =  Db::table('lbs_service_risk_target_lists')->where('city',$city)->field('target as label,target as value')->select();
             $service_data['types'] =  Db::table('lbs_service_risk_type_lists')->where('city',$city)->field('type as label,type as value')->select();
