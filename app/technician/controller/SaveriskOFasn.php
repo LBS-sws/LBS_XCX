@@ -57,8 +57,17 @@ class SaveriskOFasn
             $data['risk_proposal'] = $_POST['risk_proposal'];
             $data['take_steps'] = $_POST['take_steps'];
             $data['risk_area'] = $_POST['risk_area'];
+
+            $data['risk_data'] = $_POST['check_datas'] ? $_POST['check_datas'] : json_encode($_POST['check_datas'],true);
+
+            $result ['xxx'] = Db::table('lbs_service_risks')->where('id', $id)->find();
+
             if ($id>0) {
+
+
                 $update_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
+
+
                 $save_datas = $id;
             }else{
                 $data['creat_time'] = date('Y-m-d H:i:s', time());

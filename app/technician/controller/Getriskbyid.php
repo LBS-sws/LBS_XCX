@@ -35,7 +35,7 @@ class Getriskbyid
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
 
-        $CustomerType = '';
+        $CustomerType = '';  // 客户类型
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             $wheres['id'] = $job_id;
@@ -45,8 +45,8 @@ class Getriskbyid
             if($id>0){
                 $service_data['risk'] = Db::table('lbs_service_risks')->where('id',$id)->find();
 
-                $CustomerID = Db::table('joborder')->where('JobID',$service_data['risk']['job_id'])->value('CustomerID');
 
+                $CustomerID = Db::table('joborder')->where('JobID',$service_data['risk']['job_id'])->value('CustomerID');
                 $CustomerType = Db::table('customercompany')->where('CustomerID',$CustomerID)->value('CustomerType');
             }
             $service_data['targets'] =  Db::table('lbs_service_risk_target_lists')->where('city',$city)->field('target as label,target as value')->select();
@@ -54,6 +54,16 @@ class Getriskbyid
             $service_data['ranks'] =  Db::table('lbs_service_risk_rank_lists')->field('rank as label,rank as value')->select();
             $service_data['labels'] =  Db::table('lbs_service_risk_label_lists')->field('label as label,label as value')->select();
             $service_data['CustomerType'] = $CustomerType;
+
+            // type=1 number| type=2 selct | type=3 text
+            $service_data['check_datas'] = array(
+                array('label'=>'鼠类数量','value'=>0, 'type' =>'1'),
+                array('label'=>'有无鼠迹','value'=>'', 'type' =>'2'),
+                array('label'=>'蟑螂活体数量','value'=>0, 'type' =>'1'),
+                array('label'=>'蟑螂痕迹鼠迹','value'=>'', 'type' =>'2'),
+                array('label'=>'飞虫数量','value'=>0, 'type' =>'1'),
+                array('label'=>'飞虫类目','value'=>'', 'type' =>'3')
+            );
 
             $result['code'] = 1;
             $result['msg'] = '成功';
