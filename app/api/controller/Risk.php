@@ -248,4 +248,29 @@ class Risk extends BaseController
         ];
     }
 
+    public function list(){
+
+
+//        echo "123";exit;
+
+//        $list = $this->serviceRisksModel->alias('m')->where('1=1')->select();
+
+        $list = $this->serviceRisksModel->alias('m')
+            ->leftJoin('joborder j','m.job_id=j.JobID')
+            ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+            ->where('c.CustomerType','=',248)
+            ->field('m.id,m.job_id,m.job_type,m.risk_data,c.NameZH,c.CustomerID')
+            ->paginate(); // 查询客户信息列表
+
+//        print_r($list);exit;
+        if($list)
+            $list = $list->toArray();
+        foreach ($list as $key=>$val){
+            print_r($val['check_data']);
+        }
+
+        echo $this->serviceRisksModel->getLastSql();
+//        return success(0, 'success', $cust); // 返回操作结果和数据
+
+    }
 }
