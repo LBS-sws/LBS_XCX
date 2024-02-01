@@ -64,7 +64,7 @@ class Getriskbyid
                 array('label'=>'鼠类数量','value'=>0, 'type' =>'1'),
                 array('label'=>'有无鼠迹','value'=>'', 'type' =>'2'),
                 array('label'=>'蟑螂活体数量','value'=>0, 'type' =>'1'),
-                array('label'=>'蟑螂痕迹鼠迹','value'=>'', 'type' =>'2'),
+                array('label'=>'蟑螂痕迹','value'=>'', 'type' =>'2'),
                 array('label'=>'飞虫数量','value'=>0, 'type' =>'1'),
                 array('label'=>'飞虫类目','value'=>'', 'type' =>'3')
             );
