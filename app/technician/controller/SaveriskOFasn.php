@@ -48,13 +48,13 @@ class SaveriskOFasn
             foreach ($arr as $key=>$val){
                 if($val['type']==2 && $val['value']==''){
                     $result['code'] = 0;
-                    $result['msg'] = $val['label'] .'必填';
+                    $result['msg'] = $arr[$key]['label'] .'必填';
                     $result['data'] = null;
                     return json($result);
                 }
                 if($val['type']==3 && $val['value']==''){
                     $result['code'] = 0;
-                    $result['msg'] = $val['label'] .'必填';
+                    $result['msg'] = $arr[$key]['label'] .'必填';
                     $result['data'] = null;
                     return json($result);
                 }
