@@ -247,30 +247,35 @@ class Risk extends BaseController
             ],
         ];
     }
-
     public function list(){
 
-
-//        echo "123";exit;
-
-//        $list = $this->serviceRisksModel->alias('m')->where('1=1')->select();
+        $search = Request::param('q', ''); // 获取搜索关键字
+        // echo $search;exit;
+        $where = array();
+        if ($search != '') {
+            $where[] = ['c.NameZH', 'like', '%' . $search . '%']; // 添加搜索关键字查询条件
+        }
 
         $list = $this->serviceRisksModel->alias('m')
             ->leftJoin('joborder j','m.job_id=j.JobID')
             ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+            ->leftJoin('enums e','e.EnumID=j.City')
             ->where('c.CustomerType','=',248)
-            ->field('m.id,m.job_id,m.job_type,m.risk_data,c.NameZH,c.CustomerID')
-            ->paginate(); // 查询客户信息列表
+            ->where($where)
+            ->field('m.id,m.job_id,m.job_type,m.risk_data,c.NameZH,c.CustomerID,j.JobDate,e.Text')
+            //->paginate(); // 查询客户信息列表
+            ->paginate()
+            ->each(function($item, $key){
+                if($item['risk_data']){
+                    $item['risk_data']= json_decode($item['risk_data'],true);
+                }
 
-//        print_r($list);exit;
-        if($list)
-            $list = $list->toArray();
-        foreach ($list as $key=>$val){
-            print_r($val['check_data']);
-        }
+                return $item;
+            });
 
-        echo $this->serviceRisksModel->getLastSql();
-//        return success(0, 'success', $cust); // 返回操作结果和数据
+        $sql = $this->serviceRisksModel->getLastSql();
+        return success(0, 'success', $list,$sql); // 返回操作结果和数据
 
     }
+
 }
