@@ -338,6 +338,21 @@ class Risk extends BaseController
         $sheet->setCellValue('J1', '飞虫类目');
 
         foreach ($list as $k=>$r){
+            if(isset($r['s_2']) && $r['s_2']=='1'){
+                $list[$k]['s_2'] = '有';
+            }
+            if(isset($r['s_2']) && $r['s_2']=='0'){
+                $list[$k]['s_2'] = '无';
+            }
+
+            if(isset($r['z_2']) && $r['z_2']=='1'){
+                $list[$k]['z_2'] = '有';
+            }
+            if(isset($r['z_2']) && $r['z_2']=='0'){
+                $list[$k]['z_2'] = '有';
+            }
+        }
+        foreach ($list as $k=>$r){
             $sheet->setCellValue('A' . ($k+2), $r['Text']);
             $sheet->setCellValue('B' . ($k+2), $r['NameZH']);
             $sheet->setCellValue('C' . ($k+2), $r['CustomerID']);
@@ -349,6 +364,8 @@ class Risk extends BaseController
             $sheet->setCellValue('I' . ($k+2), $r['f_1']);
             $sheet->setCellValue('J' . ($k+2), $r['f_2']);
         }
+
+
 
         $fileName = '';
         if (count($list) > 0) {
