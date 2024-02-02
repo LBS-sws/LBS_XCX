@@ -15,6 +15,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use think\App;
 use think\facade\Request;
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 class Risk extends BaseController
 {
 
@@ -277,5 +279,103 @@ class Risk extends BaseController
         return success(0, 'success', $list,$sql); // 返回操作结果和数据
 
     }
+    // 导出
+    public function export(){
 
+        $list = $this->serviceRisksModel->alias('m')
+            ->leftJoin('joborder j','m.job_id=j.JobID')
+            ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+            ->leftJoin('enums e','e.EnumID=j.City')
+            ->where('c.CustomerType','=',248)
+            ->field('m.id,m.job_id,m.job_type,m.risk_data,c.NameZH,c.CustomerID,j.JobDate,e.Text')
+            ->select()->toArray();
+
+        //echo $sql = $this->serviceRisksModel->getLastSql();
+
+        foreach ($list as $key=>$val){
+            $check_data = json_decode($val['risk_data'],true);
+//            print_r($check_data);
+//            $list[$key]['xxx'] = $check_data;
+
+            $list[$key]['s_1'] = isset($check_data) ? $check_data[0]['value'] : '';
+            $list[$key]['s_2'] = isset($check_data) ? $check_data[1]['value'] : '';
+            $list[$key]['z_1'] = isset($check_data) ? $check_data[2]['value'] : '';
+            $list[$key]['z_2'] = isset($check_data) ? $check_data[3]['value'] : '';
+            $list[$key]['f_1'] = isset($check_data) ? $check_data[4]['value'] : '';
+            $list[$key]['f_2'] = isset($check_data) ? $check_data[5]['value'] : '';
+
+        }
+//        echo "<pre>";
+//        print_r($list);exit;
+
+        list($file, $file_url) = $this->dataToExcel_ProductReport($list);
+
+        if (!file_exists($file)){
+            exception('导出失败', -1);
+        }
+
+        //返回文件地址
+        $domain = config('app.domain_url');
+        return $domain.$file_url;
+    }
+    public function dataToExcel_ProductReport($list){
+
+        $path = config('filesystem.disks')['export_RiskReport']['root'];
+
+        $objPHPExcel = new Spreadsheet();
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+
+        $sheet->setCellValue('A1', '地区');
+        $sheet->setCellValue('B1', '客户名称');
+        $sheet->setCellValue('C1', '客户编号');
+        $sheet->setCellValue('D1', '服务日期');
+        $sheet->setCellValue('E1', '鼠类发现数量');
+        $sheet->setCellValue('F1', '鼠迹');
+        $sheet->setCellValue('G1', '蟑螂活体数量');
+        $sheet->setCellValue('H1', '蟑螂痕迹');
+        $sheet->setCellValue('I1', '飞虫数量');
+        $sheet->setCellValue('J1', '飞虫类目');
+
+        foreach ($list as $k=>$r){
+            $sheet->setCellValue('A' . ($k+2), $r['Text']);
+            $sheet->setCellValue('B' . ($k+2), $r['NameZH']);
+            $sheet->setCellValue('C' . ($k+2), $r['CustomerID']);
+            $sheet->setCellValue('D' . ($k+2), $r['JobDate']);
+            $sheet->setCellValue('E' . ($k+2), $r['s_1']);
+            $sheet->setCellValue('F' . ($k+2), $r['s_2']);
+            $sheet->setCellValue('G' . ($k+2), $r['z_1']);
+            $sheet->setCellValue('H' . ($k+2), $r['z_2']);
+            $sheet->setCellValue('I' . ($k+2), $r['f_1']);
+            $sheet->setCellValue('J' . ($k+2), $r['f_2']);
+        }
+
+        $fileName = '';
+        if (count($list) > 0) {
+            if (!is_dir($path)) {
+                mkdir($path, 0777, true);
+            }
+
+            /* 删除当天之前的文件 */
+            $files = glob($path . 'Material_*.*');
+            $todayDate = date("Y-m-d");
+            foreach ($files as $file) {
+                $fileDate = date("Y-m-d", filemtime($file));
+                if ($fileDate < $todayDate) {
+                    unlink($file);
+                }
+            }
+
+            $fileName = 'Risk_' . $todayDate . '.xlsx';
+            if (file_exists($path . $fileName)) {
+                unlink($path . $fileName);
+            }
+
+            $objWriter = IOFactory::createWriter($objPHPExcel, 'Xls');
+            $objWriter->save($path .$fileName);
+        }
+
+        return [$fileName ?$path.$fileName:'', config('filesystem.disks')['export_RiskReport']['url'].'/'.$fileName];
+
+    }
 }

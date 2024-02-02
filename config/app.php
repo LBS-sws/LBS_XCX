@@ -55,4 +55,5 @@ return [
     'smarttech_mousetrap_client_api' =>[
         'client'=>'https://rodent.lbs-smarttech.com/api/estate-mobile'
     ],
+    'domain_url'       => env('app.domain_url','https://operation.lbsapps.cn/'),
 ];
