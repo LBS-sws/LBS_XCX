@@ -20,6 +20,8 @@ class CheckLockStatus
                 ->whereIn('id',$id)
                 ->column('equipment_type_id','equipment_type_id');
             if($equipments){
+                //检查是否存在智能捕鼠设备
+                if(in_array(245,$equipments)) return error(-1,'智能老鼠感应器不需要编辑！');
                 $equipment_type_ids = array_unique($equipments);
                 if(count($equipment_type_ids) > 1) return error(-1,'请选择同一种设备！');
             }

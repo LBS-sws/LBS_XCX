@@ -34,15 +34,34 @@ class GetequipmenthzsOFasn
 
             $wheres['job_id'] = $_POST['job_id'];
             $wheres['job_type'] = $_POST['job_type'];
-            $equipment_type_ids = Db::table('lbs_service_equipments')->where($wheres)->group('equipment_type_id')->field('equipment_type_id')->select();
+            $equipment_type_ids = Db::table('lbs_service_equipments')
+                ->where('equipment_type_id','<>',245)
+                ->where($wheres)->group('equipment_type_id')->field('equipment_type_id')->select();
+
+//            print_r($equipment_type_ids);exit;
+
             $equipmenthz_datas = [];
             for ($i=0; $i < count($equipment_type_ids); $i++) {
-                $equipmenthz_allcount = Db::table('lbs_service_equipments')->where($wheres)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->count();
-                $equipmenthz_count = Db::table('lbs_service_equipments')->where($wheres)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->count();
+                $equipmenthz_allcount = Db::table('lbs_service_equipments')
+                    ->where($wheres)
+                    ->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])
+                    ->count();
+                $equipmenthz_count = Db::table('lbs_service_equipments')
+                    ->where($wheres)
+                    ->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])
+                    ->whereNotNull('equipment_area')
+                    ->whereNotNull('check_datas')
+                    ->count();
                 $equipment_type = Db::table('lbs_service_equipment_type')->where('id',$equipment_type_ids[$i]['equipment_type_id'])->field('name')->find();
                 $equipmenthz_datas[$i]['title'] = $equipment_type['name']."(".$equipmenthz_count."/".$equipmenthz_allcount.")";
 
-                $check_datas = Db::table('lbs_service_equipments')->where($wheres)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->order('id', 'asc')->select();
+                $check_datas = Db::table('lbs_service_equipments')
+                    ->where($wheres)
+                    ->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])
+                    ->whereNotNull('equipment_area')
+                    ->whereNotNull('check_datas')
+                    ->order('id', 'asc')
+                    ->select();
                 if ($check_datas) {
                     $check_datas = $check_datas->toArray();
                     // 获取number字段的值

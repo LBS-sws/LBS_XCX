@@ -9,7 +9,7 @@ use think\facade\Session;
 use think\cache\driver\Redis;
 
 
-class Jobsignout
+class Jobsignout_bak_kp
 {
     public function index()
     {
@@ -38,6 +38,9 @@ class Jobsignout
         $user_token = Db::name('token')->where('StaffID',$staffid)->find();
         // 发票信息
         $invoice_item = Db::table('lbs_invoice')->where('jobid',$jobid)->find();
+
+        event('CreatePDF',$_POST);
+        exit;
 
         if(!$invoice_item && $pics){
 
@@ -81,6 +84,10 @@ class Jobsignout
                 $xinu = json_decode($xinu_data,true);
 
 
+
+
+
+
                 $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
                 $job_start = $redis->get($job_datas_key);
                 if($job_start){
@@ -115,15 +122,11 @@ class Jobsignout
                 $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
                 if($xinu['code']==1){
-
-                    $job_datas = Db::table('followuporder')
-                        ->where('FollowUpID', $jobid)
-                        ->update(['FinishTime' => $starttime,'Status'=>3,'JobReport'=>$jobreport]);
+                    $job_datas = Db::table('followuporder')->where('FollowUpID', $jobid)->update(['FinishTime' => $starttime,'Status'=>3,'JobReport'=>$jobreport]);
 // Percy 發電郵
                     $xdata = ['job_id'=>$jobid, 'job_type'=>$jobtype];
                     $x_datas = Db::table('queue_db.mail_report_queue')->insert($xdata);
 // Percy - End
-
                 }else{
                     //返回数据
                     $result['code'] = 0;

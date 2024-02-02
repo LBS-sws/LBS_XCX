@@ -42,5 +42,17 @@ return [
         'edit_token'=>'/web/ajax/editJobToken.php', //编辑新U token
         'edit_job_status' =>'/web/ajax/editJobStatus.php', // 编辑工作单状态
         'edit_remarks' =>'/web/ajax/editTechRemarks.php', // 编辑技术员备注
-    ]
+    ],
+    //智能设备接口
+    'smarttech_mousetrap_device_api' =>[
+        'SigfoxDevice'=>'https://rodent.lbs-smarttech.com/api/sigfox-device-list-mobile',
+        'NbiotDevice' =>'https://rodent.lbs-smarttech.com/api/nbiot-device-list-mobile',
+    ],
+    'smarttech_mousetrap_trigger_api' =>[
+        'Sigfox_trigger'=>'https://rodent.lbs-smarttech.com/api/sigfox-msg-mobile',
+        'Nbiot_trigger' =>'https://rodent.lbs-smarttech.com/api/nbiot-msg-mobile',
+    ],
+    'smarttech_mousetrap_client_api' =>[
+        'client'=>'https://rodent.lbs-smarttech.com/api/estate-mobile'
+    ],
 ];

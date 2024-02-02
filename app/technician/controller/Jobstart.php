@@ -64,7 +64,13 @@ class Jobstart
             if ($job_datas) {
 //                $redis->set($job_datas_key, $job_datas,600);
                 //查询服务次数
-                $job_datas['service_number'] = Db::table('joborder')->where('ServiceType',$job_datas['service_type'])->where('CustomerID',$job_datas['CustomerID'])->where('Status',3)->where('JobDate','<=',$job_datas['JobDate'])->cache(true,60)->count();
+                $job_datas['service_number'] = Db::table('joborder')
+                    ->where('ServiceType',$job_datas['service_type'])
+                    ->where('CustomerID',$job_datas['CustomerID'])
+                    ->where('Status',3)
+                    ->where('JobDate','<=',$job_datas['JobDate'])
+                    ->cache(true,60)
+                    ->count();
                 //查询服务板块
                 $service_sections = Db::table('lbs_service_reportsections')->where('city',$city)->where('service_type',$job_datas['service_type'])->cache(true,60)->find();
                 //查询服务报告填写情况

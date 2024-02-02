@@ -88,7 +88,9 @@ class Getjobbyid
 
             }elseif ($jobtype==2) {
                 $job_wheres['j.FollowUpID'] = $jobid;
-                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->cache(true,60)->find();
+                // $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->cache(true,60)->find();
+                $job_datas = Db::table('followuporder')->alias('j')->join('service s','j.SType=s.ServiceType')->join('staff u','j.Staff01=u.StaffID')->join('customercompany c','c.CustomerID=j.CustomerID')->where($job_wheres)->field('j.*,s.ServiceName,u.StaffName,j.SType as ServiceType,c.CustomerType')->find();
+
                 $service_type = $job_datas['SType'];
             }
 
@@ -259,28 +261,28 @@ class Getjobbyid
      */
     public function CheckData()
     {
-        $param = request()->param();
-        $JobDate = '0000-00-00';  // 默认值
-        switch ($param['jobtype']){
-            case 1;
-                $JobDate = Db::table('joborder')->where('JobID',$param['jobid'])->value('JobDate');
-                break;
-//            case 2;
-//                $JobDate = Db::table('followuporder')->where('FollowUpID',$param['jobid'])->value('JobDate');
+//        $param = request()->param();
+//        $JobDate = '0000-00-00';  // 默认值
+//        switch ($param['jobtype']){
+//            case 1;
+//                $JobDate = Db::table('joborder')->where('JobID',$param['jobid'])->value('JobDate');
 //                break;
-            default:
-        }
-        $JobDate = strtotime($JobDate); //工作单日期
-        $currentDate = strtotime(date('Y-m-d')); // 当前日期
-        if ($currentDate < $JobDate) {
-            $result['code'] = -1;
-            $result['msg'] = '未到工作单日期，不能提前进行！';
-            $result['data'] = null;
-        } else {
+////            case 2;
+////                $JobDate = Db::table('followuporder')->where('FollowUpID',$param['jobid'])->value('JobDate');
+////                break;
+//            default:
+//        }
+//        $JobDate = strtotime($JobDate); //工作单日期
+//        $currentDate = strtotime(date('Y-m-d')); // 当前日期
+//        if ($currentDate < $JobDate) {
+//            $result['code'] = -1;
+//            $result['msg'] = '未到工作单日期，不能提前进行！';
+//            $result['data'] = null;
+//        } else {
             $result['code'] = 0;
             $result['msg'] = '';
             $result['data'] = null;
-        }
+//        }
         return json($result);
     }
 }

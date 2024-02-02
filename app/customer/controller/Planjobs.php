@@ -22,7 +22,7 @@ class Planjobs
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['customerid'])){
             return json($result);
         }
-        //print_r($_POST);exit;
+        $sql = '';
         $datas_followup = [];
         //获取信息
         $staffid = $_POST['staffid'];
@@ -62,9 +62,13 @@ class Planjobs
                         // ->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
                         ->where([['j.CustomerID','=',$val['CustomerID']],['j.JobDate','=',$job_data]])
                         ->where([['j.Status','<>',9]])
-                        ->field('j.JobID,j.ContractID,j.ContractNumber,j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,j.FirstJob,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
-                    //   echo Db::table('joborder')->getLastSql();exit;
-                    // print_r($list);exit;
+                        ->field('j.JobID,j.ContractID,j.ContractNumber,j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,j.FirstJob,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')
+
+                        ->select()
+                        ->toArray();
+
+                    // $sql = Db::table('joborder')->getLastSql();
+
                     if($list){
                         $datas[] = $list;
                     }
@@ -78,18 +82,15 @@ class Planjobs
                         ->where([['j.CustomerID','=',$val['CustomerID']],['j.JobDate','=',$job_data]])
                         ->where([['j.Status','<>',9]])
                         ->where([['c.Mobile','=',$user_item['Mobile']]])
-                        ->field('j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
-                    //echo Db::table('followuporder')->getLastSql();exit;
+                        ->field('j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')
+                        ->select()
+                        ->toArray();
+                    // $sql = Db::table('followuporder')->getLastSql();
 
-
-                    // print_r($list1);
                     if($list_follow){
                         $datas_followup[] = $list_follow;
                     }
                 }
-                // print_r($datas);
-                // print_r($datas_followup);
-                // exit;
 
                 // 常规服务
                 $twoDimensionalArray = array();
@@ -109,8 +110,6 @@ class Planjobs
                 }
                 $datas_followup = $twoDimensionalArrayx;
 
-                // print_r($datas);
-                // print_r($datas_followup);
                 foreach ($datas as $key=>$val){
                     if($val['FirstJob']==1){
                         $data[$key]['task_type'] = "首次服务";
@@ -124,7 +123,7 @@ class Planjobs
 
 
             }else{
-
+                $sql = '2';
                 // 服务单
                 $datas = Db::table('joborder')->alias('j')
                     ->join('service s','j.ServiceType=s.ServiceType')
@@ -134,8 +133,11 @@ class Planjobs
                     ->leftJoin('customercontact c','j.CustomerID = c.CustomerID')
                     ->where([['j.CustomerID','=',$customerid],['j.JobDate','=',$job_data]])
                     ->where([['j.Status','<>',9]])
-                    ->field('j.JobID,j.ContractID,j.ContractNumber,j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,j.FirstJob,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
-
+                    ->field('j.JobID,j.ContractID,j.ContractNumber,j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,j.FirstJob,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')
+                    ->group('j.JobID')
+                    ->select()
+                    ->toArray();
+                // $sql = Db::table('joborder')->getLastSQL();
                 // 跟进单
                 $datas_followup = Db::table('followuporder')->alias('j')
                     ->join('service s','j.SType=s.ServiceType')
@@ -147,21 +149,13 @@ class Planjobs
                     ->where([['j.Status','<>',9]])
                     ->field('j.JobDate,j.JobTime,j.JobTime2,j.Staff02,j.Staff03,j.CustomerID,j.CustomerName,j.Status,s.ServiceName,u.StaffName as Staff01,uo.StaffName as Staff02,ut.StaffName as Staff03')->select()->toArray();
 
-                //                echo Db::table('followuporder')->getLastSql();
-//exit;
-                // foreach ($datas as $key=>$val){
-                //     if($val['FirstJob']==1){
-                //         $data[$key]['task_type'] = "首次服务";
-                //     }else{
-                //         $data[$key]['task_type'] = "常规服务";
-                //     }
-                // }
             }
-//            print_r($datas_followup);
+
             //获取时间
             $begin_date = date("Y-m-d",strtotime("now"));
             $end_date = date("Y-m-d",strtotime("-4 month"));
             $result['data']['daterange'] = [$end_date,$begin_date];
+            $result['sql'] = $sql;
             if ($datas || $datas_followup) {
                 //返回数据
                 $result['code'] = 1;

@@ -128,7 +128,7 @@ date_format( j.JobDate, "%Y-%m-%d" )) as startDate,j.JobDate as FinishDate,j.Fol
 
             //equipment
             $equipmenthz_datas = [];
-            $equipment_type_ids = Db::table('lbs_service_equipments')->where($w)->group('equipment_type_id')->field('equipment_type_id')->select();
+            $equipment_type_ids = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id','<>',245)->group('equipment_type_id')->field('equipment_type_id')->select();
             for ($i=0; $i < count($equipment_type_ids); $i++) {
                 $equipmenthz_allcount = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->count();
                 $equipmenthz_count = Db::table('lbs_service_equipments')->where($w)->where('equipment_type_id',$equipment_type_ids[$i]['equipment_type_id'])->whereNotNull('equipment_area')->whereNotNull('check_datas')->count();

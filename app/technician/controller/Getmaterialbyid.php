@@ -46,12 +46,29 @@ class Getmaterialbyid
             //新增所有设备
             $allow_mas = Db::table('lbs_service_servicematerials')->where('city',$city)->where('service_type',$service_type)->find();
             if($allow_mas){
-                $service_data['material_lists'] =  Db::table('lbs_service_material_lists')->alias('m')->join('lbs_service_material_classifys c','c.id=m.classify_id')->whereIn('m.id',$allow_mas['material_ids'])->where('c.city',$city)->where('m.status',1)->order('m.sort','asc')->field('m.name as label,m.name as value,m.registration_no,m.active_ingredient,m.ratio,m.unit')->select();
+                $service_data['material_lists'] =  Db::table('lbs_service_material_lists')->alias('m')
+                    ->join('lbs_service_material_classifys c','c.id=m.classify_id')
+                    ->whereIn('m.id',$allow_mas['material_ids'])
+                    ->where('c.city',$city)
+                    ->where('m.status',1)
+                    ->order('m.sort','asc')
+                    ->field('m.name as label,m.name as value,m.registration_no,m.active_ingredient,m.ratio,m.unit')
+                    ->select();
             }else{
-                $service_data['material_lists'] =  Db::table('lbs_service_material_lists')->alias('m')->join('lbs_service_material_classifys c','c.id=m.classify_id')->where('c.city',$city)->where('m.status',1)->order('m.sort','asc')->field('m.name as label,m.name as value,m.registration_no,m.active_ingredient,m.ratio,m.unit')->select();
+                $service_data['material_lists'] =  Db::table('lbs_service_material_lists')->alias('m')
+                    ->join('lbs_service_material_classifys c','c.id=m.classify_id')
+                    ->where('c.city',$city)
+                    ->where('m.status',1)->order('m.sort','asc')
+                    ->field('m.name as label,m.name as value,m.registration_no,m.active_ingredient,m.ratio,m.unit')
+                    ->select();
             }
-            
-            $material_targets=  Db::table('lbs_service_material_target_lists')->where('city',$city)->where('service_type',$service_type)->field('targets')->find();
+
+
+                $material_targets=  Db::table('lbs_service_material_target_lists')
+                ->where('city',$city)
+                ->where('service_type',$service_type)
+                ->field('targets')
+                ->find();
             $material_targets = $material_targets?explode(',',$material_targets['targets']):null;
             $service_data['material_targets'] = [];
             if($material_targets){
@@ -60,8 +77,18 @@ class Getmaterialbyid
                     $service_data['material_targets'][$i]['value'] =$material_targets[$i] ;
                 }
             }
-            $service_data['material_usemodes'] =  Db::table('lbs_service_material_use_modes')->where('city',$city)->field('use_mode as label,use_mode as value')->select();
-            $service_data['material_useareas'] =  Db::table('lbs_service_use_areas')->where('city',$city)->where('area_type','material')->field('use_area as label,use_area as value')->select();
+
+
+            $service_data['material_usemodes'] =  Db::table('lbs_service_material_use_modes')
+                ->where('city',$city)
+                ->field('use_mode as label,use_mode as value')
+                ->select();
+
+            $service_data['material_useareas'] =  Db::table('lbs_service_use_areas')
+                ->where('city',$city)
+                ->where('area_type','material')
+                ->field('use_area as label,use_area as value')
+                ->select();
             //返回数据
             $result['code'] = 1;
             $result['msg'] = '成功';

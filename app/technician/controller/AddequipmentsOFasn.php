@@ -49,7 +49,7 @@ class AddequipmentsOFasn
                         $data_e['job_id'] = $_POST['job_id'];
                         $data_e['job_type'] = $_POST['job_type'];
                         $data_e['equipment_type_id'] = $type_ids[$i];
-                        $e_num = Db::table('lbs_service_equipments')->where($data_e)->field("max(number) number")->find();
+                        $e_num = Db::table('lbs_service_equipments')->where($data_e)->field("max(cast(number as unsigned) ) number")->find();
                         $add_num = $e_num['number']+1;
                         $data['equipment_type_id'] = $e_type['id'];
                         $data['equipment_name'] = $e_type['name'];
