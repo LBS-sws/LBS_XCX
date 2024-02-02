@@ -260,17 +260,27 @@ class Crontab extends BaseController
             exit('错误！');
         }
         // $date = '2023-03-24';//date('Y-m-d')    ;
-        $cc_where = [
-            'j.JobDate' => $date,
-            'j.Status' => 3,
-            'j.ServiceType' => 2,
-        ];
+        if($customer_id){
+            $cc_where = [
+                ['j.JobDate','>=',date('Y-m'.'-01',strtotime($date))],
+                ['j.JobDate','<=',date('Y-m'.'-31',strtotime($date))],
+                ['j.Status','=',3],
+                ['j.ServiceType','=',2],
+            ];
+        }else{
+            $cc_where = [
+                'j.JobDate' => $date,
+                'j.Status' => 3,
+                'j.ServiceType' => 2,
+            ];
+        }
         if (isset($customer_id) && $customer_id != '') {
             $cc_where['j.CustomerID'] = $customer_id;
         }
         //查询今天有哪些工厂客户
         $cust = $this->customerCompanyModel->field('j.CustomerID,j.CustomerName,j.City,GROUP_CONCAT(j.JobID) as job_ids,j.JobDate')->alias('cc')->join('joborder j','j.CustomerID = cc.CustomerID')->whereIn('cc.CustomerType',$this->custType)->where($cc_where)->group('cc.CustomerID')->select()->toArray();
         //已取得所有客户下的 订单信息
+
         $get_today_statistics = [];
         foreach ($cust as $k => $v){
             $get_today_statistics[$k] = $this->getStatistics($v);
