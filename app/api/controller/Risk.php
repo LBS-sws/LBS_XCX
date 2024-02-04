@@ -12,6 +12,8 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+use app\common\model\EnumsModel;
 use think\App;
 use think\facade\Request;
 
@@ -31,8 +33,7 @@ class Risk extends BaseController
         parent::__construct($app);
     }
 
-    public function getJobids(string $customer_id, array $daterange): array
-    {
+    public function getJobids(string $customer_id, array $daterange): array{
         return $this->jobOrderModel->field('GROUP_CONCAT(JobID) as job_ids')->whereTime('JobDate', 'between', [$daterange[0], $daterange[1]])->whereIn('CustomerID', $customer_id)->where('Status',3)->findOrEmpty()->toArray();
     }
 
@@ -40,13 +41,11 @@ class Risk extends BaseController
     /**
      * 查询getCustSignInfo详情
      * */
-    public function getRiskInfoByIds($job_ids)
-    {
+    public function getRiskInfoByIds($job_ids){
         return $this->serviceRisksModel::alias('s')->field('j.CustomerID,j.CustomerName,s.*')->join('joborder j','j.JobID = s.job_id')->whereIn('job_id', $job_ids['job_ids'])->select()->toArray();
     }
 
-    private function createCustSign($worksheet, $data = [], $col = '')
-    {
+    private function createCustSign($worksheet, $data = [], $col = ''){
 //        dd(app()->getRootPath().'public'.$data['customer_signature_url']);
         $logo = new Drawing();
         $logo->setName('cust_sign');
@@ -61,8 +60,7 @@ class Risk extends BaseController
     }
 
 
-    public function index(Request $request)
-    {
+    public function index(Request $request){
         try {
             $customer_id = $_GET['customerid']??'';
             $daterangeStr = $_GET['daterange']??[];
@@ -100,8 +98,7 @@ class Risk extends BaseController
 
     }
 
-    public function writeDataToExcel($data, $orginFile)
-    {
+    public function writeDataToExcel($data, $orginFile){
         // Create a new Excel spreadsheet object
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -236,8 +233,7 @@ class Risk extends BaseController
     }
 
 
-    public function getTitleStyle()
-    {
+    public function getTitleStyle(){
         return [
             'font' => [
                 'bold' => true,
@@ -281,21 +277,50 @@ class Risk extends BaseController
     }
     // 导出
     public function export(){
+        $name = Request::param('name', '');
+        $date = Request::param('date', '');
 
+
+
+        if(!$date){
+            $data['code'] = 400;
+            $data['msg'] = '请选择日期';
+            echo json_encode($data,true);
+            exit;
+        }
+        if($name){
+            $condition[] =  ['Text', 'like', "%$name%"];
+            $city_ids_arr = (new EnumsModel())->where('EnumType','=',1)->where($condition)->field('EnumID')->select()->toArray();
+            // echo  (new EnumsModel())->getLastSQL();
+
+            $ids = array_column($city_ids_arr, 'EnumID');
+            $where[] = ['j.City','in',$ids];
+
+        }
+        if($date){
+
+            $start_date = $date[0];
+            $end_date = $date[1];
+
+            $where[] = ['j.JobDate','between',[$start_date,$end_date]];
+        }
+
+        // risk_types 风险类别| risk_description 风险描述 | risk_proposal 整改建议 | take_steps 采取措施 undefined if(sex=1,"男","女")
         $list = $this->serviceRisksModel->alias('m')
             ->leftJoin('joborder j','m.job_id=j.JobID')
             ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
             ->leftJoin('enums e','e.EnumID=j.City')
             ->where('c.CustomerType','=',248)
-            ->field('m.id,m.job_id,m.job_type,m.risk_data,c.NameZH,c.CustomerID,j.JobDate,e.Text')
+            ->where($where)
+            // ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
+            ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
             ->select()->toArray();
 
-        //echo $sql = $this->serviceRisksModel->getLastSql();
+        // echo $sql = $this->serviceRisksModel->getLastSql();
+        // exit;
 
         foreach ($list as $key=>$val){
             $check_data = json_decode($val['risk_data'],true);
-//            print_r($check_data);
-//            $list[$key]['xxx'] = $check_data;
 
             $list[$key]['s_1'] = isset($check_data) ? $check_data[0]['value'] : '';
             $list[$key]['s_2'] = isset($check_data) ? $check_data[1]['value'] : '';
@@ -305,8 +330,8 @@ class Risk extends BaseController
             $list[$key]['f_2'] = isset($check_data) ? $check_data[5]['value'] : '';
 
         }
-//        echo "<pre>";
-//        print_r($list);exit;
+        // echo "<pre>";
+        // print_r($list);exit;
 
         list($file, $file_url) = $this->dataToExcel_ProductReport($list);
 
@@ -316,7 +341,11 @@ class Risk extends BaseController
 
         //返回文件地址
         $domain = config('app.domain_url');
-        return $domain.$file_url;
+        //return $domain.$file_url;
+
+        $data['file_url'] = $domain.$file_url;
+        return success(200, 'success', $data);
+        // header("Location:". $domain.$file_url);
     }
     public function dataToExcel_ProductReport($list){
 
@@ -330,12 +359,22 @@ class Risk extends BaseController
         $sheet->setCellValue('B1', '客户名称');
         $sheet->setCellValue('C1', '客户编号');
         $sheet->setCellValue('D1', '服务日期');
-        $sheet->setCellValue('E1', '鼠类发现数量');
-        $sheet->setCellValue('F1', '鼠迹');
-        $sheet->setCellValue('G1', '蟑螂活体数量');
-        $sheet->setCellValue('H1', '蟑螂痕迹');
-        $sheet->setCellValue('I1', '飞虫数量');
-        $sheet->setCellValue('J1', '飞虫类目');
+
+        $sheet->setCellValue('E1', '服务开始时间');
+        $sheet->setCellValue('F1', '服务结束时间');
+
+        $sheet->setCellValue('G1', '鼠类发现数量');
+        $sheet->setCellValue('H1', '鼠迹');
+        $sheet->setCellValue('I1', '蟑螂活体数量');
+        $sheet->setCellValue('J1', '蟑螂痕迹');
+        $sheet->setCellValue('K1', '飞虫数量');
+        $sheet->setCellValue('L1', '飞虫类目');
+
+        $sheet->setCellValue('M1', '风险类别');
+        $sheet->setCellValue('N1', '风险描述');
+        $sheet->setCellValue('O1', '整改建议');
+        $sheet->setCellValue('P1', '采取措施');
+
 
         foreach ($list as $k=>$r){
             if(isset($r['s_2']) && $r['s_2']=='1'){
@@ -351,18 +390,37 @@ class Risk extends BaseController
             if(isset($r['z_2']) && $r['z_2']=='0'){
                 $list[$k]['z_2'] = '有';
             }
+
+            if($r['risk_description']=='undefined'){
+                $list[$k]['risk_description'] = '';
+            }
+            if($r['risk_proposal']=='undefined'){
+                $list[$k]['risk_proposal'] = '';
+            }
+            if($r['take_steps']=='undefined'){
+                $list[$k]['take_steps'] = '';
+            }
         }
         foreach ($list as $k=>$r){
             $sheet->setCellValue('A' . ($k+2), $r['Text']);
             $sheet->setCellValue('B' . ($k+2), $r['NameZH']);
             $sheet->setCellValue('C' . ($k+2), $r['CustomerID']);
             $sheet->setCellValue('D' . ($k+2), $r['JobDate']);
-            $sheet->setCellValue('E' . ($k+2), $r['s_1']);
-            $sheet->setCellValue('F' . ($k+2), $r['s_2']);
-            $sheet->setCellValue('G' . ($k+2), $r['z_1']);
-            $sheet->setCellValue('H' . ($k+2), $r['z_2']);
-            $sheet->setCellValue('I' . ($k+2), $r['f_1']);
-            $sheet->setCellValue('J' . ($k+2), $r['f_2']);
+
+            $sheet->setCellValue('E' . ($k+2), $r['StartTime']);
+            $sheet->setCellValue('F' . ($k+2), $r['FinishTime']);
+
+            $sheet->setCellValue('G' . ($k+2), $r['s_1']);
+            $sheet->setCellValue('H' . ($k+2), $r['s_2']);
+            $sheet->setCellValue('I' . ($k+2), $r['z_1']);
+            $sheet->setCellValue('J' . ($k+2), $r['z_2']);
+            $sheet->setCellValue('K' . ($k+2), $r['f_1']);
+            $sheet->setCellValue('L' . ($k+2), $r['f_2']);
+
+            $sheet->setCellValue('M' . ($k+2), $r['risk_types']);
+            $sheet->setCellValue('N' . ($k+2), $r['risk_description']);
+            $sheet->setCellValue('O' . ($k+2), $r['risk_proposal']);
+            $sheet->setCellValue('P' . ($k+2), $r['take_steps']);
         }
 
 
