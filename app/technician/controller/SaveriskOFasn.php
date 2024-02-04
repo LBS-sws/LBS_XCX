@@ -42,7 +42,7 @@ class SaveriskOFasn
 
 
         // 客户类型
-        if($_POST['customer_type']==248){
+        if($_POST['customer_type']==248 && $_POST['check_datas']!='undefined'){
             $arr = json_decode($_POST['check_datas'],true);
             // print_r($arr);
             foreach ($arr as $key=>$val){

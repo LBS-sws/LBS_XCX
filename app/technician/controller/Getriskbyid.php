@@ -60,15 +60,18 @@ class Getriskbyid
             $service_data['CustomerType'] = $CustomerType;
 
             // type=1 number| type=2 selct | type=3 text
-            $service_data['check_datas'] = array(
-                array('label'=>'鼠类数量','value'=>0, 'type' =>'1'),
-                array('label'=>'有无鼠迹','value'=>'', 'type' =>'2'),
-                array('label'=>'蟑螂活体数量','value'=>0, 'type' =>'1'),
-                array('label'=>'蟑螂痕迹','value'=>'', 'type' =>'2'),
-                array('label'=>'飞虫数量','value'=>0, 'type' =>'1'),
-                array('label'=>'飞虫类目','value'=>'', 'type' =>'3')
-            );
+            if($service_type == 2){
+                $service_data['check_datas'] = array(
+                    array('label'=>'鼠类数量','value'=>0, 'type' =>'1'),
+                    array('label'=>'有无鼠迹','value'=>'', 'type' =>'2'),
+                    array('label'=>'蟑螂活体数量','value'=>0, 'type' =>'1'),
+                    array('label'=>'蟑螂痕迹','value'=>'', 'type' =>'2'),
+                    array('label'=>'飞虫数量','value'=>0, 'type' =>'1'),
+                    array('label'=>'飞虫类目','value'=>'', 'type' =>'3')
+                );
+            }
 
+            $result['service_type'] = $service_type;
             $result['code'] = 1;
             $result['msg'] = '成功';
             $result['data'] = $service_data;
