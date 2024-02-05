@@ -14,6 +14,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 use app\common\model\EnumsModel;
+use app\common\model\OfficeCityModel;
 use think\App;
 use think\facade\Request;
 
@@ -281,20 +282,27 @@ class Risk extends BaseController
         $date = Request::param('date', '');
 
 
-
-        if(!$date){
+        if(!$name){
+            $data['code'] = 400;
+            $data['msg'] = '请输入地区';
+            echo json_encode($data,true);
+            exit;
+        }
+        if(count($date)==0){
             $data['code'] = 400;
             $data['msg'] = '请选择日期';
             echo json_encode($data,true);
             exit;
         }
         if($name){
-            $condition[] =  ['Text', 'like', "%$name%"];
-            $city_ids_arr = (new EnumsModel())->where('EnumType','=',1)->where($condition)->field('EnumID')->select()->toArray();
-            // echo  (new EnumsModel())->getLastSQL();
+            // 获取办公室代号
+            $EnumID = (new EnumsModel())->where('EnumType','=',8)->where('Text','=',$name)->value('EnumID');
 
-            $ids = array_column($city_ids_arr, 'EnumID');
+            // 获取代号下面的城市
+            $city_arr = (new OfficeCityModel)->where('Office','=',$EnumID)->field('City')->select()->toArray();
+            $ids = array_column($city_arr, 'City');
             $where[] = ['j.City','in',$ids];
+
 
         }
         if($date){
@@ -311,13 +319,22 @@ class Risk extends BaseController
             ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
             ->leftJoin('enums e','e.EnumID=j.City')
             ->where('c.CustomerType','=',248)
+            ->where('j.ServiceType','=',2)
+            ->where('j.FinishTime','>','00:00:00')
             ->where($where)
-            // ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
             ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
             ->select()->toArray();
 
         // echo $sql = $this->serviceRisksModel->getLastSql();
-        // exit;
+
+        // echo "<pre>";
+        // print_r($list);exit;
+        if(!$list){
+            $data['code'] = 400;
+            $data['msg'] = '没有数据';
+            echo json_encode($data,true);
+            exit;
+        }
 
         foreach ($list as $key=>$val){
             $check_data = json_decode($val['risk_data'],true);
@@ -330,8 +347,6 @@ class Risk extends BaseController
             $list[$key]['f_2'] = isset($check_data) ? $check_data[5]['value'] : '';
 
         }
-        // echo "<pre>";
-        // print_r($list);exit;
 
         list($file, $file_url) = $this->dataToExcel_ProductReport($list);
 
@@ -341,11 +356,9 @@ class Risk extends BaseController
 
         //返回文件地址
         $domain = config('app.domain_url');
-        //return $domain.$file_url;
 
         $data['file_url'] = $domain.$file_url;
         return success(200, 'success', $data);
-        // header("Location:". $domain.$file_url);
     }
     public function dataToExcel_ProductReport($list){
 
