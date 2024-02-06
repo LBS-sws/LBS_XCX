@@ -39,6 +39,28 @@ class SaveriskOFasn
         $login_time = strtotime($user_token['stamp']);
         $now_time = strtotime('now');
         $c_time = ($now_time - $login_time)/60/60;
+
+
+        // 客户类型
+        if($_POST['customer_type']==248 && $_POST['check_datas']!='undefined'){
+            $arr = json_decode($_POST['check_datas'],true);
+            // print_r($arr);
+            foreach ($arr as $key=>$val){
+                if($val['type']==2 && $val['value']==''){
+                    $result['code'] = 0;
+                    $result['msg'] = $arr[$key]['label'] .'必填';
+                    $result['data'] = null;
+                    return json($result);
+                }
+                if($val['type']==3 && $val['value']==''){
+                    $result['code'] = 0;
+                    $result['msg'] = $arr[$key]['label'] .'必填';
+                    $result['data'] = null;
+                    return json($result);
+                }
+            }
+        }
+
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24 * 30)) {
             $id = $_POST['id']?$_POST['id']:0;
@@ -57,8 +79,16 @@ class SaveriskOFasn
             $data['risk_proposal'] = $_POST['risk_proposal'];
             $data['take_steps'] = $_POST['take_steps'];
             $data['risk_area'] = $_POST['risk_area'];
+
+            $data['risk_data'] = $_POST['check_datas'] ? $_POST['check_datas'] : json_encode($_POST['check_datas'],true);
+
+
             if ($id>0) {
+
+
                 $update_datas = Db::table('lbs_service_risks')->where('id', $id)->update($data);
+
+
                 $save_datas = $id;
             }else{
                 $data['creat_time'] = date('Y-m-d H:i:s', time());

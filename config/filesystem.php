@@ -32,5 +32,16 @@ return [
             // 可见性
             'visibility' => 'public',
         ],
+        // 风险跟进 现场发现
+        'export_RiskReport' => [
+            // 磁盘类型
+            'type'       => 'local',
+            // 磁盘路径
+            'root'       => app()->getRootPath() . 'public/export/RiskReport/',
+            // 磁盘路径对应的外部URL路径
+            'url'        => '/export/RiskReport',
+            // 可见性
+            'visibility' => 'public',
+        ],
     ],
 ];
