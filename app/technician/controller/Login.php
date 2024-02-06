@@ -26,7 +26,7 @@ class Login
         $password = $_POST['password'];
         //验证登录
         $user = Db::name('staff')->where('StaffID', $staffid)->where('Password', $password)->find();
-        if ($user) {
+        if ($user && $user['StaffID'] == $staffid && $user['Password'] == $password) {
             if ($user['Status']==1 || $user['Status']==2 || $user['Status']==5) {
                 //获取城市
                 $office = Db::name('enums')->alias('e')->join('officecity o ','o.Office=e.EnumID ')->join('officesettings os ','o.Office=os.Office')->where('o.City', $user['City'])->where('e.EnumType', 8)->field('e.Text,os.Tel')->find();
