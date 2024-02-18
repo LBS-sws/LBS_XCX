@@ -276,8 +276,18 @@ class Risk extends BaseController
         return success(0, 'success', $list,$sql); // 返回操作结果和数据
 
     }
+    public function demo(){
+        echo "demo";
+    }
     // 导出
     public function export(){
+        header('Content-Type: text/html;charset=utf-8');
+        header('Access-Control-Allow-Origin:*');
+        header('Access-Control-Allow-Methods:POST,GET,OPTIONS,DELETE');
+        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Headers: Content-Type,Content-Length,Accept-Encoding,X-Requested-with, Origin');
+
+
         $name = Request::param('name', '');
         $date = Request::param('date', '');
 
@@ -300,11 +310,11 @@ class Risk extends BaseController
 
             // 获取代号下面的城市
             $city_arr = (new OfficeCityModel)->where('Office','=',$EnumID)->field('City')->select()->toArray();
+            // echo  (new OfficeCityModel)->getLastSql();exit;
             $ids = array_column($city_arr, 'City');
             $where[] = ['j.City','in',$ids];
-
-
         }
+
         if($date){
 
             $start_date = $date[0];
@@ -314,21 +324,30 @@ class Risk extends BaseController
         }
 
         // risk_types 风险类别| risk_description 风险描述 | risk_proposal 整改建议 | take_steps 采取措施 undefined if(sex=1,"男","女")
+        // $list = $this->serviceRisksModel->alias('m')
+        //     ->leftJoin('joborder j','m.job_id=j.JobID')
+        //     ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+        //     ->leftJoin('enums e','e.EnumID=j.City')
+        //     ->where('c.CustomerType','=',248)
+        //     ->where('j.ServiceType','=',2)
+        //     ->where('j.FinishTime','>','00:00:00')
+        //     ->where($where)
+        //     ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
+        //     ->select()->toArray();
+
         $list = $this->serviceRisksModel->alias('m')
             ->leftJoin('joborder j','m.job_id=j.JobID')
             ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
             ->leftJoin('enums e','e.EnumID=j.City')
-            ->where('c.CustomerType','=',248)
+            ->where('c.CustomerType','in','248,139')
             ->where('j.ServiceType','=',2)
             ->where('j.FinishTime','>','00:00:00')
             ->where($where)
             ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
             ->select()->toArray();
 
-        // echo $sql = $this->serviceRisksModel->getLastSql();
+        $sql = $this->serviceRisksModel->getLastSql();
 
-        // echo "<pre>";
-        // print_r($list);exit;
         if(!$list){
             $data['code'] = 400;
             $data['msg'] = '没有数据';
@@ -358,6 +377,7 @@ class Risk extends BaseController
         $domain = config('app.domain_url');
 
         $data['file_url'] = $domain.$file_url;
+        $data['sql'] = $sql;
         return success(200, 'success', $data);
     }
     public function dataToExcel_ProductReport($list){
