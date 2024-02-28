@@ -58,33 +58,38 @@ class Lbs
         $url = "https://dms.lbsapps.cn/sv-prod/index.php/Json/index?user=admin&ac=xcx_company";
 
         $output = $this->http_curl_get($url);
-        // print_r($output);exit;
 
         $json = utf8_encode($output);
         $res = json_decode($json,true);
-        // echo "<pre/>";
-        // print_r($res);exit;
+
+        $listx = Db::name('lbs_company')->where('1=1')->field('id')->select()->toArray();
+        $arr = array_column($listx, 'id');
 
         $list = $res['list'];
         foreach ($list as $key=>$val){
 
-            $people_info = array_column($val['list'], 'img');
-            $img = implode(',',$people_info);
+            $boolvalue = in_array($val['id'],$arr,false);
+            if(!$boolvalue){
+                $people_info = array_column($val['list'], 'img');
+                $img = implode(',',$people_info);
 
-            $people_filename = array_column($val['list'], 'phy_file_name');
-            $filename = implode(',',$people_filename);
+                $people_filename = array_column($val['list'], 'phy_file_name');
+                $filename = implode(',',$people_filename);
 
-            $lcd = array_column($val['list'], 'lcd');
-            $lcdStr = implode(',',$lcd);
+                $lcd = array_column($val['list'], 'lcd');
+                $lcdStr = implode(',',$lcd);
 
-            $lud = array_column($val['list'], 'lud');
-            $ludStr = implode(',',$lud);
+                $lud = array_column($val['list'], 'lud');
+                $ludStr = implode(',',$lud);
 
-            Db::name('lbs_company')->insert(['id' => $val['id'], 'name' => $val['name'], 'city'=>$val['city'], 'tacitly'=>$val['tacitly'], 'list'=>$img, 'file_names'=>$filename, 'lcd'=>$lcdStr, 'lud'=>$ludStr]);
+                Db::name('lbs_company')->insert(['id' => $val['id'], 'name' => $val['name'], 'city'=>$val['city'], 'tacitly'=>$val['tacitly'], 'list'=>$img, 'file_names'=>$filename, 'lcd'=>$lcdStr, 'lud'=>$ludStr]);
+            }
+            if($boolvalue){
 
+            }
         }
 
-        // print_r($list);
+
         echo "success";
 
     }
@@ -93,18 +98,18 @@ class Lbs
         $name = trim($_REQUEST['name']);
         $city = trim($_REQUEST['city']);
 
-        $condition['name'] = $name;
+        // $condition['name'] = $name;
         $condition['city'] = $city;
         $condition['tacitly'] = 1;
 
         $item = Db::name('lbs_company')->where($condition)->find();
         if(!$item){
-            $where['name'] = $name;
+            // $where['name'] = $name;
             $where['city'] = $city;
             $where['tacitly'] = 0;
             $item = Db::name('lbs_company')->where($where)->find();
         }
-        //echo Db::name('lbs_company')->getLastSql();
+        // echo Db::name('lbs_company')->getLastSql();
         // if($item['imgBase'] == NULL || !$item['imgBase']){
         if(1){
 
@@ -125,7 +130,7 @@ class Lbs
 
                 $base_img = $v;
                 // //  设置文件路径和命名文件名称
-                $path = "/data/web/lbs_xcx/public/company/";
+                $path = "/data/lbs_xcx/public/company/";
                 $prefix = "";//前缀可不写
                 //$output_file = $prefix.time().rand(100,999).'.jpg';
                 $output_file = $strArray[$k];

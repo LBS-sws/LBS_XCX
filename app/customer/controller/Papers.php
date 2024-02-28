@@ -44,10 +44,15 @@ class Papers
         $name = trim($_REQUEST['name']);
         $city = trim($_REQUEST['city']);
 
-        $item = Db::name('lbs_company')->where([['name','=',$name],['city','=',$city]])->find();
+        // []['name','=',$name]
+        $item = Db::name('lbs_company')
+            ->where('city','=',$city)
+            ->where('tacitly','=',1)
+            ->find();
         // dd($item);
 
         $arr = explode(',',$item['file_names']);
+        $arr = array_unique($arr); // 数组去重
         // dd($arr);
 
         foreach ($arr as $key=>$val){
