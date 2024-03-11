@@ -358,11 +358,11 @@ class Risk extends BaseController
         foreach ($list as $key=>$val){
             $check_data = json_decode($val['risk_data'],true);
 
-            $list[$key]['s_1'] = isset($check_data) ? $check_data[0]['value'] : '';
-            $list[$key]['s_2'] = isset($check_data) ? $check_data[1]['value'] : '';
-            $list[$key]['z_1'] = isset($check_data) ? $check_data[2]['value'] : '';
-            $list[$key]['z_2'] = isset($check_data) ? $check_data[3]['value'] : '';
-            $list[$key]['f_1'] = isset($check_data) ? $check_data[4]['value'] : '';
+            $list[$key]['s_1'] = isset($check_data) ? $check_data[0]['value'] : '0';
+            $list[$key]['s_2'] = isset($check_data) ? $check_data[1]['value'] : '无';
+            $list[$key]['z_1'] = isset($check_data) ? $check_data[2]['value'] : '0';
+            $list[$key]['z_2'] = isset($check_data) ? $check_data[3]['value'] : '无';
+            $list[$key]['f_1'] = isset($check_data) ? $check_data[4]['value'] : '0';
             $list[$key]['f_2'] = isset($check_data) ? $check_data[5]['value'] : '';
 
         }
