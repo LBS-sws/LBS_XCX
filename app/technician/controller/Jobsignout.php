@@ -64,7 +64,7 @@ class Jobsignout
         //验证登录状态
         if ($token==$user_token['token'] &&  ($c_time <= 24*30)) {
             if($jobtype==1){
-                $job_time = Db::table('joborder')->alias('j')->join('staff s','j.Staff01=s.StaffID')->where('j.JobID', $jobid)->field('j.StartTime,j.ContractID,s.StaffName,ServiceType,j.FirstJob,j.ContractNumber,j.CustomerID')->find();
+                $job_time = Db::table('joborder')->alias('j')->join('staff s','j.Staff01=s.StaffID')->where('j.JobID', $jobid)->field('j.FinishDate,j.StartTime,j.ContractID,s.StaffName,ServiceType,j.FirstJob,j.ContractNumber,j.CustomerID')->find();
                 //回传新U登录状态
                 if ($job_time['ServiceType']==1) {
                     $jobcardtable = "JobCardBlue";
@@ -75,10 +75,17 @@ class Jobsignout
                 }else{
                     $jobcardtable = "JobCardGeneric";
                 }
+                if($job_time['FinishDate'] != null || $job_time['FinishDate']!= '0000-00-00' || $job_time['FinishDate']!= ''){
+                    $signdate = $job_time['FinishDate'];
+                }
                 $arr = array('staffid'=>$staffid,'jobid'=>$jobid,'jobtype'=>$jobtype,'token'=>$token,'finishdate'=>$signdate,'starttime'=>$job_time['StartTime'],'finishtime'=>$starttime,'contractid'=>$job_time['ContractID'],'staffname'=>$job_time['StaffName'],'jobcardtable'=>$jobcardtable,'invoice'=>$invoice,'firstjob'=>$job_time['FirstJob'],'servicetype'=>$job_time['ServiceType'],'contractnumber'=>$job_time['ContractNumber'],'customerid'=>$job_time['CustomerID']);
 
                 $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
+
+
+
+
 
 
                 $job_datas_key = 'job_start_'.$jobtype. 'key_'.$jobid;
@@ -115,15 +122,11 @@ class Jobsignout
                 $xinu_data = $this->curl_post(config('app.uapp_url').config('app.uapi_list.edit_job_status'),$arr);
                 $xinu = json_decode($xinu_data,true);
                 if($xinu['code']==1){
-
-                    $job_datas = Db::table('followuporder')
-                        ->where('FollowUpID', $jobid)
-                        ->update(['FinishTime' => $starttime,'Status'=>3,'JobReport'=>$jobreport]);
+                    $job_datas = Db::table('followuporder')->where('FollowUpID', $jobid)->update(['FinishTime' => $starttime,'Status'=>3,'JobReport'=>$jobreport]);
 // Percy 發電郵
                     $xdata = ['job_id'=>$jobid, 'job_type'=>$jobtype];
                     $x_datas = Db::table('queue_db.mail_report_queue')->insert($xdata);
 // Percy - End
-
                 }else{
                     //返回数据
                     $result['code'] = 0;
