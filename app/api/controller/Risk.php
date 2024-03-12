@@ -335,18 +335,32 @@ class Risk extends BaseController
         //     ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
         //     ->select()->toArray();
 
-        $list = $this->serviceRisksModel->alias('m')
-            ->leftJoin('joborder j','m.job_id=j.JobID')
-            ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+        // $list = $this->serviceRisksModel->alias('m')
+        //     ->leftJoin('joborder j','m.job_id=j.JobID')
+        //     ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+        //     ->leftJoin('enums e','e.EnumID=j.City')
+        //     ->where('c.CustomerType','in','248,139')
+        //     ->where('j.ServiceType','=',2)
+        //     ->where('j.FinishTime','>','00:00:00')
+        //     ->where($where)
+        //     ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
+        //     ->select()->toArray();
+
+        // $sql = $this->serviceRisksModel->getLastSql();
+
+
+        $list = $this->jobOrderModel->alias('j')
             ->leftJoin('enums e','e.EnumID=j.City')
-            ->where('c.CustomerType','in','248,139')
+            ->leftJoin('customercompany c','c.CustomerID=j.CustomerID')
+            ->leftJoin('lbs_service_risks m','m.job_id = j.JobID')
+            ->where('c.CustomerType','in','248,249,139')
             ->where('j.ServiceType','=',2)
             ->where('j.FinishTime','>','00:00:00')
             ->where($where)
-            ->field('m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps,c.NameZH,c.CustomerID,j.JobDate,j.StartTime,j.FinishTime,e.Text')
+            ->field('j.JobID,j.JobDate,j.StartTime,j.FinishTime,e.Text,c.NameZH,c.CustomerID,m.id,m.job_id,m.job_type,m.risk_data,m.risk_types,m.risk_description,m.risk_proposal,m.take_steps')
             ->select()->toArray();
+        $sql = $this->jobOrderModel->getLastSQL();
 
-        $sql = $this->serviceRisksModel->getLastSql();
 
         if(!$list){
             $data['code'] = 400;
@@ -358,11 +372,11 @@ class Risk extends BaseController
         foreach ($list as $key=>$val){
             $check_data = json_decode($val['risk_data'],true);
 
-            $list[$key]['s_1'] = isset($check_data) ? $check_data[0]['value'] : '';
-            $list[$key]['s_2'] = isset($check_data) ? $check_data[1]['value'] : '';
-            $list[$key]['z_1'] = isset($check_data) ? $check_data[2]['value'] : '';
-            $list[$key]['z_2'] = isset($check_data) ? $check_data[3]['value'] : '';
-            $list[$key]['f_1'] = isset($check_data) ? $check_data[4]['value'] : '';
+            $list[$key]['s_1'] = isset($check_data) ? $check_data[0]['value'] : '0';
+            $list[$key]['s_2'] = isset($check_data) ? $check_data[1]['value'] : '无';
+            $list[$key]['z_1'] = isset($check_data) ? $check_data[2]['value'] : '0';
+            $list[$key]['z_2'] = isset($check_data) ? $check_data[3]['value'] : '无';
+            $list[$key]['f_1'] = isset($check_data) ? $check_data[4]['value'] : '0';
             $list[$key]['f_2'] = isset($check_data) ? $check_data[5]['value'] : '';
 
         }
