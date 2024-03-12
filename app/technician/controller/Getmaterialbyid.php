@@ -17,10 +17,10 @@ class Getmaterialbyid
 
         $token = request()->header('token');
         if(!isset($_POST['staffid']) || !isset($token) || !isset($_POST['job_id']) || !isset($_POST['job_type']) || !isset($_POST['city']) || !isset($_POST['service_type'])){
-            return json($result); 
+            return json($result);
         }
         if(empty($_POST['staffid']) || empty($token) || empty($_POST['job_id']) || empty($_POST['job_type']) || empty($_POST['city']) || empty($_POST['service_type'])){
-            return json($result); 
+            return json($result);
         }
         //获取信息
         $staffid = $_POST['staffid'];
@@ -45,6 +45,7 @@ class Getmaterialbyid
             }
             //新增所有设备
             $allow_mas = Db::table('lbs_service_servicematerials')->where('city',$city)->where('service_type',$service_type)->find();
+
             if($allow_mas){
                 $service_data['material_lists'] =  Db::table('lbs_service_material_lists')->alias('m')
                     ->join('lbs_service_material_classifys c','c.id=m.classify_id')
@@ -61,6 +62,7 @@ class Getmaterialbyid
                     ->where('m.status',1)->order('m.sort','asc')
                     ->field('m.name as label,m.name as value,m.registration_no,m.active_ingredient,m.ratio,m.unit')
                     ->select();
+                print_r(Db::table('lbs_service_material_lists')->getLastSql());exit();
             }
 
 
@@ -72,7 +74,7 @@ class Getmaterialbyid
             $material_targets = $material_targets?explode(',',$material_targets['targets']):null;
             $service_data['material_targets'] = [];
             if($material_targets){
-                for ($i=0; $i < count($material_targets); $i++) { 
+                for ($i=0; $i < count($material_targets); $i++) {
                     $service_data['material_targets'][$i]['label'] =$material_targets[$i] ;
                     $service_data['material_targets'][$i]['value'] =$material_targets[$i] ;
                 }
@@ -93,7 +95,7 @@ class Getmaterialbyid
             $result['code'] = 1;
             $result['msg'] = '成功';
             $result['data'] = $service_data;
-           
+
         }else{
              $result['code'] = 0;
              $result['msg'] = '登录失效，请重新登陆';
